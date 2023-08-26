@@ -9,18 +9,18 @@ local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 
-
 -- Only for players currently fighting.
-local CombatPlayerData: {[Player]: CombatPlayer.CombatPlayer} = {}
+local CombatPlayerData: { [Player]: CombatPlayer.CombatPlayer } = {}
 
 function Main:Initialize()
-    Players.PlayerAdded:Connect(function(player: Player) 
-        player.CharacterAdded:Connect(function()
-            local combatPlayer = CombatPlayer.new(player, "Fabio")
-            CombatPlayerData[player] = combatPlayer
-            Network:FireClient(player, "CombatPlayer Initialize", combatPlayer)
-        end)
-    end)
+	Players.PlayerAdded:Connect(function(player: Player)
+		player.CharacterAdded:Connect(function(char)
+			local heroName = "Fabio"
+			local combatPlayer = CombatPlayer.new(player, heroName)
+			CombatPlayerData[player] = combatPlayer
+			Network:FireClient(player, "CombatPlayer Initialize", heroName)
+		end)
+	end)
 end
 
 return Main

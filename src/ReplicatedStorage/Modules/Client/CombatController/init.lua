@@ -12,16 +12,16 @@ local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loade
 local localPlayer = Players.LocalPlayer
 
 function CombatController:Initialize()
-    Network:OnClientEvent("CombatPlayer Initialize", function(combatPlayer: CombatPlayer.CombatPlayer)
-        if not localPlayer.Character then
-            print("Received combat initialise before character loaded, waiting...")
-            localPlayer.CharacterAdded:Wait()
-            print(localPlayer.Character.Parent)
-            task.wait(0)
-            print(localPlayer.Character.Parent)
-        end
-        CombatClient.new(combatPlayer)
-    end)
+	Network:OnClientEvent("CombatPlayer Initialize", function(heroName: string)
+		-- Can be called before the character has replicated from the server to the client
+		if not localPlayer.Character then
+			print("Received combat initialise before character loaded, waiting...")
+			localPlayer.CharacterAdded:Wait()
+			localPlayer.Character:WaitForChild("Humanoid") -- Also need to wait for the character to get populated
+		end
+
+		CombatClient.new(heroName)
+	end)
 end
 
 return CombatController
