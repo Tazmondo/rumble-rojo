@@ -28,6 +28,7 @@ local LeaderboardController
 function Main:UpdateStartTime()
 	ArenaUI.Game.Visible = GameStats.RoundStatus.Value == "Starting" --and SharedMemory.InMatch
 	ArenaUI.Game.Countdown.Visible = GameStats.RoundStatus.Value == "Starting" --and SharedMemory.InMatch
+	Scoreboard.Time.Timer.Text = GameStats.RoundStatus.Value == "Starting" and "2:00" or "" -- visual beauty
 
 	if self.LastStartTime ~= GameStats.RoundCountdown.Value then
 		self.LastStartTime = GameStats.RoundCountdown.Value
@@ -116,6 +117,8 @@ function Main:Initialize()
 	end)
 
 	RunService.RenderStepped:Connect(function()
+		UI.Queue.QueueSize.Text = GameStats.QueueSize.Value .. "/10"
+
 		GameStats.RoundStatus.Changed:Connect(function()
 			self:UpdateStartTime()
 		end)
