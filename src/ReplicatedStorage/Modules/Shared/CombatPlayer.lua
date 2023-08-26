@@ -24,11 +24,11 @@ end
 function CombatPlayer.new(player, heroName)
 	local self = setmetatable({}, CombatPlayer)
 
-	print(heroName, HeroData[heroName])
 	self.HeroData = HeroData[heroName] :: typeof(HeroData.Fabio)
 
 	self.State = StateEnum.Idle
-	self.LastAttackTime = 0 -- os.clock based
+	self.lastAttackTime = 0 -- os.clock based
+	self.attackId = 1
 
 	self.ScheduledChange = {} -- We use a table so if it updates
 
@@ -54,14 +54,19 @@ function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, new
 	end)
 end
 
+function CombatPlayer.GetNextAttackId(self: CombatPlayer)
+	self.attackId += 1
+	return self.attackId
+end
+
 function CombatPlayer.CanAttack(self: CombatPlayer)
 	return self.State == StateEnum.Idle
-		and os.clock() - self.LastAttackTime <= self.HeroData.Attack.ReloadSpeed - LATENCYALLOWANCE
+		and os.clock() - self.lastAttackTime <= self.HeroData.Attack.ReloadSpeed - LATENCYALLOWANCE
 end
 
 function CombatPlayer.Attack(self: CombatPlayer)
 	self:ChangeState(StateEnum.Attacking)
-	self.LastAttackTime = os.clock()
+	self.lastAttackTime = os.clock()
 
 	self:ScheduleStateChange(0.2, StateEnum.Idle)
 end

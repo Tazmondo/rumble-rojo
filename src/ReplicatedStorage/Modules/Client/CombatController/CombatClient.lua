@@ -10,6 +10,8 @@ local RunService = game:GetService("RunService")
 local FastCast = require(ReplicatedStorage.Modules.Shared.FastCastRedux)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.CombatPlayer)
 local Enums = require(ReplicatedStorage.Modules.Shared.HeroData.Enums)
+local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
+local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 
 local function VisualiseRay(ray: Ray)
 	local part = Instance.new("Part")
@@ -55,6 +57,7 @@ function CombatClient.new(heroName: string)
 	self.humanoid = self.character.Humanoid :: Humanoid
 	self.HRP = self.humanoid.RootPart
 	self.lastMouseCast = nil
+	self.connections = {} :: { RBXScriptConnection }
 
 	self.combatPlayer = CombatPlayer.new(self.player, heroName)
 
@@ -140,17 +143,20 @@ end
 function CombatClient.SetupCharacterRotation(self: CombatClient)
 	self.humanoid.AutoRotate = false
 
-	RunService.RenderStepped:Connect(function()
-		if not self.lastMouseCast then
-			return
-		end
-		local hitPosition = self.lastMouseCast[1]
+	table.insert(
+		self.connections,
+		RunService.RenderStepped:Connect(function()
+			if not self.lastMouseCast then
+				return
+			end
+			local hitPosition = self.lastMouseCast[1]
 
-		local targetCFrame =
-			CFrame.lookAt(self.HRP.Position, Vector3.new(hitPosition.X, self.HRP.Position.Y, hitPosition.Z))
+			local targetCFrame =
+				CFrame.lookAt(self.HRP.Position, Vector3.new(hitPosition.X, self.HRP.Position.Y, hitPosition.Z))
 
-		self.HRP.CFrame = self.HRP.CFrame:Lerp(targetCFrame, 0.4)
-	end)
+			self.HRP.CFrame = self.HRP.CFrame:Lerp(targetCFrame, 0.4)
+		end)
+	)
 end
 
 function CombatClient.HandleMove(self: CombatClient, input: InputObject)
@@ -193,25 +199,32 @@ function CombatClient.HandleClick(self: CombatClient)
 end
 
 function CombatClient.GetInputs(self: CombatClient)
-	UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
-		if processed then
-			return
-		end
+	table.insert(
+		self.connections,
+		UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
+			if processed then
+				return
+			end
 
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
-			self:HandleMove(input)
-		end
-	end)
+			if input.UserInputType == Enum.UserInputType.MouseMovement then
+				self:HandleMove(input)
+			end
+		end)
+	)
 
-	UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
-		if processed then
-			return
-		end
+	table.insert(
+		self.connections,
+		UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+			print("began")
+			if processed then
+				return
+			end
 
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			self:HandleClick()
-		end
-	end)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				self:HandleClick()
+			end
+		end)
+	)
 end
 
 function CombatClient.Attack(self: CombatClient, trajectory: Ray)
@@ -237,8 +250,17 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 			local rotatedCFrame = originalCFrame * CFrame.Angles(0, math.rad(decidedAngle + randomAngle), 0)
 
 			self.FastCast:Fire(rotatedCFrame.Position, rotatedCFrame.LookVector, attackData.ProjectileSpeed, behaviour)
+			Network:FireServer("Attack", rotatedCFrame, self.combatPlayer:GetNextAttackId())
 		end
 	end
+end
+
+function CombatClient.Destroy(self: CombatClient)
+	print("Destroying combat client")
+	for _, connection in pairs(self.connections) do
+		connection:Disconnect()
+	end
+	self.humanoid.AutoRotate = true
 end
 
 export type CombatClient = typeof(CombatClient.new(...))
