@@ -12,6 +12,7 @@ HeroData = {
 			Damage = 300,
 			AttackType = Enums.AttackType.Shotgun,
 			ShotCount = 5,
+			Angle = 45,
 			Range = Enums.AttackRange.Medium,
 			ReloadSpeed = 1.5,
 			Ammo = 3,

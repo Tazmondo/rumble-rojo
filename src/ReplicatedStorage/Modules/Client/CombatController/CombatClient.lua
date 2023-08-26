@@ -227,7 +227,17 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 	behaviour.MaxDistance = attackData.Range
 
 	if attackData.AttackType == Enums.AttackType.Shotgun then
-		self.FastCast:Fire(trajectory.Origin, trajectory.Direction, attackData.ProjectileSpeed, behaviour)
+		local angle = attackData.Angle
+		local pelletCount = attackData.ShotCount
+
+		for pellet = 1, pelletCount do
+			local decidedAngle = (-angle / 2) + (angle / (pelletCount - 1)) * (pellet - 1)
+			local randomAngle = math.random(-2, 2)
+			local originalCFrame = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
+			local rotatedCFrame = originalCFrame * CFrame.Angles(0, math.rad(decidedAngle + randomAngle), 0)
+
+			self.FastCast:Fire(rotatedCFrame.Position, rotatedCFrame.LookVector, attackData.ProjectileSpeed, behaviour)
+		end
 	end
 end
 
