@@ -57,7 +57,7 @@ function Main:LoadData(Data)
 end
 
 function Main:Initialize()
-	warn("initialized data controller")
+	-- warn("initialized data controller")
 
 	Network:OnClientEvent("LoadData", function(Data)
 		self:LoadData(Data)

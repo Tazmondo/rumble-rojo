@@ -4,7 +4,7 @@ local Main = {
 	Players = {},
 	Arena = "",
 
-	Intermission = 20, -- 20
+	Intermission = 10, -- 20
 	RoundLength = 10, -- 2mimnutes
 	RoundsAmount = 1, -- default is 1 although can support multiple rounds
 
@@ -30,6 +30,12 @@ local Container = Arena.Enter
 local Arena = ZoneModule.new(Container)
 
 -- functions
+function Main:IsAlive(Player)
+	return Player
+		and Player.Character
+		and (Player.Character:FindFirstChild("Humanoid") and Player.Character.Humanoid.Health > 0)
+end
+
 function Main:CountQueue()
 	local Count = 0
 

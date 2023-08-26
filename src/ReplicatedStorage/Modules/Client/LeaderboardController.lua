@@ -26,7 +26,11 @@ local SharedMemory = ModuleLoader:LoadModule("SharedMemory")
 local UIController = ModuleLoader:LoadModule("UIController")
 
 -- functions
-function Main:IsAlive() end
+function Main:IsAlive()
+	return Player
+		and Player.Character
+		and (Player.Character:FindFirstChild("Humanoid") and Player.Character.Humanoid.Health > 0)
+end
 
 function Main:ClearScoreboard() -- bruh
 	for i, v in pairs(Scoreboard.List1:GetChildren()) do

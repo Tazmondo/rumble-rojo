@@ -21,6 +21,7 @@ local Main = {
 		Playtime = 0,
 	},
 }
+local PlayerDatastore
 
 -- services
 local DataStoreService = game:GetService("DataStoreService")
@@ -30,7 +31,6 @@ local RunService = game:GetService("RunService")
 -- load modules
 local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
 local Network = Loader:LoadModule("Network")
-
 -- functions
 function Main:RecursiveAdd(Data, CompareTo)
 	for Key, Value in pairs(CompareTo) do
@@ -193,7 +193,7 @@ function Main:SaveData(Player, IsLeaving)
 			PlayerDatastore:UpdateAsync(PlayerId, function(Data)
 				if Data then
 					if IsLeaving then
-						warn("removed session data")
+						-- warn("removed session data")
 						self.PlayerJoinTime[Player] = nil
 					end
 

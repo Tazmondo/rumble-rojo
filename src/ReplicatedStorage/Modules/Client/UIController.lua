@@ -9,7 +9,6 @@ local GameStats = game.ReplicatedStorage.GameValues.Arena
 local UI = Player:WaitForChild("PlayerGui"):WaitForChild("MainUI")
 local ArenaUI = Player:WaitForChild("PlayerGui"):WaitForChild("ArenaUI").Interface
 
-local Templates = ArenaUI.Parent.Templates -- laziness
 local Scoreboard = ArenaUI:WaitForChild("ScoreBoard")
 
 -- services
@@ -25,15 +24,21 @@ local SharedMemory = Loader:LoadModule("SharedMemory")
 local LeaderboardController
 
 -- functions
+function Main:IsAlive()
+	return Player
+		and Player.Character
+		and (Player.Character:FindFirstChild("Humanoid") and Player.Character.Humanoid.Health > 0)
+end
+
 function Main:UpdateStartTime()
-	ArenaUI.Game.Visible = GameStats.RoundStatus.Value == "Starting" --and SharedMemory.InMatch
-	ArenaUI.Game.Countdown.Visible = GameStats.RoundStatus.Value == "Starting" --and SharedMemory.InMatch
+	ArenaUI.Game.Visible = GameStats.RoundStatus.Value == "Starting" and SharedMemory.InMatch
+	ArenaUI.Game.Countdown.Visible = GameStats.RoundStatus.Value == "Starting" and SharedMemory.InMatch
 	Scoreboard.Time.Timer.Text = GameStats.RoundStatus.Value == "Starting" and "2:00" or "" -- visual beauty
 
 	if self.LastStartTime ~= GameStats.RoundCountdown.Value then
 		self.LastStartTime = GameStats.RoundCountdown.Value
 
-		if GameStats.RoundStatus.Value == "Starting" then
+		if GameStats.RoundStatus.Value == "Starting" and SharedMemory.InMatch then
 			local CountdownText = ArenaUI.Game.Countdown
 			CountdownText.Text = GameStats.RoundCountdown.Value
 
@@ -56,7 +61,7 @@ function Main:UpdateStartTime()
 		end
 	end
 
-	if GameStats.RoundStatus.Value == "Game" then
+	if GameStats.RoundStatus.Value == "Game" and SharedMemory.InMatch then
 		local Seconds = math.ceil(GameStats.RoundTime.Value)
 		local Minutes = math.floor(Seconds / 60)
 		Seconds = Seconds - Minutes * 60
@@ -84,7 +89,7 @@ function Main:UpdateStartTime()
 
 			Timer.TextColor3 = Color3.fromRGB(255, 255, 255)
 		end
-	elseif GameStats.RoundStatus.Value == "Ended" then
+	elseif GameStats.RoundStatus.Value == "Ended" and SharedMemory.InMatch then
 		ArenaUI.Game.Visible = true
 		ArenaUI.Game.RoundOver.Visible = true
 		wait(3)
@@ -99,11 +104,11 @@ function Main:UpdateStartTime()
 end
 
 function Main:Initialize()
+	LeaderboardController = Loader:LoadModule("LeaderboardController")
+
 	if not Player.Character then
 		Player.CharacterAdded:wait()
 	end
-
-	LeaderboardController = Loader:LoadModule("LeaderboardController")
 
 	local Ready = false
 
