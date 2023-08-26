@@ -1,21 +1,12 @@
-local CombatController = {}
-CombatController.__index = CombatController
+local CombatClient = {}
+CombatClient.__index = CombatClient
 
+local Debris = game:GetService("Debris")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
-local Debris = game:GetService("Debris")
 
-local Players = game:GetService("Players")
-local localPlayer = Players.LocalPlayer
-
-local FastCast = require(ReplicatedStorage.Modules.Shared.FastCastRedux)
-
--- Controller Variables
--- (Since controllers are singletons (there is only ever one of them), we don't need to store the variables within the table)
-local lastMouseCast
-local character: Model?
-local humanoid: Humanoid?
-local HRP: BasePart?
+local CombatPlayer = require(ReplicatedStorage.Modules.Shared.CombatPlayer)
 
 local function VisualiseRay(ray: Ray)
     local part = Instance.new("Part")
@@ -53,38 +44,32 @@ local function ScreenPointCast(x: number, y: number, params: RaycastParams?)
     end
 end
 
-local function CharacterAdded(char)
-    humanoid = char:WaitForChild("Humanoid") :: Humanoid
-    assert(humanoid)
-    HRP = humanoid.RootPart
-    character = char
+function CombatClient.new(combatPlayer: CombatPlayer.CombatPlayer)
+    local self = setmetatable({}, CombatClient)
 
-    humanoid.AutoRotate = false
-    humanoid.JumpHeight = 0
+    self.player = Players.LocalPlayer
+    self.character = self.player.Character
+    self.humanoid = self.character.Humanoid
+    self.HRP = self.character.HumanoidRootPart
+
+    self.combatPlayer = combatPlayer
+
+    self:GetInputs()
+
+    return self
 end
 
-local function CharacterRemoving()  
-    character = nil
-    humanoid = nil
-    HRP = nil
-end
-
-function CombatController:Initialize()
-    localPlayer.CharacterAdded:Connect(CharacterAdded)
-    localPlayer.CharacterRemoving:Connect(CharacterRemoving)
-
+function CombatClient.GetInputs(self: CombatClient)
     UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean) 
         if processed then return end
 
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            if not character or not humanoid or not HRP then return end
-            
+        if input.UserInputType == Enum.UserInputType.MouseMovement then            
             local screenPosition = input.Position
             lastMouseCast = ScreenPointCast(screenPosition.X, screenPosition.Y)
 
             local hitPosition = lastMouseCast[1]
 
-            HRP.CFrame = CFrame.lookAt(HRP.Position, Vector3.new(hitPosition.X, HRP.Position.Y, hitPosition.Z))
+            self.HRP.CFrame = CFrame.lookAt(self.HRP.Position, Vector3.new(hitPosition.X, self.HRP.Position.Y, hitPosition.Z))
         end
     end)
 
@@ -92,14 +77,12 @@ function CombatController:Initialize()
         if processed then return end
 
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            if not character or not humanoid or not HRP or not lastMouseCast then return end
-
             local lastPosition = lastMouseCast[1]
             local lastInstance = lastMouseCast[2]
             local lastNormal = lastMouseCast[3]
 
             
-            local targetHeight = HRP.Position.Y
+            local targetHeight = self.HRP.Position.Y
             
             if lastInstance and lastInstance.Parent:FindFirstChild("Humanoid") then
                 -- If they clicked on a player, we do not need to correct the aim height
@@ -116,11 +99,13 @@ function CombatController:Initialize()
             end
 
 
-            local ray = Ray.new(HRP.Position, Vector3.new(lastPosition.X, targetHeight, lastPosition.Z) - HRP.Position)
+            local ray = Ray.new(self.HRP.Position, Vector3.new(lastPosition.X, targetHeight, lastPosition.Z) - self.HRP.Position)
             VisualiseRay(ray)
 
         end
     end)
 end
 
-return CombatController
+export type CombatClient = typeof(CombatClient.new())
+
+return CombatClient

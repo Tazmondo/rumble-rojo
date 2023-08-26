@@ -151,6 +151,7 @@ end
 
 -- routing requests
 function Main:Initialize()
+	print("Network initialized")
 	if RunService:IsServer() then
 		Remotes.RemoteEvent.OnServerEvent:Connect(function(Player, Type, ...)
 			if self.CachedFunctions[Type] then

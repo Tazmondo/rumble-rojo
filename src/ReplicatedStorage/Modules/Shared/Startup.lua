@@ -33,7 +33,7 @@ function Main:Initialize(LoadOrder)
 		self:LoadModule(ModuleName)
 	end
 
-	local Location = game:GetService("RunService"):IsClient() and game.ReplicatedStorage.Modules.Client or game.ServerStorage.Modules
+	local Location = if game:GetService("RunService"):IsClient() then game.ReplicatedStorage.Modules.Client else game.ServerStorage.Modules
 	for i,v in pairs(Location:GetChildren()) do
 		if not self.LoadedModules[v.Name] then
 			self:LoadModule(v.Name)
