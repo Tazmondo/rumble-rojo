@@ -19,9 +19,10 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
 -- load modules
-local ModuleLoader = require(game.ReplicatedStorage.Modules.Shared.Loader)
-local Network = ModuleLoader:LoadModule("Network")
-local SharedMemory = ModuleLoader:LoadModule("SharedMemory")
+local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
+local Network = Loader:LoadModule("Network")
+local SharedMemory = Loader:LoadModule("SharedMemory")
+local LeaderboardController
 
 -- functions
 function Main:UpdateStartTime()
@@ -88,6 +89,11 @@ function Main:UpdateStartTime()
 		wait(3)
 		ArenaUI.Game.RoundOver.Visible = false
 		ArenaUI.Game.Visible = false
+	elseif GameStats.RoundStatus.Value == "Intermission" then
+		local Time = GameStats.RoundIntermission.Value
+
+		Scoreboard.Time.Timer.Text = Time
+		UI.Queue.Title.Text = "a game is starting in <font color='rgb(0, 255, 157)'>" .. Time .. "</font> seconds"
 	end
 end
 
@@ -95,6 +101,8 @@ function Main:Initialize()
 	if not Player.Character then
 		Player.CharacterAdded:wait()
 	end
+
+	LeaderboardController = Loader:LoadModule("LeaderboardController")
 
 	local Ready = false
 
@@ -120,6 +128,10 @@ function Main:Initialize()
 			self:UpdateStartTime()
 		end)
 
+		GameStats.RoundIntermission.Changed:Connect(function(Value)
+			self:UpdateStartTime()
+		end)
+
 		GameStats.RoundStatus.Changed:Connect(function()
 			if GameStats.RoundStatus.Value ~= "Intermission" then
 				UI.Queue.Visible = false
@@ -138,13 +150,14 @@ function Main:Initialize()
 
 	Network:OnClientEvent("UpdateMatchStatus", function(Status, Players)
 		SharedMemory.InMatch = Status
+		SharedMemory.MatchedPlayers = Players
 
 		if Status then
 			ArenaUI.Game.Countdown.Visible = true
-			self:UpdateScoreboard(Players)
+			LeaderboardController:CreateScoreboard(Players)
 		else
 			ArenaUI.Game.Visible = false
-			Scoreboard.Visible = false
+			-- Scoreboard.Visible = false
 		end
 	end)
 	--

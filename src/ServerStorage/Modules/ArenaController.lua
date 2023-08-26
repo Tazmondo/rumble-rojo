@@ -4,7 +4,7 @@ local Main = {
 	Players = {},
 	Arena = "",
 
-	Intermission = 2,
+	Intermission = 20, -- 20
 	RoundLength = 10, -- 2mimnutes
 	RoundsAmount = 1, -- default is 1 although can support multiple rounds
 
@@ -23,6 +23,7 @@ local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
 local Network = Loader:LoadModule("Network")
 local DataController = Loader:LoadModule("DataController")
 local ZoneModule = require(game:GetService("ReplicatedStorage").Zone)
+local SharedMemory = Loader:LoadModule("SharedMemory")
 
 -- zone
 local Container = Arena.Enter
@@ -113,16 +114,6 @@ function Main:TeleportToSpawn()
 	end
 end
 
-function Main:UpdateDisplay()
-	local Status = Values.RoundStatus.Value
-
-	if Status == "Intermission" then
-		Values.DisplayText.Value = Values.RoundIntermission.Value
-	elseif Status == "waiting for players" then
-		Values.DisplayText.Value = Values.QueueSize.Value .. "/" .. self.MaxPlayers
-	end
-end
-
 function Main:HandleResults(WinningPlayer)
 	for _, Player in pairs(self.Players) do
 		local PlayerData = DataController.CurrentPlayerData["Player_" .. Player.UserId]
@@ -146,7 +137,6 @@ function Main:StartIntermission()
 
 	for i = self.Intermission, 1, -1 do
 		Values.RoundIntermission.Value = Values.RoundIntermission.Value - 1
-		self:UpdateDisplay()
 		wait(1)
 	end
 
@@ -155,10 +145,8 @@ function Main:StartIntermission()
 	while PlayerCount ~= self.MinPlayers do
 		wait(1)
 		PlayerCount = self:CountQueue()
-		self:UpdateDisplay()
 	end
 
-	Values.RoundIntermission.Value = self.Intermission -- reset intermission so it doesnt go into minus (lol)
 	self:CloseQueue()
 	self:TeleportToArena()
 	self:ClearQueue()
@@ -223,8 +211,13 @@ function Main:EndMatch()
 	wait(1)
 	Values.RoundStatus.Value = "Ended"
 	wait(3)
+	Values.RoundIntermission.Value = self.Intermission -- reset intermission so it doesnt go into minus (lol)
 	Values.RoundStatus.Value = "Intermission"
 	self:TeleportToSpawn()
+
+	for _, Player in pairs(self.Players) do
+		Network:FireClient(Player, "UpdateMatchStatus", false, self.Players)
+	end
 
 	self:ClearPlayers()
 

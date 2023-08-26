@@ -1,8 +1,8 @@
 -- variables
 local Main = {
-    PlayerUI = {},
-	PlayerData = {}
-	
+	PlayerUI = {},
+	PlayerData = {},
+	PlayerFrameMap = {},
 }
 
 local Player = game.Players.LocalPlayer
@@ -26,19 +26,7 @@ local SharedMemory = ModuleLoader:LoadModule("SharedMemory")
 local UIController = ModuleLoader:LoadModule("UIController")
 
 -- functions
-function Main:IsAlive()
-end
-
-function Main:GetUser(Player)
-	-- n NO NO
-    -- local User = Scoreboard.List1[Player]
-
-    -- if User then
-    --     return User;
-    -- else
-    --     return Scoreboard.List2[Player]
-    -- end
-end
+function Main:IsAlive() end
 
 function Main:ClearScoreboard() -- bruh
 	for i, v in pairs(Scoreboard.List1:GetChildren()) do
@@ -53,28 +41,15 @@ function Main:ClearScoreboard() -- bruh
 	end
 end
 
-function Main:UpdateScoreboard(PlayerList)
+function Main:CreateScoreboard(PlayerList)
 	self:ClearScoreboard()
-
-	local PlayerAmount = #PlayerList
-	local PlayersPerFrame = math.ceil(PlayerAmount / 2)
 
 	local FrameIndex = 1
 
 	for _, Player in pairs(PlayerList) do
 		local Frame = Templates:WaitForChild("ScoreboardPlayer"):Clone()
-		local Avatar = Players:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-		local Character = Player.Character
-
-		if Character then
-			local Humanoid = Character:FindFirstChild("Humanoid")
-			local HealthBar = Frame.HealthBar
-			
-            local CurrentHealth = Humanoid.Health
-			local Percent = math.clamp(CurrentHealth / 100 or 0, 0, 1)
-
-			HealthBar.Health.Size = UDim2.new(Percent, 0, 0.1, 0)
-		end
+		local Avatar =
+			Players:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
 
 		Frame.Avatar.Character.Image = Avatar
 		Frame.Name = tostring(Player)
@@ -86,22 +61,33 @@ function Main:UpdateScoreboard(PlayerList)
 			Frame.Parent = Scoreboard.List2
 		end
 
+		self.PlayerFrameMap[Player.Name] = Frame
 		FrameIndex = (FrameIndex % 2) + 1
-		Scoreboard.Visible = true
 	end
 end
 
+function Main:UpdateHealth(Frame, Health)
+	local Percent = math.clamp(Health / 100, 0, 1)
+
+	Frame.HealthBar.Health.Size = UDim2.new(Percent, 0, 0.1, 0)
+end
+
 function Main:Initialize()
-    spawn(function()
-        while wait() do
-			for i = 1, #self.Players do
-				local User = self:GetUser(i)
-				local Percent = math.clamp(User and self:IsAlive(User) and User.Health / 100 or 0, 0, 1)
-				
-				User.HealthBar.Health.Size = UDim2.new(Percent, 0, 0.1, 0)
+	RunService.RenderStepped:Connect(function()
+		Scoreboard.List1.Visible = SharedMemory.InMatch == true -- these 2 lists are just annoying
+		Scoreboard.List2.Visible = SharedMemory.InMatch == true
+
+		if SharedMemory.InMatch then
+			for _, Player in SharedMemory.MatchedPlayers do
+				local Character = Player.Character
+				local Frame = self.PlayerFrameMap[Player.Name]
+
+				if Character and Frame then
+					self:UpdateHealth(Frame, Character.Humanoid.Health)
+				end
 			end
 		end
-    end)
+	end)
 
 	spawn(function()
 		while wait() do
@@ -110,13 +96,12 @@ function Main:Initialize()
 					StarterGui:SetCore("ResetButtonCallback", false)
 				end
 			end)
-			
+
 			if not Error then
 				break
 			end
 		end
 	end)
-	
 end
 
 return Main
