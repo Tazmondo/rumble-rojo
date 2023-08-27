@@ -16,6 +16,7 @@ local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
+local DataService: typeof(require(script.Parent.DataController)) = Loader:LoadModule("DataController")
 
 -- Only for players currently fighting.
 local CombatPlayerData: { [Model]: CombatPlayer.CombatPlayer } = {}
@@ -97,10 +98,11 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		return
 	end
 
-	local victimCharacter = CombatPlayer.GetCombatPlayerFromInstance(target)
+	local victimCharacter = CombatPlayer.GetAncestorWhichIsACombatPlayer(target)
 	if not victimCharacter then
 		return
 	end
+	local victimCombatPlayer = CombatPlayerData[victimCharacter]
 
 	if (target.Position - localTargetPosition).Magnitude > Config.MaximumPlayerPositionDifference then
 		warn("Rejected attack, too far away!", player, localTargetPosition, target, target.Position)
@@ -115,6 +117,7 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		rayDiff = 0
 	end
 
+	-- Makes sure the trajectory of bullet doesn't change between fire and hit event.
 	if rayDiff > 5 then
 		warn(player, "Almost certainly exploiting, mismatched fired and hit bullet trajectories.")
 		return
@@ -127,7 +130,30 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		return
 	end
 
-	CombatPlayerData[victimCharacter]:TakeDamage(attackData.Data.Damage)
+	local beforeState = victimCombatPlayer:GetState()
+	victimCombatPlayer:TakeDamage(attackData.Data.Damage) -- Will update state to dead if this kills
+	local afterState = victimCombatPlayer:GetState()
+
+	local died = victimCombatPlayer:GetState() == CombatPlayer.StateEnum.Dead and beforeState ~= afterState
+
+	-- Update Data
+	local killerData = DataService:GetDataTableForPlayer(player)
+	killerData.Stats.DamageDealt += attackData.Data.Damage
+
+	if died then
+		-- TODO: Add experience and level handling
+		killerData.Stats.Kills += 1
+		killerData.Stats.KillStreak += 1
+		killerData.Stats.BestKillStreak = math.max(killerData.Stats.BestKillStreak, killerData.Stats.KillStreak)
+
+		local victimPlayer = Players:GetPlayerFromCharacter(victimCharacter)
+		if victimPlayer then
+			local victimData = DataService:GetDataTableForPlayer(victimPlayer)
+			victimData.Stats.Deaths += 1
+			victimData.Stats.KillStreak = 0
+		end
+	end
+	print(killerData)
 end
 
 function Main:Initialize()

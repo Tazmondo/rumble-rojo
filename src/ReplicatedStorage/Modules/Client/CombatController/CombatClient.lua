@@ -91,7 +91,7 @@ function CombatClient.RayHit(self: CombatClient, activeCast, result: RaycastResu
 	-- This is called on the same frame as RayHit, but we don't want the bullet to get instantly destroyed, as it looks weird
 	local instance, position = result.Instance, result.Position
 
-	local character = CombatPlayer.GetCombatPlayerFromInstance(instance)
+	local character = CombatPlayer.GetAncestorWhichIsACombatPlayer(instance)
 	if character then
 		Network:FireServer("Hit", instance, position, activeCast.UserData.Id)
 	end

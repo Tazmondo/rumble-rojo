@@ -1,8 +1,8 @@
 -- This handles state relating to the player for the combat system
 -- Should not have any side-effects (i do not count the humanoid as a side effect, as this is the sole authority on the humanoid)
--- Think of it as pretty much a state machine
+-- Think of it as pretty much a custom humanoid for the combat system
+-- THE NAME IS MISLEADING, AN NPC CAN BE A COMBATPLAYER
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 
@@ -12,7 +12,7 @@ CombatPlayer.__index = CombatPlayer
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
 
-local StateEnum = {
+CombatPlayer.StateEnum = {
 	Idle = 0,
 	Attacking = 1,
 	Dead = 2,
@@ -46,7 +46,7 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid)
 	self.humanoid.WalkSpeed = self.movementSpeed
 	self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 
-	self.state = StateEnum.Idle
+	self.state = self.StateEnum.Idle
 	self.lastAttackTime = 0 -- os.clock based
 	self.attackId = 1
 	self.attacks = {} :: { [number]: Attack }
@@ -55,6 +55,20 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid)
 	self.scheduledReloads = 0
 
 	return self
+end
+
+function CombatPlayer.GetAncestorWhichIsACombatPlayer(instance: Instance)
+	local humanoids = CollectionService:GetTagged(Config.CombatPlayerTag)
+	for _, humanoid in pairs(humanoids) do
+		if instance:IsDescendantOf(humanoid.Parent) then
+			return humanoid.Parent
+		end
+	end
+	return nil
+end
+
+function CombatPlayer.GetState(self: CombatPlayer)
+	return self.state
 end
 
 function CombatPlayer.Reload(self: CombatPlayer)
@@ -68,7 +82,7 @@ end
 
 function CombatPlayer.ScheduleReload(self: CombatPlayer)
 	-- Could also use a system where ammo fills up like a charge over time, and decreases when you attack
-	-- Could be useful for UI
+	-- which ould be useful for UI
 
 	self.scheduledReloads += 1
 
@@ -102,7 +116,7 @@ function CombatPlayer.GetNextAttackId(self: CombatPlayer)
 end
 
 function CombatPlayer.CanAttack(self: CombatPlayer)
-	local canAttack = self.state == StateEnum.Idle
+	local canAttack = self.state == self.StateEnum.Idle
 		and os.clock() - self.lastAttackTime >= self.reloadSpeed
 		and self.ammo > 0
 	return canAttack
@@ -138,21 +152,14 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 	self.humanoid.Health = self.health
 	if self.health <= 0 then
 		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
-		self:ChangeState(StateEnum.Dead)
+		self:ChangeState(self.StateEnum.Dead)
 	end
 end
 
-function CombatPlayer.GetCombatPlayerFromInstance(instance: Instance)
-	local humanoids = CollectionService:GetTagged(Config.CombatPlayerTag)
-	for _, humanoid in pairs(humanoids) do
-		if instance:IsDescendantOf(humanoid.Parent) then
-			return humanoid.Parent
-		end
-	end
-	return nil
+function CombatPlayer.Destroy(self: CombatPlayer)
+	warn("CombatPlayer was destroyed, but this is undefined behaviour! Killing humanoid instead.")
+	self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 end
-
-function CombatPlayer.Destroy(self: CombatPlayer) end
 
 export type Attack = {
 	AttackId: number,

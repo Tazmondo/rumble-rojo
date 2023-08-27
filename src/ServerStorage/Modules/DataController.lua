@@ -1,25 +1,27 @@
 -- variables
-local Main = {
-	CurrentPlayerData = {},
-	PlayerJoinTime = {},
-	DefaultData = {
-		Level = 0,
-		Experience = 0,
-		Rank = "",
-		Currency = 0,
-		Stats = {
-			Kills = 0,
-			Deaths = 0,
-			Wins = 0,
-			Losses = 0,
-			WinStreak = 0,
-			BestWinStreak = 0,
-			KillStreak = 0,
-			BestKillStreak = 0,
-			DamageDealt = 0,
-		},
-		Playtime = 0,
+local DefaultData = {
+	Level = 0,
+	Experience = 0,
+	Rank = "",
+	Currency = 0,
+	Stats = {
+		Kills = 0,
+		Deaths = 0,
+		Wins = 0,
+		Losses = 0,
+		WinStreak = 0,
+		BestWinStreak = 0,
+		KillStreak = 0,
+		BestKillStreak = 0,
+		DamageDealt = 0,
 	},
+	Playtime = 0,
+}
+
+local Main = {
+	CurrentPlayerData = {} :: { data: typeof(DefaultData) },
+	PlayerJoinTime = {},
+	DefaultData = DefaultData,
 }
 local PlayerDatastore
 
@@ -32,6 +34,12 @@ local RunService = game:GetService("RunService")
 local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
 local Network = Loader:LoadModule("Network")
 -- functions
+function Main:GetDataTableForPlayer(player: Player)
+	self = self :: Main
+
+	return self.CurrentPlayerData["Player_" .. player.UserId].Data
+end
+
 function Main:RecursiveAdd(Data, CompareTo)
 	for Key, Value in pairs(CompareTo) do
 		if Data[Key] == nil then
@@ -65,11 +73,12 @@ function Main:NewPlayer(Player)
 
 		wait(3)
 
+		-- Player should never already have a table, so if this is true something has gone wrong.
 		if self.CurrentPlayerData["Player_" .. Player.UserId] then
 			local HttpService = game:GetService("HttpService")
 
 			warn(HttpService:JSONEncode(self.CurrentPlayerData["Player_" .. Player.UserId]))
-			Player:Kick("data mismatch")
+			Player:Kick("A strange error occured! Please let the devs know. Error: Data already exists")
 			return
 		end
 
@@ -283,5 +292,7 @@ function Main:Initialize()
 		end
 	end)
 end
+
+export type Main = typeof(Main)
 
 return Main
