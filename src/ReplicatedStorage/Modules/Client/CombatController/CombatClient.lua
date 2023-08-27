@@ -62,11 +62,11 @@ function CombatClient.new(heroName: string)
 	self.lastMousePosition = nil :: Vector3?
 	self.connections = {} :: { RBXScriptConnection }
 
-	self.combatPlayer = CombatPlayer.new(self.player, heroName)
+	self.combatPlayer = CombatPlayer.new(self.player, heroName, self.humanoid)
 
 	self.FastCast = FastCast.new()
 
-	self.FastCast.LengthChanged:Connect(AttackRenderer.GenerateLengthChangedFunction(self.combatPlayer.HeroData.Attack))
+	self.FastCast.LengthChanged:Connect(AttackRenderer.GenerateLengthChangedFunction(self.combatPlayer.heroData.Attack))
 
 	self.FastCast.RayHit:Connect(function(...)
 		self:RayHit(...)
@@ -150,12 +150,12 @@ end
 
 function CombatClient.HandleClick(self: CombatClient)
 	local trajectory = self:NormaliseClickTarget()
-	-- VisualiseRay(ray)
-
 	self:Attack(trajectory.Unit)
 end
 
 function CombatClient.GetInputs(self: CombatClient)
+	local mouseHeld = false
+
 	table.insert(
 		self.connections,
 		UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
@@ -177,22 +177,40 @@ function CombatClient.GetInputs(self: CombatClient)
 			end
 
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				self:HandleClick()
+				mouseHeld = true
 			end
 		end)
 	)
+
+	table.insert(
+		self.connections,
+		UserInputService.InputEnded:Connect(function(input: InputObject, processed: boolean)
+			if processed then
+				return
+			end
+
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				mouseHeld = false
+			end
+		end)
+	)
+
+	RunService.RenderStepped:Connect(function()
+		if mouseHeld then
+			self:HandleClick()
+		end
+	end)
 end
 
 function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 	if not self.combatPlayer:CanAttack() then
-		print("Can't attack")
 		return
 	end
 	self.combatPlayer:Attack()
 
 	trajectory = trajectory.Unit
 
-	local attackData = self.combatPlayer.HeroData.Attack
+	local attackData = self.combatPlayer.heroData.Attack
 
 	local behaviour = AttackRenderer.GetCastBehaviour(attackData, self.character)
 

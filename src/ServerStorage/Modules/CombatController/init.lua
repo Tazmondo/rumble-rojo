@@ -13,7 +13,7 @@ local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loade
 local CombatPlayerData: { [Player]: CombatPlayer.CombatPlayer } = {}
 
 local function handleAttack(player: Player, origin: CFrame, attackId: number)
-	local attackData = CombatPlayerData[player].HeroData.Attack
+	local attackData = CombatPlayerData[player].heroData.Attack
 
 	Network:FireAllClients("Attack", player, attackData, origin)
 end
@@ -22,7 +22,7 @@ function Main:Initialize()
 	Players.PlayerAdded:Connect(function(player: Player)
 		player.CharacterAdded:Connect(function(char)
 			local heroName = "Fabio"
-			local combatPlayer = CombatPlayer.new(player, heroName)
+			local combatPlayer = CombatPlayer.new(player, heroName, char.Humanoid)
 			CombatPlayerData[player] = combatPlayer
 			Network:FireClient(player, "CombatPlayer Initialize", heroName)
 		end)

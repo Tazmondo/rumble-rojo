@@ -21,8 +21,9 @@ local function InitializeCombatClient(heroName)
 	if not localPlayer.Character then
 		print("Received combat initialise before character loaded, waiting...")
 		localPlayer.CharacterAdded:Wait()
-		localPlayer.Character:WaitForChild("Humanoid") -- Also need to wait for the character to get populated
 	end
+	localPlayer.Character:WaitForChild("Humanoid") -- Also need to wait for the character to get populated
+	localPlayer.Character:WaitForChild("HumanoidRootPart")
 
 	local combatClient = CombatClient.new(heroName)
 	localPlayer.CharacterRemoving:Once(function()

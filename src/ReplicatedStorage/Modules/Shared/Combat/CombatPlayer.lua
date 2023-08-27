@@ -21,33 +21,42 @@ if RunService:IsClient() then
 	LATENCYALLOWANCE = 0
 end
 
-function CombatPlayer.new(player, heroName)
+function CombatPlayer.new(player: Player, heroName: string, humanoid: Humanoid)
 	local self = setmetatable({}, CombatPlayer)
 
-	self.HeroData = HeroData[heroName] :: typeof(HeroData.Fabio)
+	self.player = player
+	self.humanoid = humanoid
+	self.heroData = HeroData[heroName] :: HeroData.HeroData
 
-	self.State = StateEnum.Idle
+	self.maxHealth = self.heroData.Health
+	self.health = self.maxHealth
+
+	self.movementSpeed = self.heroData.MovementSpeed
+	self.humanoid.WalkSpeed = self.movementSpeed
+	self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+
+	self.state = StateEnum.Idle
 	self.lastAttackTime = 0 -- os.clock based
 	self.attackId = 1
 
-	self.ScheduledChange = {} -- We use a table so if it updates
+	self.scheduledChange = {} -- We use a table so if it updates
 
 	return self
 end
 
 function CombatPlayer.ChangeState(self: CombatPlayer, newState: number)
-	self.State = newState
-	self.ScheduledChange = {}
+	self.state = newState
+	self.scheduledChange = {}
 end
 
 function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, newState: number)
 	local stateChange = { newState }
-	self.ScheduledChange = stateChange
+	self.scheduledChange = stateChange
 
 	task.delay(delay, function()
 		-- Makes sure it hasn't been overriden by another scheduled state change
-		if self.ScheduledChange == stateChange then
-			self.State = newState
+		if self.scheduledChange == stateChange then
+			self.state = newState
 		else
 			print("state change was overriden!")
 		end
@@ -60,8 +69,8 @@ function CombatPlayer.GetNextAttackId(self: CombatPlayer)
 end
 
 function CombatPlayer.CanAttack(self: CombatPlayer)
-	return self.State == StateEnum.Idle
-		and os.clock() - self.lastAttackTime >= self.HeroData.Attack.ReloadSpeed - LATENCYALLOWANCE
+	return self.state == StateEnum.Idle
+		and os.clock() - self.lastAttackTime >= self.heroData.Attack.ReloadSpeed - LATENCYALLOWANCE
 end
 
 function CombatPlayer.Attack(self: CombatPlayer)
