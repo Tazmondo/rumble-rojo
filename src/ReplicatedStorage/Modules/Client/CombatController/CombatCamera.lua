@@ -52,14 +52,27 @@ function CombatCamera.GetCFrame(self: CombatCamera)
 	if not self.HRP then
 		return
 	end
-
 	return CFrame.lookAt(self.HRP.Position + self.cameraOffset, self.HRP.Position)
 end
 
 function CombatCamera.SetupCamera(self: CombatCamera)
-	RunService:BindToRenderStep("CombatCamera", Enum.RenderPriority.Camera.Value, function(dt)
+	-- Here splitting the camera CFraming into two parts fixes a stuttering issue with the player character.
+
+	local smoothCFrame = CFrame.new()
+	local lastTime = 0
+
+	-- Necessary to use step since it's based off the position of a part (the HRP)
+	RunService.Stepped:Connect(function(t)
+		local dt = t - lastTime
+		lastTime = t
 		if self.enabled and not self.transitioning then
-			self.camera.CFrame = self:GetCFrame()
+			-- Lerp can actually take alpha > 1, which causes camera to overshoot and mess up completely
+			local alpha = math.clamp(dt * 8.5, 0, 1)
+
+			local targetCFrame = self:GetCFrame()
+			smoothCFrame = self.camera.CFrame:Lerp(targetCFrame, alpha)
+
+			self.camera.CFrame = smoothCFrame
 		end
 	end)
 end
@@ -77,19 +90,19 @@ function CombatCamera.Transition(self: CombatCamera, enable: boolean)
 	local targetOffset = if enable then CFrame.new(self.cameraOffset) else self.savedCFrame
 
 	local transitionTime = 0.8
-	local start = os.clock()
 	self.transitioning = true
 
 	-- Get offset from player position (not hrp rotation, we dont want to rotate camera when player rotates)
 	local initialOffset = CFrame.new(HRP.Position):ToObjectSpace(self.camera.CFrame)
 	self.savedCFrame = initialOffset
 
-	local transitionStep = RunService.RenderStepped:Connect(function()
-		local alpha = TweenService:GetValue(
-			(os.clock() - start) / transitionTime,
-			Enum.EasingStyle.Quad,
-			Enum.EasingDirection.Out
-		)
+	local startTime
+	local transitionStep = RunService.Stepped:Connect(function(t)
+		if not startTime then
+			startTime = t
+		end
+		local alpha =
+			TweenService:GetValue((t - startTime) / transitionTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		local newStartPosition = CFrame.new(HRP.Position) * initialOffset
 
 		local targetCFrame = CFrame.new(HRP.Position) * targetOffset
@@ -155,6 +168,7 @@ function CombatCamera.Destroy(self: CombatCamera)
 		connection:Disconnect()
 	end
 	RunService:UnbindFromRenderStep("CombatCamera")
+	RunService:UnbindFromRenderStep("CombatCameraSmoothing")
 
 	self.destroyed = true
 	if prevCamera == self then
