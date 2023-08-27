@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local CombatPlayer = {}
 CombatPlayer.__index = CombatPlayer
 
-local HeroData = require(ReplicatedStorage.Modules.Shared.HeroData)
+local HeroData = require(script.Parent.HeroData)
 
 local StateEnum = {
 	Idle = 0,
@@ -61,7 +61,7 @@ end
 
 function CombatPlayer.CanAttack(self: CombatPlayer)
 	return self.State == StateEnum.Idle
-		and os.clock() - self.lastAttackTime <= self.HeroData.Attack.ReloadSpeed - LATENCYALLOWANCE
+		and os.clock() - self.lastAttackTime >= self.HeroData.Attack.ReloadSpeed - LATENCYALLOWANCE
 end
 
 function CombatPlayer.Attack(self: CombatPlayer)

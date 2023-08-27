@@ -7,9 +7,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
-local FastCast = require(ReplicatedStorage.Modules.Shared.FastCastRedux)
-local CombatPlayer = require(ReplicatedStorage.Modules.Shared.CombatPlayer)
-local Enums = require(ReplicatedStorage.Modules.Shared.HeroData.Enums)
+local combatFolder = ReplicatedStorage.Modules.Shared.Combat
+
+local FastCast = require(combatFolder.FastCastRedux)
+local CombatPlayer = require(combatFolder.CombatPlayer)
+local AttackRenderer = require(script.Parent.AttackRenderer)
+local Enums = require(combatFolder.Enums)
 local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 
@@ -56,16 +59,14 @@ function CombatClient.new(heroName: string)
 	self.character = self.player.Character
 	self.humanoid = self.character.Humanoid :: Humanoid
 	self.HRP = self.humanoid.RootPart
-	self.lastMouseCast = nil
+	self.lastMousePosition = nil :: Vector3?
 	self.connections = {} :: { RBXScriptConnection }
 
 	self.combatPlayer = CombatPlayer.new(self.player, heroName)
 
 	self.FastCast = FastCast.new()
 
-	self.FastCast.LengthChanged:Connect(function(...)
-		self:LengthChanged(...)
-	end)
+	self.FastCast.LengthChanged:Connect(AttackRenderer.GenerateLengthChangedFunction(self.combatPlayer.HeroData.Attack))
 
 	self.FastCast.RayHit:Connect(function(...)
 		self:RayHit(...)
@@ -81,63 +82,19 @@ function CombatClient.new(heroName: string)
 	return self
 end
 
-function CombatClient.LengthChanged(
-	self: CombatClient,
-	activeCast,
-	lastPoint: Vector3,
-	rayDir: Vector3,
-	displacement: number,
-	velocity: Vector3,
-	bullet: BasePart
-)
-	local projectilePoint = lastPoint + rayDir * displacement
-	bullet.CFrame = CFrame.lookAt(projectilePoint, projectilePoint + rayDir)
-end
+export type CombatClient = typeof(CombatClient.new(...))
 
 function CombatClient.RayHit(self: CombatClient, activeCast, result: RaycastResult, velocity: Vector3, bullet: BasePart)
+	-- This is called on the same frame as RayHit, but we don't want the bullet to get instantly destroyed, as it looks weird
+	task.wait()
 	bullet:Destroy()
 end
 
 function CombatClient.CastTerminating(self: CombatClient, activeCast)
 	local bullet = activeCast.RayInfo.CosmeticBulletObject
-	-- This is called on the same frame as RayHit, but we don't want the bullet to get instantly destroyed, as it looks weird
-	task.wait()
 	if bullet then
 		bullet:Destroy()
 	end
-end
-
-function CombatClient.GetCastBehaviour(self: CombatClient)
-	local RaycastParams = RaycastParams.new()
-	RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
-	RaycastParams.FilterDescendantsInstances = { self.character }
-	RaycastParams.RespectCanCollide = true
-
-	-- TODO: Use VFX
-	local templatePart = Instance.new("Part")
-	templatePart.Transparency = 0.5
-	templatePart.Color = Color3.fromHex("#73f7c0")
-	templatePart.Size = Vector3.one * 2
-	templatePart.Shape = Enum.PartType.Ball
-	templatePart.Anchored = true
-	templatePart.CanCollide = false
-	templatePart.CanQuery = false
-	templatePart.CanTouch = false
-	templatePart.Position = Vector3.new(100000000000, 0, 0)
-
-	local projectileFolder = workspace:FindFirstChild("ProjectileFolder")
-	if not projectileFolder then
-		projectileFolder = Instance.new("Folder")
-		projectileFolder.Name = "ProjectileFolder"
-		projectileFolder.Parent = workspace
-	end
-
-	local FastCastBehaviour = FastCast.newBehavior()
-	FastCastBehaviour.RaycastParams = RaycastParams
-	FastCastBehaviour.CosmeticBulletTemplate = templatePart
-	FastCastBehaviour.CosmeticBulletContainer = projectileFolder
-
-	return FastCastBehaviour
 end
 
 function CombatClient.SetupCharacterRotation(self: CombatClient)
@@ -146,10 +103,11 @@ function CombatClient.SetupCharacterRotation(self: CombatClient)
 	table.insert(
 		self.connections,
 		RunService.RenderStepped:Connect(function()
-			if not self.lastMouseCast then
+			if not self.lastMousePosition then
 				return
 			end
-			local hitPosition = self.lastMouseCast[1]
+
+			local hitPosition = ScreenPointCast(self.lastMousePosition.X, self.lastMousePosition.Y)[1]
 
 			local targetCFrame =
 				CFrame.lookAt(self.HRP.Position, Vector3.new(hitPosition.X, self.HRP.Position.Y, hitPosition.Z))
@@ -161,13 +119,12 @@ end
 
 function CombatClient.HandleMove(self: CombatClient, input: InputObject)
 	local screenPosition = input.Position
-	self.lastMouseCast = ScreenPointCast(screenPosition.X, screenPosition.Y)
+	self.lastMousePosition = screenPosition
 end
 
 function CombatClient.NormaliseClickTarget(self: CombatClient): Ray
-	local lastPosition = self.lastMouseCast[1]
-	local lastInstance = self.lastMouseCast[2]
-	local lastNormal = self.lastMouseCast[3]
+	local lastPosition, lastInstance, lastNormal =
+		table.unpack(ScreenPointCast(self.lastMousePosition.X, self.lastMousePosition.Y))
 
 	local targetHeight = self.HRP.Position.Y
 
@@ -215,7 +172,6 @@ function CombatClient.GetInputs(self: CombatClient)
 	table.insert(
 		self.connections,
 		UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
-			print("began")
 			if processed then
 				return
 			end
@@ -229,20 +185,20 @@ end
 
 function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 	if not self.combatPlayer:CanAttack() then
+		print("Can't attack")
 		return
 	end
+	self.combatPlayer:Attack()
 
 	trajectory = trajectory.Unit
 
 	local attackData = self.combatPlayer.HeroData.Attack
 
-	local behaviour = self:GetCastBehaviour()
-	behaviour.MaxDistance = attackData.Range
+	local behaviour = AttackRenderer.GetCastBehaviour(attackData, self.character)
 
 	if attackData.AttackType == Enums.AttackType.Shotgun then
 		local angle = attackData.Angle
 		local pelletCount = attackData.ShotCount
-
 		for pellet = 1, pelletCount do
 			local decidedAngle = (-angle / 2) + (angle / (pelletCount - 1)) * (pellet - 1)
 			local randomAngle = math.random(-2, 2)
@@ -262,7 +218,5 @@ function CombatClient.Destroy(self: CombatClient)
 	end
 	self.humanoid.AutoRotate = true
 end
-
-export type CombatClient = typeof(CombatClient.new(...))
 
 return CombatClient

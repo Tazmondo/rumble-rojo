@@ -1,8 +1,6 @@
-local HeroData: HeroData = {}
+local Enums = require(script.Parent.Enums)
 
-local Enums = require(script.Enums)
-
-HeroData = {
+local HeroData = {
 	Fabio = {
 		Health = 3600,
 		MovementSpeed = Enums.MovementSpeed.Normal,
@@ -12,7 +10,7 @@ HeroData = {
 			Damage = 300,
 			AttackType = Enums.AttackType.Shotgun,
 			ShotCount = 5,
-			Angle = 45,
+			Angle = 25,
 			Range = Enums.AttackRange.Medium,
 			ReloadSpeed = 1.5,
 			Ammo = 3,
@@ -23,5 +21,6 @@ HeroData = {
 }
 
 export type HeroData = typeof(HeroData)
+export type AttackData = typeof(HeroData.Fabio.Attack)
 
 return HeroData
