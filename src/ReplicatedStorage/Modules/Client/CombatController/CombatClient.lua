@@ -15,6 +15,7 @@ local AttackLogic = require(combatFolder.AttackLogic)
 local FastCast = require(combatFolder.FastCastRedux)
 local CombatPlayer = require(combatFolder.CombatPlayer)
 local AttackRenderer = require(script.Parent.AttackRenderer)
+local CombatCamera = require(script.Parent.CombatCamera)
 local Enums = require(combatFolder.Enums)
 local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
@@ -65,6 +66,8 @@ function CombatClient.new(heroName: string)
 	self.connections = {} :: { RBXScriptConnection }
 
 	self.combatPlayer = CombatPlayer.new(heroName, self.humanoid)
+	self.combatCamera = CombatCamera.new()
+	self.combatCamera:Enable()
 
 	self.FastCast = FastCast.new()
 
@@ -256,6 +259,7 @@ function CombatClient.Destroy(self: CombatClient)
 	end
 	self.humanoid.AutoRotate = true
 	self.combatPlayer:Destroy()
+	self.combatCamera:Destroy()
 
 	self.destroyed = true
 end
