@@ -1,3 +1,4 @@
+-- Config for the combat system
 local Config = {
 	-- Server will be more lenient with attack checking the higher this value. Improves gameplay for laggy players, but gives exploiters more leeway
 	-- Default: 0.1

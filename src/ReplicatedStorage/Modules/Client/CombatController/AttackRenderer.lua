@@ -1,3 +1,5 @@
+-- Handles rendering of attacks
+-- This will be more fleshed out when we have more attacks
 local AttackRenderer = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

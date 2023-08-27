@@ -1,3 +1,6 @@
+-- Initializes client sided combat system
+-- This does not do any combat logic on its own, just enables the CombatClient which handles all logic
+
 local CombatController = {}
 CombatController.__index = CombatController
 

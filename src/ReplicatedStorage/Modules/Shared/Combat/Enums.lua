@@ -1,3 +1,4 @@
+-- Enums to be used for combat system, also acts as a kind of configuration, and enforces reliable and regular variables for combat.
 local Enums = {}
 
 Enums.MovementSpeed = {

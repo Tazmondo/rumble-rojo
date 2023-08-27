@@ -1,3 +1,7 @@
+-- Initializes and handles the of the server-side combat system
+-- Shouldn't be very long, as combat data is mostly decided by scripts in client
+-- This just validates that they haven't been tampered with before replicating them to other clients
+
 local Main = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

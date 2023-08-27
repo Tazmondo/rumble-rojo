@@ -1,3 +1,5 @@
+-- Handles all client sided combat systems, such as the inputs, the camera, and sending data to the server
+
 local CombatClient = {}
 CombatClient.__index = CombatClient
 
