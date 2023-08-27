@@ -51,14 +51,31 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid)
 	self.attackId = 1
 	self.attacks = {} :: { [number]: Attack }
 
-	self.scheduledChange = {} -- We use a table so if it updates
-
-	self:InitializeReloadSystem()
+	self.scheduledChange = {} -- We use a table so if it updates we can detect and cancel the change
+	self.scheduledReloads = 0
 
 	return self
 end
 
-function CombatPlayer.InitializeReloadSystem(self: CombatPlayer) end
+function CombatPlayer.Reload(self: CombatPlayer)
+	self.ammo = math.min(self.maxAmmo, self.ammo + 1)
+	self.scheduledReloads = math.max(0, self.scheduledReloads - 1)
+
+	if self.scheduledReloads > 0 then
+		task.delay(self.ammoRegen, self.Reload, self)
+	end
+end
+
+function CombatPlayer.ScheduleReload(self: CombatPlayer)
+	-- Could also use a system where ammo fills up like a charge over time, and decreases when you attack
+	-- Could be useful for UI
+
+	self.scheduledReloads += 1
+
+	if self.scheduledReloads == 1 then
+		task.delay(self.ammoRegen, self.Reload, self)
+	end
+end
 
 function CombatPlayer.ChangeState(self: CombatPlayer, newState: number)
 	self.state = newState
@@ -85,20 +102,21 @@ function CombatPlayer.GetNextAttackId(self: CombatPlayer)
 end
 
 function CombatPlayer.CanAttack(self: CombatPlayer)
-	return self.state == StateEnum.Idle and os.clock() - self.lastAttackTime >= self.reloadSpeed and self.ammo > 0
+	local canAttack = self.state == StateEnum.Idle
+		and os.clock() - self.lastAttackTime >= self.reloadSpeed
+		and self.ammo > 0
+	return canAttack
 end
 
 function CombatPlayer.Attack(self: CombatPlayer)
-	self:ChangeState(StateEnum.Attacking)
+	-- self:ChangeState(StateEnum.Attacking)
 	self.lastAttackTime = os.clock()
 
 	self.ammo = math.max(0, self.ammo - 1)
-	task.delay(self.ammoRegen, function()
-		self.ammo = math.min(self.maxAmmo, self.ammo + 1)
-	end)
+	self:ScheduleReload()
 
 	-- TODO: Is this state system necessary?
-	self:ScheduleStateChange(0.1, StateEnum.Idle)
+	-- self:ScheduleStateChange(0.1, StateEnum.Idle)
 end
 
 function CombatPlayer.RegisterAttack(self: CombatPlayer, attackId, attackCF, cast)
@@ -133,6 +151,8 @@ function CombatPlayer.GetCombatPlayerFromInstance(instance: Instance)
 	end
 	return nil
 end
+
+function CombatPlayer.Destroy(self: CombatPlayer) end
 
 export type Attack = {
 	AttackId: number,
