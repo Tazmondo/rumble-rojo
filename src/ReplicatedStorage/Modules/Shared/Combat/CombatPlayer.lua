@@ -34,6 +34,10 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid)
 	self.maxHealth = self.heroData.Health
 	self.health = self.maxHealth
 	self.movementSpeed = self.heroData.MovementSpeed
+	self.maxAmmo = self.heroData.Attack.Ammo
+	self.ammo = self.maxAmmo
+	self.ammoRegen = self.heroData.Attack.AmmoRegen - LATENCYALLOWANCE
+	self.reloadSpeed = self.heroData.Attack.ReloadSpeed - LATENCYALLOWANCE
 
 	self.humanoid = humanoid
 	self.humanoid:AddTag("CombatPlayer")
@@ -49,8 +53,12 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid)
 
 	self.scheduledChange = {} -- We use a table so if it updates
 
+	self:InitializeReloadSystem()
+
 	return self
 end
+
+function CombatPlayer.InitializeReloadSystem(self: CombatPlayer) end
 
 function CombatPlayer.ChangeState(self: CombatPlayer, newState: number)
 	self.state = newState
@@ -77,15 +85,20 @@ function CombatPlayer.GetNextAttackId(self: CombatPlayer)
 end
 
 function CombatPlayer.CanAttack(self: CombatPlayer)
-	return self.state == StateEnum.Idle
-		and os.clock() - self.lastAttackTime >= self.heroData.Attack.ReloadSpeed - LATENCYALLOWANCE
+	return self.state == StateEnum.Idle and os.clock() - self.lastAttackTime >= self.reloadSpeed and self.ammo > 0
 end
 
 function CombatPlayer.Attack(self: CombatPlayer)
 	self:ChangeState(StateEnum.Attacking)
 	self.lastAttackTime = os.clock()
 
-	self:ScheduleStateChange(0.2, StateEnum.Idle)
+	self.ammo = math.max(0, self.ammo - 1)
+	task.delay(self.ammoRegen, function()
+		self.ammo = math.min(self.maxAmmo, self.ammo + 1)
+	end)
+
+	-- TODO: Is this state system necessary?
+	self:ScheduleStateChange(0.1, StateEnum.Idle)
 end
 
 function CombatPlayer.RegisterAttack(self: CombatPlayer, attackId, attackCF, cast)
