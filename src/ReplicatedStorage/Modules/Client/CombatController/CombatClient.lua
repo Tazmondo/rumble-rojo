@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 
 local combatFolder = ReplicatedStorage.Modules.Shared.Combat
 
+local AttackLogic = require(combatFolder.AttackLogic)
 local FastCast = require(combatFolder.FastCastRedux)
 local CombatPlayer = require(combatFolder.CombatPlayer)
 local AttackRenderer = require(script.Parent.AttackRenderer)
@@ -62,7 +63,7 @@ function CombatClient.new(heroName: string)
 	self.lastMousePosition = nil :: Vector3?
 	self.connections = {} :: { RBXScriptConnection }
 
-	self.combatPlayer = CombatPlayer.new(self.player, heroName, self.humanoid)
+	self.combatPlayer = CombatPlayer.new(heroName, self.humanoid)
 
 	self.FastCast = FastCast.new()
 
@@ -82,12 +83,14 @@ function CombatClient.new(heroName: string)
 	return self
 end
 
-export type CombatClient = typeof(CombatClient.new(...))
-
 function CombatClient.RayHit(self: CombatClient, activeCast, result: RaycastResult, velocity: Vector3, bullet: BasePart)
 	-- This is called on the same frame as RayHit, but we don't want the bullet to get instantly destroyed, as it looks weird
-	task.wait()
-	bullet:Destroy()
+	local instance, position = result.Instance, result.Position
+
+	local character = CombatPlayer.GetCombatPlayerFromInstance(instance)
+	if character then
+		Network:FireServer("Hit", instance, position, activeCast.UserData.Id)
+	end
 end
 
 function CombatClient.CastTerminating(self: CombatClient, activeCast)
@@ -202,6 +205,10 @@ function CombatClient.GetInputs(self: CombatClient)
 	end)
 end
 
+function CombatClient.FastCastFire(self: CombatClient, attackId, ...)
+	self.FastCast:Fire(...).UserData.Id = attackId
+end
+
 function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 	if not self.combatPlayer:CanAttack() then
 		return
@@ -209,6 +216,7 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 	self.combatPlayer:Attack()
 
 	trajectory = trajectory.Unit
+	local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
 
 	local attackData = self.combatPlayer.heroData.Attack
 
@@ -217,15 +225,21 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 	if attackData.AttackType == Enums.AttackType.Shotgun then
 		local angle = attackData.Angle
 		local pelletCount = attackData.ShotCount
-		for pellet = 1, pelletCount do
-			local decidedAngle = (-angle / 2) + (angle / (pelletCount - 1)) * (pellet - 1)
-			local randomAngle = math.random(-2, 2)
-			local originalCFrame = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
-			local rotatedCFrame = originalCFrame * CFrame.Angles(0, math.rad(decidedAngle + randomAngle), 0)
+		local attackDetails = AttackLogic.Shotgun(angle, pelletCount, origin, function()
+			return self.combatPlayer:GetNextAttackId()
+		end)
 
-			self.FastCast:Fire(rotatedCFrame.Position, rotatedCFrame.LookVector, attackData.ProjectileSpeed, behaviour)
-			Network:FireServer("Attack", rotatedCFrame, self.combatPlayer:GetNextAttackId())
+		for index, pellet in pairs(attackDetails.pellets) do
+			self:FastCastFire(
+				pellet.id,
+				pellet.CFrame.Position,
+				pellet.CFrame.LookVector,
+				attackData.ProjectileSpeed,
+				behaviour
+			)
 		end
+
+		Network:FireServer("Attack", origin, attackDetails)
 	end
 end
 
@@ -236,5 +250,7 @@ function CombatClient.Destroy(self: CombatClient)
 	end
 	self.humanoid.AutoRotate = true
 end
+
+export type CombatClient = typeof(CombatClient.new(...))
 
 return CombatClient

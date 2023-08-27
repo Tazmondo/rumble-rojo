@@ -1,43 +1,50 @@
 -- This handles state relating to the player for the combat system
+-- Should not have any side-effects (i do not count the humanoid as a side effect, as this is the sole authority on the humanoid)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 
 local CombatPlayer = {}
 CombatPlayer.__index = CombatPlayer
 
 local HeroData = require(script.Parent.HeroData)
+local Config = require(script.Parent.Config)
 
 local StateEnum = {
 	Idle = 0,
 	Attacking = 1,
+	Dead = 2,
 }
 
 -- On the server, when processing certain things we want to allow for some latency, so laggy players don't have a bad experience
 -- But too much will give leeway for exploiters
 -- It does not need to be the player's ping, just their latency variation
-local LATENCYALLOWANCE = 0.1
+local LATENCYALLOWANCE = Config.MaximumAllowedLatencyVariation
 if RunService:IsClient() then
 	LATENCYALLOWANCE = 0
 end
 
-function CombatPlayer.new(player: Player, heroName: string, humanoid: Humanoid)
+function CombatPlayer.new(heroName: string, humanoid: Humanoid)
 	local self = setmetatable({}, CombatPlayer)
 
-	self.player = player
-	self.humanoid = humanoid
-	self.heroData = HeroData[heroName] :: HeroData.HeroData
+	self.heroData = HeroData[heroName] :: typeof(HeroData.Fabio)
 
 	self.maxHealth = self.heroData.Health
 	self.health = self.maxHealth
-
 	self.movementSpeed = self.heroData.MovementSpeed
+
+	self.humanoid = humanoid
+	self.humanoid:AddTag("CombatPlayer")
+	self.humanoid.MaxHealth = self.maxHealth
+	self.humanoid.Health = self.health
 	self.humanoid.WalkSpeed = self.movementSpeed
 	self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 
 	self.state = StateEnum.Idle
 	self.lastAttackTime = 0 -- os.clock based
 	self.attackId = 1
+	self.attacks = {} :: { [number]: Attack }
 
 	self.scheduledChange = {} -- We use a table so if it updates
 
@@ -80,6 +87,47 @@ function CombatPlayer.Attack(self: CombatPlayer)
 	self:ScheduleStateChange(0.2, StateEnum.Idle)
 end
 
+function CombatPlayer.RegisterAttack(self: CombatPlayer, attackId, attackCF, cast)
+	self.attacks[attackId] = {
+		AttackId = attackId,
+		FiredTime = os.clock(),
+		FiredCFrame = attackCF,
+		Cast = cast,
+		Data = self.heroData.Attack,
+		HitPosition = nil,
+	}
+	task.delay(Config.MaxAttackTimeout, function()
+		self.attacks[attackId] = nil
+	end)
+end
+
+function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
+	self.health -= amount
+	self.humanoid.Health = self.health
+	if self.health <= 0 then
+		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
+		self:ChangeState(StateEnum.Dead)
+	end
+end
+
+function CombatPlayer.GetCombatPlayerFromInstance(instance: Instance)
+	local humanoids = CollectionService:GetTagged(Config.CombatPlayerTag)
+	for _, humanoid in pairs(humanoids) do
+		if instance:IsDescendantOf(humanoid.Parent) then
+			return humanoid.Parent
+		end
+	end
+	return nil
+end
+
+export type Attack = {
+	AttackId: number,
+	FiredTime: number,
+	FiredCFrame: CFrame,
+	Cast: any,
+	Data: HeroData.AttackData,
+	HitPosition: Vector3?,
+}
 export type CombatPlayer = typeof(CombatPlayer.new(...))
 
 return CombatPlayer
