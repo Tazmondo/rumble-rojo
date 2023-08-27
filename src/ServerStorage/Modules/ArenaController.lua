@@ -4,11 +4,11 @@ local Main = {
 	Players = {},
 	Arena = "",
 
-	Intermission = 10, -- 20
-	RoundLength = 10, -- 2mimnutes
+	Intermission = 20, -- 20
+	RoundLength = 120, -- 2mimnutes
 	RoundsAmount = 1, -- default is 1 although can support multiple rounds
 
-	MinPlayers = 1,
+	MinPlayers = 2,
 	MaxPlayers = 10,
 }
 local Values = game.ReplicatedStorage.GameValues.Arena
@@ -64,6 +64,7 @@ end
 
 function Main:OpenQueue() -- enables queue button on all palyesr
 	self:CountQueue()
+
 	for _, Player in pairs(Players:GetPlayers()) do
 		if self.Players[Player] or self.Queue[Player] then
 			continue
@@ -138,14 +139,9 @@ function Main:HandleResults(WinningPlayer)
 end
 
 function Main:StartIntermission()
+	Values.RoundIntermission.Value = self.Intermission
+
 	self:OpenQueue()
-	Values.RoundStatus.Value = "Intermission"
-
-	for i = self.Intermission, 1, -1 do
-		Values.RoundIntermission.Value = Values.RoundIntermission.Value - 1
-		wait(1)
-	end
-
 	local PlayerCount = self:CountQueue()
 
 	while PlayerCount ~= self.MinPlayers do
@@ -153,8 +149,19 @@ function Main:StartIntermission()
 		PlayerCount = self:CountQueue()
 	end
 
+	Values.RoundStatus.Value = "Intermission"
+
+	for i = self.Intermission, 1, -1 do
+		Values.RoundIntermission.Value = Values.RoundIntermission.Value - 1
+		wait(1)
+	end
+
+	if Values.QueueSize.Value < self.MinPlayers then
+		self:StartIntermission()
+		return
+	end
+
 	self:CloseQueue()
-	self:TeleportToArena()
 	self:ClearQueue()
 
 	-- ok
@@ -166,10 +173,10 @@ function Main:StartIntermission()
 end
 
 function Main:StartMatch()
-	-- wait(2)
 	Values.RoundStatus.Value = "Starting"
-
 	Values.RoundCountdown.Value = 5
+
+	self:TeleportToArena()
 
 	for i = Values.RoundCountdown.Value, 1, -1 do
 		wait(1)
@@ -195,6 +202,10 @@ function Main:StartMatch()
 		Values.RoundTime.Value = self.RoundTime
 		Values.DisplayText.Value = self.RoundTime
 
+		if RemainingTime <= 60 then -- half way through
+			self:OpenQueue()
+		end
+
 		if RemainingTime <= 0 then
 			self:EndMatch()
 			break
@@ -204,8 +215,8 @@ function Main:StartMatch()
 		local PlayersLeft, WinningPlayer = self:CountPlayers()
 
 		if PlayersLeft == 1 then
-			-- self:HandleResults(WinningPlayer)
-			-- self:EndMatch()
+			self:HandleResults(WinningPlayer)
+			self:EndMatch()
 		end
 		--
 
@@ -217,7 +228,6 @@ function Main:EndMatch()
 	wait(1)
 	Values.RoundStatus.Value = "Ended"
 	wait(3)
-	Values.RoundIntermission.Value = self.Intermission -- reset intermission so it doesnt go into minus (lol)
 	Values.RoundStatus.Value = "Intermission"
 	self:TeleportToSpawn()
 

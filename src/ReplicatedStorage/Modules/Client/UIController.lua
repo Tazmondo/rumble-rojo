@@ -1,5 +1,7 @@
 -- variables
-local Main = {}
+local Main = {
+	MinPlayers = 2,
+}
 
 local Player = game.Players.LocalPlayer
 local Mouse = Player:GetMouse()
@@ -123,6 +125,11 @@ function Main:Initialize()
 
 	RunService.RenderStepped:Connect(function()
 		UI.Queue.QueueSize.Text = GameStats.QueueSize.Value .. "/10"
+		Scoreboard.Time.Visible = GameStats.QueueSize.Value >= self.MinPlayers
+
+		if GameStats.QueueSize.Value < self.MinPlayers then
+			UI.Queue.Title.Text = "a game is starting soon"
+		end
 
 		GameStats.RoundStatus.Changed:Connect(function()
 			self:UpdateStartTime()
