@@ -143,7 +143,7 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	if died then
 		-- TODO: Add experience and level handling
 		killerData.Stats.Kills += 1
-		killerData.Stats.KillStreak += 1
+		killerData.Stats.KillStreak += 1 -- This could continue between matches, so it should be set to 0 elsewhere
 		killerData.Stats.BestKillStreak = math.max(killerData.Stats.BestKillStreak, killerData.Stats.KillStreak)
 
 		local victimPlayer = Players:GetPlayerFromCharacter(victimCharacter)
