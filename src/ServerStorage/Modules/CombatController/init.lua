@@ -59,8 +59,8 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
 				fastCast:Fire(pellet.CFrame.Position, pellet.CFrame.LookVector, attackData.ProjectileSpeed, behaviour)
 			cast.UserData.Id = pellet.id
 			combatPlayer:RegisterAttack(pellet.id, pellet.CFrame, cast)
-			Network:FireAllClients("Attack", player, attackData, pellet.CFrame)
 		end
+		Network:FireAllClients("Attack", player, attackData, attackDetails, origin)
 	end
 
 	combatPlayer:Attack()
@@ -135,7 +135,9 @@ function Main:Initialize()
 	Network:OnServerEvent("Attack", handleAttack)
 	Network:OnServerEvent("Hit", handleClientHit)
 
-	CombatPlayerData[workspace.Rig] = CombatPlayer.new("Fabio", workspace.Rig.Humanoid)
+	if workspace:FindFirstChild("Rig") then
+		CombatPlayerData[workspace.Rig] = CombatPlayer.new("Fabio", workspace.Rig.Humanoid)
+	end
 end
 
 return Main

@@ -3,9 +3,11 @@ local AttackRenderer = {}
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
+local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local FastCast = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux)
+local FastCastTypes = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux.TypeDefinitions)
 
-function AttackRenderer.Render() end
+local localPlayer = game:GetService("Players").LocalPlayer
 
 function AttackRenderer.GenerateLengthChangedFunction(attackData: HeroData.AttackData)
 	-- TODO: Implement VFX
@@ -54,6 +56,47 @@ function AttackRenderer.GetCastBehaviour(attackData: HeroData.AttackData, exclud
 	FastCastBehaviour.MaxDistance = attackData.Range
 
 	return FastCastBehaviour
+end
+
+local function RayHit(activeCast: FastCastTypes.ActiveCast, result: RaycastResult, velocity: Vector3, bullet: BasePart)
+	task.wait()
+	bullet:Destroy()
+end
+
+local function CastTerminating(activeCast: FastCastTypes.ActiveCast)
+	local bullet = activeCast.RayInfo.CosmeticBulletObject
+	if bullet then
+		bullet:Destroy()
+	end
+end
+
+-- So each attack only has one fastcaster, reducing lag.
+local cachedCasts: { [string]: FastCastTypes.Caster } = {}
+
+function AttackRenderer.HandleAttackRender(player: Player, attackData, attackDetails, origin: CFrame)
+	-- Don't want to render our own attacks twice
+	if player == localPlayer then
+		return
+	end
+
+	local attackName = attackData.Name
+	local cachedCaster = cachedCasts[attackName]
+	if not cachedCaster then
+		cachedCaster = FastCast.new()
+		cachedCasts[attackName] = cachedCaster
+
+		cachedCaster.LengthChanged:Connect(AttackRenderer.GenerateLengthChangedFunction(attackData))
+		cachedCaster.RayHit:Connect(RayHit)
+		cachedCaster.CastTerminating:Connect(CastTerminating)
+	end
+
+	local behaviour = AttackRenderer.GetCastBehaviour(attackData, player.Character)
+
+	if attackData.AttackType == Enums.AttackType.Shotgun then
+		for index, pellet in pairs(attackDetails.pellets) do
+			cachedCaster:Fire(origin.Position, origin.LookVector, attackData.ProjectileSpeed, behaviour)
+		end
+	end
 end
 
 export type AttackRenderer = typeof(AttackRenderer)
