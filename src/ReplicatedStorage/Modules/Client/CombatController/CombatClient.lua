@@ -34,15 +34,14 @@ local function VisualiseRay(ray: Ray)
 end
 
 -- Returns hit position, instance, normal
-local function ScreenPointCast(x: number, y: number, params: RaycastParams?)
-	if not params then
-		params = RaycastParams.new()
-		assert(params) -- To appease type checker
-		local mapFolder = workspace:FindFirstChild("Map")
-		assert(mapFolder, "map folder not found")
-		params.FilterDescendantsInstances = { mapFolder }
-		params.FilterType = Enum.RaycastFilterType.Include
-	end
+local function ScreenPointCast(x: number, y: number, exclude: { Instance }?)
+	local params = RaycastParams.new()
+	-- local mapFolder = workspace:FindFirstChild("Map")
+	-- assert(mapFolder, "map folder not found")
+	-- params.FilterDescendantsInstances = { mapFolder }
+	-- params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = exclude or {}
+	params.FilterType = Enum.RaycastFilterType.Exclude
 
 	local cam = workspace.CurrentCamera
 	local ray = cam:ScreenPointToRay(x, y)
@@ -112,7 +111,8 @@ function CombatClient.SetupCharacterRotation(self: CombatClient)
 				return
 			end
 
-			local hitPosition = ScreenPointCast(self.lastMousePosition.X, self.lastMousePosition.Y)[1]
+			local hitPosition =
+				ScreenPointCast(self.lastMousePosition.X, self.lastMousePosition.Y, { self.character })[1]
 
 			local targetCFrame =
 				CFrame.lookAt(self.HRP.Position, Vector3.new(hitPosition.X, self.HRP.Position.Y, hitPosition.Z))
@@ -129,7 +129,7 @@ end
 
 function CombatClient.NormaliseClickTarget(self: CombatClient): Ray
 	local lastPosition, lastInstance, lastNormal =
-		table.unpack(ScreenPointCast(self.lastMousePosition.X, self.lastMousePosition.Y))
+		table.unpack(ScreenPointCast(self.lastMousePosition.X, self.lastMousePosition.Y, { self.character }))
 
 	local targetHeight = self.HRP.Position.Y
 
