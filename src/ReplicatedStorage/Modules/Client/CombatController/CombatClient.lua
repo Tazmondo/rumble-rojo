@@ -246,11 +246,18 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 end
 
 function CombatClient.Destroy(self: CombatClient)
+	if self.destroyed then
+		return
+	end
+
 	print("Destroying combat client")
 	for _, connection in pairs(self.connections) do
 		connection:Disconnect()
 	end
 	self.humanoid.AutoRotate = true
+	self.combatPlayer:Destroy()
+
+	self.destroyed = true
 end
 
 export type CombatClient = typeof(CombatClient.new(...))

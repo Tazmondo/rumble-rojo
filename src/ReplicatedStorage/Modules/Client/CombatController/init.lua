@@ -13,21 +13,38 @@ local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 
 local localPlayer = Players.LocalPlayer
+local combatClient
 
 local function InitializeCombatClient(heroName)
+	if combatClient then
+		combatClient:Destroy()
+	end
+
+	print("Initializing combat client")
 	-- Can be called before the character has replicated from the server to the client
-	if not localPlayer.Character then
+	if not localPlayer.Character or localPlayer.Character.Parent == nil then
 		print("Received combat initialise before character loaded, waiting...")
 		localPlayer.CharacterAdded:Wait()
 	end
 	localPlayer.Character:WaitForChild("Humanoid") -- Also need to wait for the character to get populated
 	localPlayer.Character:WaitForChild("HumanoidRootPart")
 
-	local combatClient = CombatClient.new(heroName)
-	localPlayer.CharacterRemoving:Once(function()
-		combatClient:Destroy()
+	localPlayer.CharacterRemoving:Once(function(character)
+		if combatClient.character == character then
+			combatClient:Destroy()
+		end
 	end)
+
+	combatClient = CombatClient.new(heroName)
+	print("Initialized combat client")
 end
+
+localPlayer.CharacterAdded:Connect(function()
+	print("added")
+end)
+localPlayer.CharacterRemoving:Connect(function()
+	print("removed")
+end)
 
 function CombatController:Initialize()
 	print("Initializing combat controller")

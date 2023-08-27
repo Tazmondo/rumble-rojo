@@ -73,7 +73,15 @@ end
 local function handleRayHit(cast, result)
 	cast.UserData.HitPosition = result.Position
 end
+
+local function handleCastTerminate(cast)
+	-- We want to prioritise the RayHit hitposition
+	if not cast.UserData.HitPosition then
+		cast.UserData.HitPosition = cast:GetPosition()
+	end
+end
 fastCast.RayHit:Connect(handleRayHit)
+fastCast.CastTerminating:Connect(handleCastTerminate)
 
 local function handleClientHit(player: Player, target: BasePart, localTargetPosition: Vector3, attackId: number)
 	if not player.Character or not target or not localTargetPosition or not attackId then
@@ -132,6 +140,7 @@ function Main:Initialize()
 			Network:FireClient(player, "CombatPlayer Initialize", heroName)
 
 			char.Destroying:Wait()
+			CombatPlayerData[char]:Destroy()
 			CombatPlayerData[char] = nil
 		end)
 	end)
