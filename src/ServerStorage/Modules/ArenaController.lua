@@ -19,19 +19,63 @@ local Arena = workspace.Arena
 -- services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 -- load modules
 local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
 local Network = Loader:LoadModule("Network")
 local DataController = Loader:LoadModule("DataController")
-local ZoneModule = require(game:GetService("ReplicatedStorage").Zone)
 local SharedMemory = Loader:LoadModule("SharedMemory")
 
--- zone
-local Container = Arena.Enter
-local Arena = ZoneModule.new(Container)
+-- arena stuff
+local ClosedPositions = {
+	One = CFrame.new(Vector3.new(-151.931, 36.726, -298.159)) * CFrame.Angles(0, math.rad(-45), 0),
+	Two = CFrame.new(Vector3.new(-99.627, 36.726, -350.464)) * CFrame.Angles(0, math.rad(-45), 0),
+}
+local OpenPositions = {
+	One = CFrame.new(Vector3.new(-208.592, 36.726, -241.498)) * CFrame.Angles(0, math.rad(-45), 0),
+	Two = CFrame.new(Vector3.new(-43.482, 36.726, -406.608)) * CFrame.Angles(0, math.rad(-45), 0),
+}
+
+local ClosedMapPosition = Vector3.new(-127.528, -64.207, -324.767)
+local OpenMapPosition = Vector3.new(-127.528, -6.617, -324.767)
 
 -- functions
+local function MoveDoors(Part, Position, Time)
+	local Tween = TweenService:Create(
+		Part,
+		TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ CFrame = Position }
+	)
+
+	Tween:Play()
+end
+local function MoveMap(Parts, Position, Time)
+	for _, Part in pairs(Parts) do
+		if Part:IsA("BasePart") then
+			local Position = Position + Part.Position - Arena.Map.PrimaryPart.Position
+			local Tween = TweenService:Create(
+				Part,
+				TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{ Position = Position }
+			)
+
+			Tween:Play()
+		end
+	end
+end
+
+local function MoveDoorsAndMap(Open)
+	local DoorTargetPos = Open and OpenPositions or ClosedPositions
+	local TargetMapPos = Open and OpenMapPosition or ClosedMapPosition
+
+	MoveDoors(Arena.Doors.One, DoorTargetPos.One, 1.3)
+	MoveDoors(Arena.Doors.Two, DoorTargetPos.Two, 1.3)
+
+	local Parts = Arena.Map:GetDescendants()
+	MoveMap(Parts, TargetMapPos, 1.5)
+end
+
 function Main:IsAlive(Player)
 	return Player
 		and Player.Character
