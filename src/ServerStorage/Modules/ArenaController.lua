@@ -10,6 +10,8 @@ local Main = {
 
 	MinPlayers = 2,
 	MaxPlayers = 10,
+
+	QueueStatus = true,
 }
 local Values = game.ReplicatedStorage.GameValues.Arena
 local Arena = workspace.Arena
@@ -50,13 +52,15 @@ end
 
 function Main:CountPlayers()
 	local Count = 0
+	local WinningPlayer
 
 	for _, Player in pairs(self.Players) do
-		Count = Count + 1
+		Count += 1
+		WinningPlayer = Player
+	end
 
-		if Count == 1 then
-			return Count, Player
-		end
+	if Count == 1 then
+		return Count, WinningPlayer
 	end
 
 	return Count
@@ -72,10 +76,13 @@ function Main:OpenQueue() -- enables queue button on all palyesr
 
 		Network:FireClient(Player, "QueueDisplay", true)
 	end
+
+	self.QueueStatus = true
 end
 
 function Main:CloseQueue(List)
 	self:CountQueue()
+
 	if List then
 		for _, Player in pairs(List) do
 			Network:FireClient(Player, "QueueDisplay", false)
@@ -90,6 +97,8 @@ function Main:CloseQueue(List)
 	for _, Player in pairs(self.Queue) do
 		self.Players[Player] = Player
 	end
+
+	self.QueueStatus = false
 end
 
 function Main:ClearQueue()
@@ -105,7 +114,7 @@ function Main:ClearPlayers()
 end
 
 function Main:TeleportToArena()
-	for _, Player in pairs(self.Queue) do
+	for _, Player in pairs(self.Players) do
 		local Character = Player.Character
 
 		Character:MoveTo(workspace.Arena.Enter.Position)
@@ -127,7 +136,6 @@ function Main:HandleResults(WinningPlayer)
 
 		if PlayerData and PlayerData.DataLoaded then
 			if Player == WinningPlayer then
-				print(PlayerData)
 				PlayerData.Data.Stats.Wins += 1
 				PlayerData.Data.Stats.WinStreak += 1
 			else
@@ -141,6 +149,7 @@ end
 function Main:StartIntermission()
 	Values.RoundIntermission.Value = self.Intermission
 
+	wait(2)
 	self:OpenQueue()
 	local PlayerCount = self:CountQueue()
 
@@ -194,27 +203,22 @@ function Main:StartMatch()
 	self.StartRoundTick = tick()
 
 	while true do
-		local TimeElapsed = tick() - self.StartRoundTick
-		local RemainingTime = RoundLength - TimeElapsed
+		local RoundTime = math.max(0, RoundLength - (tick() - self.StartRoundTick))
+		Values.RoundTime.Value = RoundTime
 
-		self.RoundTime = math.round(math.max(0, RemainingTime))
-
-		Values.RoundTime.Value = self.RoundTime
-		Values.DisplayText.Value = self.RoundTime
-
-		if RemainingTime <= 60 then -- half way through
+		if RoundTime < 60 then -- half way through
 			self:OpenQueue()
 		end
 
-		if RemainingTime <= 0 then
+		if RoundTime <= 0 then
 			self:EndMatch()
 			break
 		end
 
 		-- determine winner stuff
-		local PlayersLeft, WinningPlayer = self:CountPlayers()
+		local Count, WinningPlayer = self:CountPlayers()
 
-		if PlayersLeft == 1 then
+		if WinningPlayer then
 			self:HandleResults(WinningPlayer)
 			self:EndMatch()
 		end
@@ -256,6 +260,13 @@ function Main:Initialize()
 	-- 	self.Players[Player.Name] = nil
 	-- end)
 	--
+
+	game.Players.PlayerAdded:Connect(function(Player)
+		wait(3)
+		if self.QueueStatus then
+			Network:FireClient(Player, "QueueDisplay", true)
+		end
+	end)
 
 	-- remotes
 	Network:OnServerInvoke("QueueStatus", function(Player, Status)
