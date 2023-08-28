@@ -25,57 +25,10 @@ local TweenService = game:GetService("TweenService")
 local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
 local Network = Loader:LoadModule("Network")
 local DataController = Loader:LoadModule("DataController")
+local MapController = Loader:LoadModule("MapController")
 local SharedMemory = Loader:LoadModule("SharedMemory")
 
--- arena stuff
-local ClosedPositions = {
-	One = CFrame.new(Vector3.new(-151.931, 36.726, -298.159)) * CFrame.Angles(0, math.rad(-45), 0),
-	Two = CFrame.new(Vector3.new(-99.627, 36.726, -350.464)) * CFrame.Angles(0, math.rad(-45), 0),
-}
-local OpenPositions = {
-	One = CFrame.new(Vector3.new(-208.592, 36.726, -241.498)) * CFrame.Angles(0, math.rad(-45), 0),
-	Two = CFrame.new(Vector3.new(-43.482, 36.726, -406.608)) * CFrame.Angles(0, math.rad(-45), 0),
-}
-
-local ClosedMapPosition = Vector3.new(-127.528, -64.207, -324.767)
-local OpenMapPosition = Vector3.new(-127.528, -6.617, -324.767)
-
 -- functions
-local function MoveDoors(Part, Position, Time)
-	local Tween = TweenService:Create(
-		Part,
-		TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ CFrame = Position }
-	)
-
-	Tween:Play()
-end
-local function MoveMap(Parts, Position, Time)
-	for _, Part in pairs(Parts) do
-		if Part:IsA("BasePart") then
-			local Position = Position + Part.Position - Arena.Map.PrimaryPart.Position
-			local Tween = TweenService:Create(
-				Part,
-				TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-				{ Position = Position }
-			)
-
-			Tween:Play()
-		end
-	end
-end
-
-local function MoveDoorsAndMap(Open)
-	local DoorTargetPos = Open and OpenPositions or ClosedPositions
-	local TargetMapPos = Open and OpenMapPosition or ClosedMapPosition
-
-	MoveDoors(Arena.Doors.One, DoorTargetPos.One, 1.3)
-	MoveDoors(Arena.Doors.Two, DoorTargetPos.Two, 1.3)
-
-	local Parts = Arena.Map:GetDescendants()
-	MoveMap(Parts, TargetMapPos, 1.5)
-end
-
 function Main:IsAlive(Player)
 	return Player
 		and Player.Character
@@ -217,6 +170,12 @@ function Main:StartIntermission()
 	self:CloseQueue()
 	self:ClearQueue()
 
+	MapController:MoveDoorsAndMap(false)
+	MapController:LoadRandomMap()
+	MapController:MoveDoorsAndMap(true)
+
+	wait(5)
+
 	-- ok
 	for _, Player in pairs(self.Players) do
 		Network:FireClient(Player, "UpdateMatchStatus", true, self.Players)
@@ -285,6 +244,9 @@ function Main:EndMatch()
 
 	self:ClearPlayers()
 
+	MapController:MoveDoorsAndMap(false)
+	-- MapController:LoadRandomMap()
+	-- MapController:MoveDoorsAndMap(true)
 	wait(10)
 
 	self:StartIntermission()

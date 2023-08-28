@@ -161,11 +161,11 @@ function Main:Initialize()
 
 		UI.Queue.Visible = Status
 
-		if Status == true then
-			UI.Queue:TweenPosition(UDim2.new(0.01, 0, 0.83, 0), "In", "Quad", 2.5)
-		else
-			UI.Queue:TweenPosition(UDim2.new(-1, 0, 0.5, 0), "Out", "Quad", 2.5)
-		end
+		-- if Status == true then
+		-- 	UI.Queue:TweenPosition(UDim2.new(0.01, 0, 0.83, 0), "In", "Quad", 2.5)
+		-- else
+		-- 	UI.Queue:TweenPosition(UDim2.new(-1, 0, 0.5, 0), "Out", "Quad", 2.5)
+		-- end
 
 		Ready = false
 	end)
