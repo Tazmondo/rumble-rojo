@@ -80,6 +80,7 @@ local cachedCasts: { [string]: FastCastTypes.Caster } = {}
 
 function AttackRenderer.HandleAttackRender(player: Player, attackData, attackDetails, origin: CFrame)
 	-- Don't want to render our own attacks twice
+	-- This must be a separate function from local attack rendering, since we don't want a RayHit callback with other clients attacks
 	if player == localPlayer then
 		return
 	end

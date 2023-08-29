@@ -1,4 +1,3 @@
---!strict
 -- Initializes and handles the of the server-side combat system
 -- Shouldn't be very long, as combat data is mostly decided by scripts in client
 -- This just validates that they haven't been tampered with before replicating them to other clients
@@ -44,6 +43,7 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
 	local behaviour = FastCast.newBehavior()
 	behaviour.MaxDistance = attackData.Range
 	behaviour.RaycastParams = RaycastParams.new()
+	assert(behaviour.RaycastParams)
 
 	-- Don't collide with characters, as they move around they could move in front of the server bullet, but not client bullet
 	-- which will mess up hit detection

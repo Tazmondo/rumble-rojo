@@ -87,6 +87,22 @@ function CombatClient.new(heroName: string)
 	return self
 end
 
+function CombatClient.Destroy(self: CombatClient)
+	if self.destroyed then
+		return
+	end
+
+	print("Destroying combat client")
+	for _, connection in pairs(self.connections) do
+		connection:Disconnect()
+	end
+	self.humanoid.AutoRotate = true
+	self.combatPlayer:Destroy()
+	self.combatCamera:Destroy()
+
+	self.destroyed = true
+end
+
 function CombatClient.RayHit(self: CombatClient, activeCast, result: RaycastResult, velocity: Vector3, bullet: BasePart)
 	-- This is called on the same frame as RayHit, but we don't want the bullet to get instantly destroyed, as it looks weird
 	local instance, position = result.Instance, result.Position
@@ -246,22 +262,6 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 
 		Network:FireServer("Attack", origin, attackDetails)
 	end
-end
-
-function CombatClient.Destroy(self: CombatClient)
-	if self.destroyed then
-		return
-	end
-
-	print("Destroying combat client")
-	for _, connection in pairs(self.connections) do
-		connection:Disconnect()
-	end
-	self.humanoid.AutoRotate = true
-	self.combatPlayer:Destroy()
-	self.combatCamera:Destroy()
-
-	self.destroyed = true
 end
 
 export type CombatClient = typeof(CombatClient.new(...))

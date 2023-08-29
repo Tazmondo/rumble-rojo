@@ -123,9 +123,10 @@ function CombatPlayer.CanAttack(self: CombatPlayer)
 	local canAttack = self.state == self.StateEnum.Idle
 		and os.clock() - self.lastAttackTime >= self.reloadSpeed
 		and self.ammo > 0
-		and GameValues.RoundStatus.Value == "Game" -- Make sure round is in-progress
+	-- and GameValues.RoundStatus.Value == "Game" -- Make sure round is in-progress
 	return canAttack
 end
+warn("Take CanAttack function out of testing!")
 
 function CombatPlayer.Attack(self: CombatPlayer)
 	-- self:ChangeState(StateEnum.Attacking)
