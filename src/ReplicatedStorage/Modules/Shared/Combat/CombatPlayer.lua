@@ -1,3 +1,4 @@
+--!strict
 -- This handles state relating to the player for the combat system
 -- Should not have any side-effects (i do not count the humanoid as a side effect, as this is the sole authority on the humanoid)
 -- Think of it as pretty much a custom humanoid for the combat system

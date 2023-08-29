@@ -1,3 +1,4 @@
+--!strict
 -- Defines hero abilities and attacks
 local Enums = require(script.Parent.Enums)
 

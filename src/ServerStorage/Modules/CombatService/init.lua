@@ -1,3 +1,4 @@
+--!strict
 -- Initializes and handles the of the server-side combat system
 -- Shouldn't be very long, as combat data is mostly decided by scripts in client
 -- This just validates that they haven't been tampered with before replicating them to other clients
@@ -160,7 +161,9 @@ function Main:Initialize()
 	Players.PlayerAdded:Connect(function(player: Player)
 		player.CharacterAdded:Connect(function(char)
 			local heroName = "Fabio"
-			local combatPlayer = CombatPlayer.new(heroName, char.Humanoid)
+			local humanoid = assert(char:FindFirstChildOfClass("Humanoid"), "CharacterAdded without humanoid")
+
+			local combatPlayer = CombatPlayer.new(heroName, humanoid)
 			CombatPlayerData[char] = combatPlayer
 
 			Network:FireClient(player, "CombatPlayer Initialize", heroName)

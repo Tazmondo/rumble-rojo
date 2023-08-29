@@ -1,3 +1,4 @@
+--!strict
 -- Used by server and client to generate data deterministically for attacks (using seeding)
 
 local AttackLogic = {}

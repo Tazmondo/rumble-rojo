@@ -20,7 +20,7 @@ type ActiveCast = TypeDefs.ActiveCast
 export type CanPierceFunction = (ActiveCast, RaycastResult, Vector3) -> boolean
 
 -- Represents any table.
-export type GenericTable = {[any]: any}
+export type GenericTable = { [any]: any }
 
 -- Represents a Caster :: https://etithespirit.github.io/FastCastAPIDocs/fastcast-objects/caster/
 export type Caster = {
@@ -29,7 +29,7 @@ export type Caster = {
 	RayHit: RBXScriptSignal,
 	RayPierced: RBXScriptSignal,
 	CastTerminating: RBXScriptSignal,
-	Fire: (Vector3, Vector3, Vector3 | number, FastCastBehavior) -> ()
+	Fire: (Caster, Vector3, Vector3, Vector3 | number, FastCastBehavior) -> (),
 }
 
 -- Represents a FastCastBehavior :: https://etithespirit.github.io/FastCastAPIDocs/fastcast-objects/fcbehavior/
@@ -43,7 +43,7 @@ export type FastCastBehavior = {
 	CosmeticBulletProvider: any, -- Intended to be a PartCache. Dictated via TypeMarshaller.
 	CosmeticBulletContainer: Instance?,
 	AutoIgnoreContainer: boolean,
-	CanPierceFunction: CanPierceFunction
+	CanPierceFunction: CanPierceFunction,
 }
 
 -- Represents a CastTrajectory :: https://etithespirit.github.io/FastCastAPIDocs/fastcast-objects/casttrajectory/
@@ -52,7 +52,7 @@ export type CastTrajectory = {
 	EndTime: number,
 	Origin: Vector3,
 	InitialVelocity: Vector3,
-	Acceleration: Vector3
+	Acceleration: Vector3,
 }
 
 -- Represents a CastStateInfo :: https://etithespirit.github.io/FastCastAPIDocs/fastcast-objects/caststateinfo/
@@ -66,7 +66,7 @@ export type CastStateInfo = {
 	IsActivelySimulatingPierce: boolean,
 	IsActivelyResimulating: boolean,
 	CancelHighResCast: boolean,
-	Trajectories: {[number]: CastTrajectory}
+	Trajectories: { [number]: CastTrajectory },
 }
 
 -- Represents a CastRayInfo :: https://etithespirit.github.io/FastCastAPIDocs/fastcast-objects/castrayinfo/
@@ -75,7 +75,7 @@ export type CastRayInfo = {
 	WorldRoot: WorldRoot,
 	MaxDistance: number,
 	CosmeticBulletObject: Instance?,
-	CanPierceCallback: CanPierceFunction
+	CanPierceCallback: CanPierceFunction,
 }
 
 -- Represents an ActiveCast :: https://etithespirit.github.io/FastCastAPIDocs/fastcast-objects/activecast/
@@ -83,7 +83,7 @@ export type ActiveCast = {
 	Caster: Caster,
 	StateInfo: CastStateInfo,
 	RayInfo: CastRayInfo,
-	UserData: {[any]: any}
+	UserData: { [any]: any },
 }
 
 return {}

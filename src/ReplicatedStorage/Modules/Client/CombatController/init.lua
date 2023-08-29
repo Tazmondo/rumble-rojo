@@ -1,3 +1,4 @@
+--!strict
 -- Initializes client sided combat system
 -- This does not do any combat logic on its own, just enables the CombatClient which handles all logic
 
@@ -13,7 +14,7 @@ local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 
 local localPlayer = Players.LocalPlayer
-local combatClient
+local combatClient: CombatClient.CombatClient
 
 local function InitializeCombatClient(heroName)
 	if combatClient then
@@ -31,6 +32,7 @@ local function InitializeCombatClient(heroName)
 
 	localPlayer.CharacterRemoving:Once(function(character)
 		if combatClient.character == character then
+			combatClient:GetInputs()
 			combatClient:Destroy()
 		end
 	end)

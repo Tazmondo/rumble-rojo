@@ -1,3 +1,4 @@
+--!strict
 -- Handles all client sided combat systems, such as the inputs, the camera, and sending data to the server
 
 local CombatCamera = {}
@@ -16,7 +17,7 @@ function CombatCamera.new()
 		warn(debug.traceback("Combatcamera may have been forgotten to be cleaned up!"))
 		prevCamera:Destroy()
 	end
-	local self = setmetatable({}, CombatCamera)
+	local self = setmetatable({}, CombatCamera) :: CombatCamera
 
 	self.player = Players.LocalPlayer
 	self.character = self.player.Character
@@ -27,7 +28,7 @@ function CombatCamera.new()
 
 	self.camera = workspace.CurrentCamera
 	self.cameraOffset = Vector3.new(0, 20, -10)
-	self.savedCFrame = nil
+	self.savedCFrame = CFrame.new()
 
 	self.enabled = false
 	self.transitioning = false
@@ -62,7 +63,7 @@ function CombatCamera.SetupCamera(self: CombatCamera)
 	local lastTime = 0
 
 	-- Necessary to use step since it's based off the position of a part (the HRP)
-	RunService.Stepped:Connect(function(t)
+	RunService.Stepped:Connect(function(t: number)
 		local dt = t - lastTime
 		lastTime = t
 		if self.enabled and not self.transitioning then
@@ -97,7 +98,7 @@ function CombatCamera.Transition(self: CombatCamera, enable: boolean)
 	self.savedCFrame = initialOffset
 
 	local startTime
-	local transitionStep = RunService.Stepped:Connect(function(t)
+	local transitionStep = RunService.Stepped:Connect(function(t: number)
 		if not startTime then
 			startTime = t
 		end

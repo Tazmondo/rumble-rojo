@@ -1,3 +1,4 @@
+--!strict
 -- Handles rendering of attacks
 -- This will be more fleshed out when we have more attacks
 local AttackRenderer = {}
@@ -29,7 +30,9 @@ end
 function AttackRenderer.GetCastBehaviour(attackData: HeroData.AttackData, excludeCharacter: Model?)
 	local RaycastParams = RaycastParams.new()
 	RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
-	RaycastParams.FilterDescendantsInstances = { excludeCharacter }
+	if excludeCharacter then
+		RaycastParams.FilterDescendantsInstances = { excludeCharacter }
+	end
 	RaycastParams.RespectCanCollide = true
 
 	-- TODO: Use VFX
@@ -86,6 +89,7 @@ function AttackRenderer.HandleAttackRender(player: Player, attackData, attackDet
 	if not cachedCaster then
 		cachedCaster = FastCast.new()
 		cachedCasts[attackName] = cachedCaster
+		assert(cachedCaster) -- Appease type checker
 
 		cachedCaster.LengthChanged:Connect(AttackRenderer.GenerateLengthChangedFunction(attackData))
 		cachedCaster.RayHit:Connect(RayHit)
