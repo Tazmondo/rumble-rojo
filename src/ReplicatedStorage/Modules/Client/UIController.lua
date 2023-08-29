@@ -66,6 +66,8 @@ function Main:UpdateStartTime()
 	end
 
 	if GameStats.RoundStatus.Value == "Game" then
+		ArenaUI.CharacterSelection.Visible = false
+
 		if SharedMemory.InMatch then
 			Player.Character.HumanoidRootPart.Anchored = false
 			Scoreboard.Visible = SharedMemory.InMatch
