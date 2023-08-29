@@ -4,7 +4,7 @@ local Main = {
 	Players = {},
 	Arena = "",
 
-	Intermission = 20, -- 20
+	Intermission = 30, -- 20
 	RoundLength = 120, -- 2mimnutes
 	RoundsAmount = 1, -- default is 1 although can support multiple rounds
 
@@ -95,6 +95,7 @@ function Main:CloseQueue(List)
 		self.Players[Player] = Player
 	end
 
+	self:ClearQueue()
 	self.QueueStatus = false
 end
 
@@ -148,6 +149,7 @@ function Main:StartIntermission()
 
 	wait(2)
 	self:OpenQueue()
+
 	local PlayerCount = self:CountQueue()
 
 	while PlayerCount ~= self.MinPlayers do
@@ -162,17 +164,19 @@ function Main:StartIntermission()
 		wait(1)
 	end
 
+	Values.RoundStatus.Value = "Map"
+	MapController:LoadRandomMap()
+	wait(2)
+	MapController:MoveDoorsAndMap(true)
+	Values.RoundStatus.Value = "CharacterSelection"
+	wait(15)
+
 	if Values.QueueSize.Value < self.MinPlayers then
 		self:StartIntermission()
 		return
 	end
 
 	self:CloseQueue()
-	self:ClearQueue()
-
-	MapController:MoveDoorsAndMap(false)
-	MapController:LoadRandomMap()
-	MapController:MoveDoorsAndMap(true)
 
 	wait(5)
 
@@ -209,13 +213,13 @@ function Main:StartMatch()
 		local RoundTime = math.max(0, RoundLength - (tick() - self.StartRoundTick))
 		Values.RoundTime.Value = RoundTime
 
-		if RoundTime < 60 then -- half way through
-			self:OpenQueue()
-		end
-
 		if RoundTime <= 0 then
 			self:EndMatch()
 			break
+		end
+
+		if RoundTime < 60 then -- half way through
+			self:OpenQueue()
 		end
 
 		-- determine winner stuff
@@ -245,8 +249,6 @@ function Main:EndMatch()
 	self:ClearPlayers()
 
 	MapController:MoveDoorsAndMap(false)
-	-- MapController:LoadRandomMap()
-	-- MapController:MoveDoorsAndMap(true)
 	wait(10)
 
 	self:StartIntermission()
@@ -256,16 +258,6 @@ function Main:Initialize()
 	spawn(function()
 		self:StartIntermission()
 	end)
-
-	-- collision and player detection
-	-- Arena.playerEntered:Connect(function(Player)
-	-- 	self.Players[Player.Name] = Player
-	-- end)
-
-	-- Arena.playerExited:Connect(function(Player)
-	-- 	self.Players[Player.Name] = nil
-	-- end)
-	--
 
 	game.Players.PlayerAdded:Connect(function(Player)
 		wait(3)
@@ -278,6 +270,10 @@ function Main:Initialize()
 	Network:OnServerInvoke("QueueStatus", function(Player, Status)
 		self.Queue[Player] = Status and Player or nil
 		self:CountQueue()
+	end)
+
+	Network:OnServerInvoke("PlayerDied", function(Player)
+		self.Players[Player] = nil
 	end)
 	--
 end

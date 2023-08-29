@@ -63,33 +63,40 @@ function Main:UpdateStartTime()
 		end
 	end
 
-	if GameStats.RoundStatus.Value == "Game" and SharedMemory.InMatch then
-		local Seconds = math.ceil(GameStats.RoundTime.Value)
-		local Minutes = math.floor(Seconds / 60)
-		Seconds = Seconds - Minutes * 60
-		local MatchTimer = Minutes .. ":" .. (Seconds >= 10 and Seconds or "0" .. Seconds)
+	if GameStats.RoundStatus.Value == "Game" then
+		if SharedMemory.InMatch then
+			Scoreboard.Visible = SharedMemory.InMatch
 
-		local Timer = Scoreboard.Time.Timer
-		Timer.Text = MatchTimer
+			local Seconds = math.ceil(GameStats.RoundTime.Value)
+			local Minutes = math.floor(Seconds / 60)
+			Seconds = Seconds - Minutes * 60
+			local MatchTimer = Minutes .. ":" .. (Seconds >= 10 and Seconds or "0" .. Seconds)
 
-		if GameStats.RoundTime.Value <= 10 and not self.TimerColorTween then
-			coroutine.wrap(function()
-				self.TimerColorTween = TweenService:Create(
-					Timer,
-					TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, true),
-					{ TextColor3 = Color3.fromRGB(255, 63, 48) }
-				)
-				self.TimerColorTween:Play()
+			local Timer = Scoreboard.Time.Timer
+			Timer.Text = MatchTimer
 
-				self.TimerColorTween.Completed:Wait()
-				task.wait(1)
-				self.TimerColorTween = nil
-			end)()
-		elseif GameStats.RoundTime.Value > 10 and self.TimerColorTween then
-			self.TimerColorTween:Cancel()
-			self.TimerColorTween = nil -- these tweens took way longer than they should have. i wanna off myself
+			if GameStats.RoundTime.Value <= 10 and not self.TimerColorTween then
+				coroutine.wrap(function()
+					self.TimerColorTween = TweenService:Create(
+						Timer,
+						TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, true),
+						{ TextColor3 = Color3.fromRGB(255, 63, 48) }
+					)
+					self.TimerColorTween:Play()
 
-			Timer.TextColor3 = Color3.fromRGB(255, 255, 255)
+					self.TimerColorTween.Completed:Wait()
+					task.wait(1)
+					self.TimerColorTween = nil
+				end)()
+			elseif GameStats.RoundTime.Value > 10 and self.TimerColorTween then
+				self.TimerColorTween:Cancel()
+				self.TimerColorTween = nil -- these tweens took way longer than they should have. i wanna off myself
+
+				Timer.TextColor3 = Color3.fromRGB(255, 255, 255)
+			end
+		else
+			Scoreboard.Visible = false
+			Arena.Status.Visible = true
 		end
 	elseif GameStats.RoundStatus.Value == "Ended" and SharedMemory.InMatch then
 		ArenaUI.Game.Visible = true
@@ -98,10 +105,15 @@ function Main:UpdateStartTime()
 		ArenaUI.Game.RoundOver.Visible = false
 		ArenaUI.Game.Visible = false
 	elseif GameStats.RoundStatus.Value == "Intermission" then
+		Scoreboard.Visible = SharedMemory.InQueue
 		local Time = GameStats.RoundIntermission.Value
 
 		Scoreboard.Time.Timer.Text = Time
-		UI.Queue.Title.Text = "a game is starting in <font color='rgb(0, 255, 157)'>" .. Time .. "</font> seconds"
+	elseif GameStats.RoundStatus.Value == "CharacterSelection" then
+		local Selection = ArenaUI.CharacterSelection
+
+		Scoreboard.Visible = false
+		Selection.Visible = true
 	end
 end
 
@@ -112,10 +124,22 @@ function Main:Initialize()
 		Player.CharacterAdded:wait()
 	end
 
+	RunService.RenderStepped:Connect(function()
+		-- UI.Queue.QueueSize.Text = GameStats.QueueSize.Value .. "/10"
+		Scoreboard.Time.Visible = GameStats.QueueSize.Value >= self.MinPlayers
+
+		-- if GameStats.QueueSize.Value < self.MinPlayers then
+		-- 	UI.Queue.Title.Text = "a game is starting soon"
+		-- end
+	end)
+
 	local Ready = false
+	local Selected = false
+	local SelectedHero
 
 	UI.Queue.Ready.MouseButton1Down:Connect(function()
 		Ready = not Ready
+		SharedMemory.InQueue = Ready
 		Network:InvokeServer("QueueStatus", Ready)
 
 		UI.Queue.Ready.Text = Ready and "Cancel" or "Ready"
@@ -123,36 +147,43 @@ function Main:Initialize()
 			or Color3.new(0, 0.690196, 0.435294)
 	end)
 
-	RunService.RenderStepped:Connect(function()
-		UI.Queue.QueueSize.Text = GameStats.QueueSize.Value .. "/10"
-		Scoreboard.Time.Visible = GameStats.QueueSize.Value >= self.MinPlayers
+	for i, v in pairs(ArenaUI.CharacterSelection.Heros:GetChildren()) do
+		if v:IsA("ImageLabel") then
+			v.Button.MouseButton1Down:Connect(function()
+				print("ok")
+				Selected = not Selected
+				SelectedHero = v.Name
 
-		if GameStats.QueueSize.Value < self.MinPlayers then
-			UI.Queue.Title.Text = "a game is starting soon"
+				v.Button.TextLabel.Text = Selected and "SELECTED" or "SELECT"
+				wait(0.5)
+				ArenaUI.CharacterSelection.Visible = false
+			end)
 		end
+	end
 
-		GameStats.RoundStatus.Changed:Connect(function()
-			self:UpdateStartTime()
-		end)
-
-		GameStats.RoundTime.Changed:Connect(function()
-			self:UpdateStartTime()
-		end)
-
-		GameStats.RoundCountdown.Changed:Connect(function(Value)
-			self:UpdateStartTime()
-		end)
-
-		GameStats.RoundIntermission.Changed:Connect(function(Value)
-			self:UpdateStartTime()
-		end)
-
-		GameStats.RoundStatus.Changed:Connect(function()
-			if GameStats.RoundStatus.Value ~= "Intermission" then
-				UI.Queue.Visible = false
-			end
-		end)
+	-- value changes
+	GameStats.RoundStatus.Changed:Connect(function()
+		self:UpdateStartTime()
 	end)
+
+	GameStats.RoundTime.Changed:Connect(function()
+		self:UpdateStartTime()
+	end)
+
+	GameStats.RoundCountdown.Changed:Connect(function(Value)
+		self:UpdateStartTime()
+	end)
+
+	GameStats.RoundIntermission.Changed:Connect(function(Value)
+		self:UpdateStartTime()
+	end)
+
+	GameStats.RoundStatus.Changed:Connect(function()
+		if GameStats.RoundStatus.Value ~= "Intermission" then
+			UI.Queue.Visible = false
+		end
+	end)
+	--
 
 	-- remotes
 	Network:OnClientEvent("QueueDisplay", function(Status)
@@ -183,6 +214,10 @@ function Main:Initialize()
 		end
 	end)
 	--
+
+	Player.Character.Humanoid.Died:Connect(function()
+		Network:InvokeServer("PlayerDied")
+	end)
 end
 
 return Main
