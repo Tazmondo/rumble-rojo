@@ -16,7 +16,7 @@ local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
-local DataService: typeof(require(script.Parent.DataController)) = Loader:LoadModule("DataController")
+local DataService: typeof(require(script.Parent.DataService)) = Loader:LoadModule("DataService")
 
 -- Only for players currently fighting.
 local CombatPlayerData: { [Model]: CombatPlayer.CombatPlayer } = {}

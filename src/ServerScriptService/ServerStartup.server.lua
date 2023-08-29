@@ -1,4 +1,4 @@
-local LoadOrder = { "DataController", "ArenaController", "CombatService" }
+local LoadOrder = { "DataService", "ArenaService", "CombatService" }
 
 require(game.ReplicatedStorage.Modules.Shared.Network):Initialize()
 require(game.ReplicatedStorage.Modules.Shared.Startup):Initialize(LoadOrder)

@@ -24,8 +24,8 @@ local TweenService = game:GetService("TweenService")
 -- load modules
 local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
 local Network = Loader:LoadModule("Network")
-local DataController = Loader:LoadModule("DataController")
-local MapController = Loader:LoadModule("MapController")
+local DataService = Loader:LoadModule("DataService")
+local MapService = Loader:LoadModule("MapService")
 local SharedMemory = Loader:LoadModule("SharedMemory")
 
 -- functions
@@ -130,7 +130,7 @@ end
 
 function Main:HandleResults(WinningPlayer)
 	for _, Player in pairs(self.Players) do
-		local PlayerData = DataController.CurrentPlayerData["Player_" .. Player.UserId]
+		local PlayerData = DataService.CurrentPlayerData["Player_" .. Player.UserId]
 
 		if PlayerData and PlayerData.DataLoaded then
 			if Player == WinningPlayer then
@@ -165,9 +165,9 @@ function Main:StartIntermission()
 	end
 
 	Values.RoundStatus.Value = "Map"
-	MapController:LoadRandomMap()
+	MapService:LoadRandomMap()
 	wait(2)
-	MapController:MoveDoorsAndMap(true)
+	MapService:MoveDoorsAndMap(true)
 	Values.RoundStatus.Value = "CharacterSelection"
 	wait(15)
 
@@ -248,7 +248,7 @@ function Main:EndMatch()
 
 	self:ClearPlayers()
 
-	MapController:MoveDoorsAndMap(false)
+	MapService:MoveDoorsAndMap(false)
 	wait(10)
 
 	self:StartIntermission()
