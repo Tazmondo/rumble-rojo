@@ -7,6 +7,9 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local AccelTween = require(ReplicatedStorage.Modules.Shared.AccelTween)
 
 -- Makes sure combat cameras arent forgotten to be cleaned up, as only one should exist at any time anyway
 local prevCamera: CombatCamera? = nil
@@ -27,8 +30,9 @@ function CombatCamera.new()
 
 	self.camera = workspace.CurrentCamera
 
-	self.cameraOffset = CFrame.Angles(0, 0, 0) * Vector3.new(0, 20, -10)
+	self.cameraOffset = CFrame.Angles(0, math.rad(-90), 0) * (Vector3.new(0, 20, -10) * 1.5)
 	self.savedCFrame = CFrame.new()
+	self.accelTween = AccelTween.new(60)
 
 	self.enabled = false
 	self.transitioning = false
@@ -59,21 +63,32 @@ end
 function CombatCamera.SetupCamera(self: CombatCamera)
 	-- Here splitting the camera CFraming into two parts fixes a stuttering issue with the player character.
 
-	local smoothCFrame = CFrame.new()
-	local lastTime = 0
-
 	-- Necessary to use step since it's based off the position of a part (the HRP)
-	RunService.Stepped:Connect(function(t: number)
-		local dt = t - lastTime
-		lastTime = t
+	RunService.Stepped:Connect(function(t: number, dt)
 		if self.enabled and not self.transitioning then
-			-- Lerp can actually take alpha > 1, which causes camera to overshoot and mess up completely
-			local alpha = math.clamp(dt * 8.5, 0, 1)
-
 			local targetCFrame = self:GetCFrame()
-			smoothCFrame = self.camera.CFrame:Lerp(targetCFrame, alpha)
+			local currentCFrame = self.camera.CFrame
+			local differenceVector: Vector3 = targetCFrame.Position - currentCFrame.Position
 
-			self.camera.CFrame = smoothCFrame
+			self.accelTween.p = -differenceVector.Magnitude
+
+			-- Move camera in direction of target based on current velocity of the spring. Preserve its rotation.
+			currentCFrame = CFrame.new(currentCFrame.Position + self.accelTween.v * differenceVector.Unit * dt)
+				* currentCFrame.Rotation
+
+			differenceVector = targetCFrame.Position - currentCFrame.Position
+			self.accelTween.p = -differenceVector.Magnitude
+
+			self.camera.CFrame = currentCFrame
+
+			-- 	-- Lerp can actually take alpha > 1, which causes camera to overshoot and mess up completely
+			-- 	local alpha = math.clamp(dt * 8.5, 0, 1)
+
+			-- 	local targetCFrame = self:GetCFrame()
+			-- local smoothCFrame = CFrame.new()
+			-- 	smoothCFrame = self.camera.CFrame:Lerp(targetCFrame, alpha)
+
+			-- 	self.camera.CFrame = smoothCFrame
 		end
 	end)
 end

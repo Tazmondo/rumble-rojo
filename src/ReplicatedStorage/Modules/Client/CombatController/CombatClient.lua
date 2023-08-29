@@ -11,12 +11,15 @@ local RunService = game:GetService("RunService")
 
 local combatFolder = ReplicatedStorage.Modules.Shared.Combat
 
+local AttackRenderer = require(script.Parent.AttackRenderer)
+local CombatCamera = require(script.Parent.CombatCamera)
+
 local AttackLogic = require(combatFolder.AttackLogic)
 local FastCast = require(combatFolder.FastCastRedux)
 local CombatPlayer = require(combatFolder.CombatPlayer)
-local AttackRenderer = require(script.Parent.AttackRenderer)
-local CombatCamera = require(script.Parent.CombatCamera)
 local Enums = require(combatFolder.Enums)
+
+local AccelTween = require(ReplicatedStorage.Modules.Shared.AccelTween)
 local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 
@@ -64,6 +67,7 @@ function CombatClient.new(heroName: string)
 	self.HRP = self.humanoid.RootPart
 	self.lastMousePosition = nil :: Vector3?
 	self.connections = {} :: { RBXScriptConnection }
+	self.rotating = false
 
 	self.combatPlayer = CombatPlayer.new(heroName, self.humanoid)
 	self.combatCamera = CombatCamera.new()
@@ -82,7 +86,7 @@ function CombatClient.new(heroName: string)
 	end)
 
 	self:GetInputs()
-	self:SetupCharacterRotation()
+	-- self:SetupCharacterRotation() -- For auto-looking at mouse
 
 	return self
 end
@@ -230,10 +234,35 @@ function CombatClient.FastCastFire(self: CombatClient, attackId, ...)
 	self.FastCast:Fire(...).UserData.Id = attackId
 end
 
+function CombatClient.RotateToAngleYield(self: CombatClient, worldDirection: Vector3)
+	self.rotating = true
+	local flattenedDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
+	local angleDifference = self.HRP.CFrame.LookVector:Angle(flattenedDirection, Vector3.new(0, 1, 0))
+
+	local startCFrameRotation = self.HRP.CFrame.Rotation
+
+	local accelTween = AccelTween.new(180)
+	accelTween.t = angleDifference
+
+	self.humanoid.AutoRotate = false
+	local rotationTime = accelTween.rtime
+	local start = os.clock()
+	while os.clock() - start < rotationTime do
+		RunService.RenderStepped:Wait()
+		self.HRP.CFrame = CFrame.new(self.HRP.Position) * startCFrameRotation * CFrame.Angles(0, accelTween.p, 0)
+	end
+	self.rotating = false
+	self.humanoid.AutoRotate = true
+
+	return Ray.new(self.HRP.Position, worldDirection)
+end
+
 function CombatClient.Attack(self: CombatClient, trajectory: Ray)
-	if not self.combatPlayer:CanAttack() then
+	if not self.combatPlayer:CanAttack() or self.rotating then
 		return
 	end
+	trajectory = self:RotateToAngleYield(trajectory.Direction)
+
 	self.combatPlayer:Attack()
 
 	trajectory = trajectory.Unit
