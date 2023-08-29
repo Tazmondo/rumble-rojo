@@ -68,6 +68,7 @@ function CombatClient.new(heroName: string)
 	self.lastMousePosition = nil :: Vector3?
 	self.connections = {} :: { RBXScriptConnection }
 	self.rotating = false
+	self.scheduleRotateBack = {}
 
 	self.combatPlayer = CombatPlayer.new(heroName, self.humanoid)
 	self.combatCamera = CombatCamera.new()
@@ -241,7 +242,7 @@ function CombatClient.RotateToAngleYield(self: CombatClient, worldDirection: Vec
 
 	local startCFrameRotation = self.HRP.CFrame.Rotation
 
-	local accelTween = AccelTween.new(180)
+	local accelTween = AccelTween.new(360)
 	accelTween.t = angleDifference
 
 	self.humanoid.AutoRotate = false
@@ -252,7 +253,14 @@ function CombatClient.RotateToAngleYield(self: CombatClient, worldDirection: Vec
 		self.HRP.CFrame = CFrame.new(self.HRP.Position) * startCFrameRotation * CFrame.Angles(0, accelTween.p, 0)
 	end
 	self.rotating = false
-	self.humanoid.AutoRotate = true
+
+	local check = {}
+	self.scheduleRotateBack = check
+	task.delay(0.15, function()
+		if self.scheduleRotateBack == check then
+			self.humanoid.AutoRotate = true
+		end
+	end)
 
 	return Ray.new(self.HRP.Position, worldDirection)
 end

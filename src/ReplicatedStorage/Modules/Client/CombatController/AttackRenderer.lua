@@ -20,8 +20,12 @@ function AttackRenderer.GenerateLengthChangedFunction(attackData: HeroData.Attac
 		rayDir: Vector3,
 		displacement: number,
 		velocity: Vector3,
-		bullet: BasePart
+		bullet: BasePart?
 	)
+		if bullet == nil then
+			warn("LengthChanged without a bullet", debug.traceback())
+			return
+		end
 		local projectilePoint = lastPoint + rayDir * displacement
 		bullet.CFrame = CFrame.lookAt(projectilePoint, projectilePoint + rayDir)
 	end
