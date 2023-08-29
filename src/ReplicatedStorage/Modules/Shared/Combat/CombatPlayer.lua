@@ -5,12 +5,15 @@
 
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatPlayer = {}
 CombatPlayer.__index = CombatPlayer
 
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
+
+local GameValues = ReplicatedStorage.GameValues.Arena
 
 CombatPlayer.StateEnum = {
 	Idle = 0,
@@ -119,6 +122,7 @@ function CombatPlayer.CanAttack(self: CombatPlayer)
 	local canAttack = self.state == self.StateEnum.Idle
 		and os.clock() - self.lastAttackTime >= self.reloadSpeed
 		and self.ammo > 0
+		and GameValues.RoundStatus.Value == "Game" -- Make sure round is in-progress
 	return canAttack
 end
 
