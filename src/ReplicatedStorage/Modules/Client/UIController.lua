@@ -144,14 +144,23 @@ function Main:Initialize()
 	local Selected = false
 	local SelectedHero
 
+	UI.Queue.Exit.Visible = false
+
 	UI.Queue.Ready.MouseButton1Down:Connect(function()
-		Ready = not Ready
+		Ready = true
 		SharedMemory.InQueue = Ready
 		Network:InvokeServer("QueueStatus", Ready)
 
-		UI.Queue.Ready.Text = Ready and "Cancel" or "Ready"
-		UI.Queue.Ready.BackgroundColor3 = Ready and Color3.new(0.690196, 0.286275, 0.286275)
-			or Color3.new(0, 0.690196, 0.435294)
+		UI.Queue.Ready.Visible = false
+		UI.Queue.Exit.Visible = true
+	end)
+	UI.Queue.Exit.MouseButton1Down:Connect(function()
+		Ready = false
+		SharedMemory.InQueue = Ready
+		Network:InvokeServer("QueueStatus", Ready)
+
+		UI.Queue.Ready.Visible = true
+		UI.Queue.Exit.Visible = false
 	end)
 
 	for i, v in pairs(ArenaUI.CharacterSelection.Heros:GetChildren()) do
@@ -194,8 +203,8 @@ function Main:Initialize()
 
 	-- remotes
 	Network:OnClientEvent("QueueDisplay", function(Status)
-		UI.Queue.Ready.Text = "Ready"
-		UI.Queue.Ready.BackgroundColor3 = Color3.new(0, 0.690196, 0.435294)
+		UI.Queue.Ready.Visible = true
+		UI.Queue.Exit.Visible = false
 
 		UI.Queue.Visible = Status
 
