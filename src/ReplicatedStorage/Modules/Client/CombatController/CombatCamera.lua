@@ -27,8 +27,7 @@ function CombatCamera.new()
 
 	self.camera = workspace.CurrentCamera
 
-	-- Rotate this offset by 45 degrees, so it lines up with the diagonal maps
-	self.cameraOffset = CFrame.Angles(0, math.rad(-45), 0) * Vector3.new(0, 20, -10)
+	self.cameraOffset = CFrame.Angles(0, 0, 0) * Vector3.new(0, 20, -10)
 	self.savedCFrame = CFrame.new()
 
 	self.enabled = false
