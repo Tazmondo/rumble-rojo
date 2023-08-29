@@ -41,6 +41,8 @@ function Main:UpdateStartTime()
 		self.LastStartTime = GameStats.RoundCountdown.Value
 
 		if GameStats.RoundStatus.Value == "Starting" and SharedMemory.InMatch then
+			Player.Character.HumanoidRootPart.Anchored = true
+
 			local CountdownText = ArenaUI.Game.Countdown
 			CountdownText.Text = GameStats.RoundCountdown.Value
 
@@ -65,6 +67,7 @@ function Main:UpdateStartTime()
 
 	if GameStats.RoundStatus.Value == "Game" then
 		if SharedMemory.InMatch then
+			Player.Character.HumanoidRootPart.Anchored = false
 			Scoreboard.Visible = SharedMemory.InMatch
 
 			local Seconds = math.ceil(GameStats.RoundTime.Value)
@@ -99,11 +102,13 @@ function Main:UpdateStartTime()
 			Arena.Status.Visible = true
 		end
 	elseif GameStats.RoundStatus.Value == "Ended" and SharedMemory.InMatch then
+		Player.Character.HumanoidRootPart.Anchored = true
 		ArenaUI.Game.Visible = true
 		ArenaUI.Game.RoundOver.Visible = true
 		wait(3)
 		ArenaUI.Game.RoundOver.Visible = false
 		ArenaUI.Game.Visible = false
+		Player.Character.HumanoidRootPart.Anchored = false
 	elseif GameStats.RoundStatus.Value == "Intermission" then
 		Scoreboard.Visible = SharedMemory.InQueue
 		local Time = GameStats.RoundIntermission.Value

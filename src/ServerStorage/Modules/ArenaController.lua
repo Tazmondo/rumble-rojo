@@ -4,7 +4,7 @@ local Main = {
 	Players = {},
 	Arena = "",
 
-	Intermission = 30, -- 20
+	Intermission = 30, -- 30
 	RoundLength = 120, -- 2mimnutes
 	RoundsAmount = 1, -- default is 1 although can support multiple rounds
 
