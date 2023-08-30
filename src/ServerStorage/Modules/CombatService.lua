@@ -239,6 +239,20 @@ function CombatService:SetupCombatPlayer(player: Player, heroName: string)
 	self:InitializeNameTag(player, combatPlayer)
 end
 
+function CombatService:LoadCharacterWithModel(player: Player, characterModel: Model?)
+	self = self :: CombatService
+
+	if characterModel then
+		local starterChar = characterModel:Clone()
+		starterChar.Name = "StarterCharacter"
+		starterChar.Parent = game.StarterPlayer
+		player:LoadCharacter()
+		starterChar:Destroy()
+	else
+		player:LoadCharacter()
+	end
+end
+
 function CombatService:SpawnCharacter(player: Player)
 	self = self :: CombatService
 
@@ -259,7 +273,10 @@ function CombatService:SpawnCharacter(player: Player)
 		-- TODO: Move to spawnpoint
 	end)
 	print(player, "Loading char")
-	player:LoadCharacter()
+	self:LoadCharacterWithModel(
+		player,
+		ReplicatedStorage.Assets.CharacterModels:FindFirstChild(PlayersInCombat[player])
+	)
 end
 
 function CombatService:PlayerAdded(player: Player)

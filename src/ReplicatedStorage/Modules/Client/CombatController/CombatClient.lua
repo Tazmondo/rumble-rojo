@@ -22,7 +22,7 @@ local Enums = require(combatFolder.Enums)
 local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 
-local function VisualiseRay(ray: Ray)
+local function _VisualiseRay(ray: Ray)
 	local part = Instance.new("Part")
 	part.Anchored = true
 	part.CanCollide = false
