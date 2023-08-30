@@ -19,6 +19,14 @@ local HeroData = {
 			AmmoRegen = 2,
 			ProjectileSpeed = Enums.ProjectileSpeed.Medium,
 		},
+		Super = {
+			Name = "Super Shell",
+			AttackType = Enums.AttackType.Shotgun,
+			ShotCount = 10,
+			Angle = 15,
+			Range = Enums.AttackRange.MediumLarge,
+			Charge = 5,
+		},
 	},
 }
 
