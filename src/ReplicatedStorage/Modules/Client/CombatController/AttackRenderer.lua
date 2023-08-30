@@ -79,7 +79,6 @@ function AttackRenderer.GetRendererForAttack(
 	local behaviour = AttackRenderer.GetCastBehaviour(attackData, player.Character)
 
 	return function(caster: FastCastTypes.Caster)
-		print("Render!", attackData, attackDetails, debug.traceback())
 		if attackData.AttackType == Enums.AttackType.Shotgun then
 			for index, pellet in pairs(attackDetails.pellets) do
 				caster:Fire(pellet.CFrame.Position, pellet.CFrame.LookVector, pellet.speed, behaviour).UserData.Id =

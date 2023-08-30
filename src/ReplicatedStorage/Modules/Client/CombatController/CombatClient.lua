@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 
 local combatFolder = ReplicatedStorage.Modules.Shared.Combat
 
+local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
 local AttackRenderer = require(script.Parent.AttackRenderer)
 local CombatCamera = require(script.Parent.CombatCamera)
 
@@ -89,6 +90,8 @@ function CombatClient.new(heroName: string)
 		self:CastTerminating(...)
 	end)
 
+	self.nameTag = NameTag.Init(self.player, self.combatPlayer, false)
+
 	self:GetInputs()
 	self:SetupCharacterRotation()
 
@@ -113,6 +116,7 @@ function CombatClient.Destroy(self: CombatClient)
 	self.humanoid.AutoRotate = true
 	self.combatPlayer:Destroy()
 	self.combatCamera:Destroy()
+	self.nameTag:Destroy()
 
 	self.destroyed = true
 end
@@ -274,6 +278,7 @@ end
 
 function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 	if not self.combatPlayer:CanAttack() then
+		print("Tried to attack but can't.", self.combatPlayer.ammo)
 		return
 	end
 	self.combatPlayer:Attack()

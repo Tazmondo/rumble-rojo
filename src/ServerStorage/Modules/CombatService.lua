@@ -15,6 +15,7 @@ local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local FastCast = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
+local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
 local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
@@ -186,33 +187,12 @@ end
 function CombatService:InitializeNameTag(player: Player, combatPlayer: CombatPlayer.CombatPlayer)
 	self = self :: CombatService
 
-	local char = assert(player.Character, "Tried to initialize nametag on player without a character")
-	assert(player.Character.Parent, "Character has not been parented to workspace yet!")
-	local NameTag = nameTagTemplate:Clone()
-
-	NameTag.PlayerName.Text = player.Name
-
-	NameTag.Parent = char.Head
-
+	local nameTag = NameTag.Init(player, combatPlayer, true)
 	task.spawn(function()
-		while char.Parent ~= nil do
-			for i = 1, 3 do
-				local AmmoBar = NameTag.AmmoBar:FindFirstChild("Ammo" .. i)
-
-				if AmmoBar then
-					AmmoBar.Visible = i <= combatPlayer.ammo
-				end
-			end
-			NameTag.HealthNumber.Text = combatPlayer.health
-			local healthRatio = combatPlayer.health / combatPlayer.maxHealth
-			-- Size the smaller bar as a percentage of the size of the parent bar, based off player health percentage
-			NameTag.HealthBar.HealthBar.Size = UDim2.new(healthRatio, 0, 0, NameTag.HealthBar.HealthBar.Size.Y.Offset)
-			local colour1 = Color3.fromHSV(healthRatio * 100 / 255, 206 / 255, 1)
-			local colour2 = Color3.fromHSV(healthRatio * 88 / 255, 197 / 255, 158 / 255)
-			NameTag.HealthBar.HealthBar.UIGradient.Color = ColorSequence.new(colour1, colour2)
-
+		while player.Character and CombatPlayerData[player.Character] do
 			task.wait()
 		end
+		nameTag:Destroy()
 	end)
 end
 
