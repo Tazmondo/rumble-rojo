@@ -197,10 +197,6 @@ function Main:StartMatch()
 	for i = Values.RoundCountdown.Value, 1, -1 do
 		wait(1)
 		Values.RoundCountdown.Value = Values.RoundCountdown.Value - 1
-
-		if i == 1 then
-			Values.RoundCountdown.Value = "FIGHT!!"
-		end
 	end
 
 	wait(1)

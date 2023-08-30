@@ -157,6 +157,14 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	print(killerData)
 end
 
+function Main:GetCombatPlayerForPlayer(player: Player): CombatPlayer.CombatPlayer?
+	if player.Character and CombatPlayerData[player.Character] then
+		return CombatPlayerData[player.Character]
+	else
+		return
+	end
+end
+
 function Main:Initialize()
 	Players.PlayerAdded:Connect(function(player: Player)
 		player.CharacterAdded:Connect(function(char)

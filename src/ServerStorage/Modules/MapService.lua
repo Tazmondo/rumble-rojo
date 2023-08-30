@@ -6,6 +6,8 @@ local MapFolder = Arena.Map
 local Maps = game.ServerStorage.Maps
 local GameStats = game.ReplicatedStorage.GameValues.Arena
 
+local offset = Vector3.new
+
 -- services
 local TweenService = game:GetService("TweenService")
 
@@ -15,17 +17,13 @@ local Network = Loader:LoadModule("Network")
 local MapsModule = Loader:LoadModule("Maps")
 
 -- transition stuff
-local ClosedPositions = {
-	One = CFrame.new(Vector3.new(-151.931, 36.726, -298.159)) * CFrame.Angles(0, math.rad(-45), 0),
-	Two = CFrame.new(Vector3.new(-99.627, 36.726, -350.464)) * CFrame.Angles(0, math.rad(-45), 0),
-}
-local OpenPositions = {
-	One = CFrame.new(Vector3.new(-208.592, 36.726, -241.498)) * CFrame.Angles(0, math.rad(-45), 0),
-	Two = CFrame.new(Vector3.new(-43.482, 36.726, -406.608)) * CFrame.Angles(0, math.rad(-45), 0),
-}
+local Part1Closed, Part2Closed = Arena.Doors.One.CFrame, Arena.Doors.Two.CFrame
 
-local ClosedMapPosition = Vector3.new(-127.528, -64.207, -324.767)
-local OpenMapPosition = Vector3.new(-127.528, -6.617, -324.767)
+local Part1Open = CFrame.new(Part1Closed.Position - offset(80.39, 0, 0)) * CFrame.Angles(0, math.rad(-90), 0)
+local Part2Open = CFrame.new(Part2Closed.Position + offset(90.961, 0, 0)) * CFrame.Angles(0, math.rad(-90), 0)
+
+local ClosedMapPosition = Vector3.new(Arena.Base.Position.X, Arena.Base.Position.Y - 80, Arena.Base.Position.Z)
+local OpenMapPosition = Arena.Base.Position
 
 -- functions
 local function MoveDoors(Part, Position, Time)
@@ -54,11 +52,11 @@ local function MoveMap(Parts, Position, Time)
 end
 
 function Main:MoveDoorsAndMap(Open)
-	local DoorTargetPos = Open and OpenPositions or ClosedPositions
+	local TargetPositions = Open and { One = Part1Open, Two = Part2Open } or { One = Part1Closed, Two = Part2Closed }
 	local TargetMapPos = Open and OpenMapPosition or ClosedMapPosition
 
-	MoveDoors(Arena.Doors.One, DoorTargetPos.One, 1.3)
-	MoveDoors(Arena.Doors.Two, DoorTargetPos.Two, 1.3)
+	MoveDoors(Arena.Doors.One, TargetPositions.One, 1.3)
+	MoveDoors(Arena.Doors.Two, TargetPositions.Two, 1.3)
 
 	local Parts = Arena.Map:GetDescendants()
 	MoveMap(Parts, TargetMapPos, 1.5)

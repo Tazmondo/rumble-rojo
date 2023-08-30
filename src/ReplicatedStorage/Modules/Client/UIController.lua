@@ -36,6 +36,7 @@ function Main:UpdateStartTime()
 	ArenaUI.Game.Visible = GameStats.RoundStatus.Value == "Starting" and SharedMemory.InMatch
 	ArenaUI.Game.Countdown.Visible = GameStats.RoundStatus.Value == "Starting" and SharedMemory.InMatch
 	Scoreboard.Time.Timer.Text = GameStats.RoundStatus.Value == "Starting" and "2:00" or "" -- visual beauty
+	ArenaUI.CharacterSelection.Visible = GameStats.RoundStatus.Value == "CharacterSelection" and SharedMemory.InQueue
 
 	if self.LastStartTime ~= GameStats.RoundCountdown.Value then
 		self.LastStartTime = GameStats.RoundCountdown.Value
@@ -45,6 +46,13 @@ function Main:UpdateStartTime()
 
 			local CountdownText = ArenaUI.Game.Countdown
 			CountdownText.Text = GameStats.RoundCountdown.Value
+
+			if GameStats.RoundCountdown.Value == "0" then -- lazy
+				CountdownText.Visible = false
+				ArenaUI.Game.StartFight.Visible = true
+				wait(1)
+				ArenaUI.Game.StartFight.Visible = false
+			end
 
 			local OriginalSizeX, OriginalSizeY = 0.134, 0.366
 			local Tween = TweenService:Create(
@@ -116,11 +124,11 @@ function Main:UpdateStartTime()
 		local Time = GameStats.RoundIntermission.Value
 
 		Scoreboard.Time.Timer.Text = Time
-	elseif GameStats.RoundStatus.Value == "CharacterSelection" then
+	elseif GameStats.RoundStatus.Value == "CharacterSelection" and SharedMemory.InQueue then
 		local Selection = ArenaUI.CharacterSelection
 
 		Scoreboard.Visible = false
-		Selection.Visible = true
+		-- Selection.Visible = GameStats.RoundStatus.Value == "CharacterSelection" --and SharedMemory.InQueue
 	end
 end
 
@@ -132,17 +140,13 @@ function Main:Initialize()
 	end
 
 	RunService.RenderStepped:Connect(function()
-		-- UI.Queue.QueueSize.Text = GameStats.QueueSize.Value .. "/10"
+		UI.Queue.Frame.Title.Text = "Players Ready: " .. GameStats.QueueSize.Value .. "/10"
 		Scoreboard.Time.Visible = GameStats.QueueSize.Value >= self.MinPlayers
-
-		-- if GameStats.QueueSize.Value < self.MinPlayers then
-		-- 	UI.Queue.Title.Text = "a game is starting soon"
-		-- end
 	end)
 
 	local Ready = false
 	local Selected = false
-	local SelectedHero
+	local SelectedHero = "Fabio"
 
 	UI.Queue.Exit.Visible = false
 
@@ -170,7 +174,6 @@ function Main:Initialize()
 				Selected = not Selected
 				SelectedHero = v.Name
 
-				v.Button.TextLabel.Text = Selected and "SELECTED" or "SELECT"
 				wait(0.5)
 				ArenaUI.CharacterSelection.Visible = false
 			end)
