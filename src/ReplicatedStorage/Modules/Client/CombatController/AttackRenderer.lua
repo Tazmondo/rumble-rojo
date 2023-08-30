@@ -9,6 +9,8 @@ local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local FastCast = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux)
 local FastCastTypes = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux.TypeDefinitions)
+local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
+local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 
 local localPlayer = game:GetService("Players").LocalPlayer
 
@@ -39,18 +41,6 @@ function AttackRenderer.GetCastBehaviour(attackData: HeroData.AttackData, exclud
 	end
 	RaycastParams.RespectCanCollide = true
 
-	-- TODO: Use VFX
-	local templatePart = Instance.new("Part")
-	templatePart.Transparency = 0.5
-	templatePart.Color = Color3.fromHex("#73f7c0")
-	templatePart.Size = Vector3.one * 2
-	templatePart.Shape = Enum.PartType.Ball
-	templatePart.Anchored = true
-	templatePart.CanCollide = false
-	templatePart.CanQuery = false
-	templatePart.CanTouch = false
-	templatePart.Position = Vector3.new(100000000000, 0, 0)
-
 	local projectileFolder = workspace:FindFirstChild("ProjectileFolder")
 	if not projectileFolder then
 		projectileFolder = Instance.new("Folder")
@@ -79,16 +69,40 @@ local function CastTerminating(activeCast: FastCastTypes.ActiveCast)
 	end
 end
 
+function AttackRenderer.GetRendererForAttack(
+	player: Player,
+	attackData: HeroData.AttackData,
+	origin: CFrame,
+	attackDetails
+)
+	assert(attackDetails, "Called attack renderer without providing attack details")
+	local behaviour = AttackRenderer.GetCastBehaviour(attackData, player.Character)
+
+	return function(caster: FastCastTypes.Caster)
+		print("Render!", attackData, attackDetails, debug.traceback())
+		if attackData.AttackType == Enums.AttackType.Shotgun then
+			for index, pellet in pairs(attackDetails.pellets) do
+				caster:Fire(pellet.CFrame.Position, pellet.CFrame.LookVector, pellet.speed, behaviour).UserData.Id =
+					pellet.id
+			end
+		end
+	end
+end
+
 -- So each attack only has one fastcaster, reducing lag.
 local cachedCasts: { [string]: FastCastTypes.Caster } = {}
 
-function AttackRenderer.HandleAttackRender(player: Player, attackData, attackDetails, origin: CFrame)
+function AttackRenderer.HandleAttackRender(
+	player: Player,
+	attackData: HeroData.AttackData,
+	origin: CFrame,
+	attackDetails
+)
 	-- Don't want to render our own attacks twice
 	-- This must be a separate function from local attack rendering, since we don't want a RayHit callback with other clients attacks
 	if player == localPlayer then
 		return
 	end
-
 	local attackName = attackData.Name
 	local cachedCaster = cachedCasts[attackName]
 	if not cachedCaster then
@@ -101,13 +115,7 @@ function AttackRenderer.HandleAttackRender(player: Player, attackData, attackDet
 		cachedCaster.CastTerminating:Connect(CastTerminating)
 	end
 
-	local behaviour = AttackRenderer.GetCastBehaviour(attackData, player.Character)
-
-	if attackData.AttackType == Enums.AttackType.Shotgun then
-		for index, pellet in pairs(attackDetails.pellets) do
-			cachedCaster:Fire(origin.Position, origin.LookVector, attackData.ProjectileSpeed, behaviour)
-		end
-	end
+	AttackRenderer.GetRendererForAttack(player, attackData, origin, attackDetails)(cachedCaster)
 end
 
 export type AttackRenderer = typeof(AttackRenderer)

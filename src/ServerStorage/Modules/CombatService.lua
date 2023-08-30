@@ -56,9 +56,16 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
 	behaviour.RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	if attackData.AttackType == Enums.AttackType.Shotgun then
-		local attackDetails = AttackLogic.Shotgun(attackData.Angle, attackData.ShotCount, origin, function()
-			return combatPlayer:GetNextAttackId()
-		end, localAttackDetails.seed)
+		local attackDetails = AttackLogic.Shotgun(
+			attackData.Angle,
+			attackData.ShotCount,
+			attackData.ProjectileSpeed,
+			origin,
+			localAttackDetails.seed,
+			function()
+				return combatPlayer:GetNextAttackId()
+			end
+		)
 		localAttackDetails = localAttackDetails :: typeof(attackDetails)
 
 		for index, pellet in pairs(attackDetails.pellets) do
@@ -66,16 +73,11 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
 				warn(player, "mismatched attack ids, could be cheating.")
 				return
 			end
-			local cast = fastCast:Fire(
-				pellet.CFrame.Position,
-				pellet.CFrame.LookVector,
-				attackData.ProjectileSpeed + pellet.speedVariance,
-				behaviour
-			)
+			local cast = fastCast:Fire(pellet.CFrame.Position, pellet.CFrame.LookVector, pellet.speed, behaviour)
 			cast.UserData.Id = pellet.id
 			combatPlayer:RegisterAttack(pellet.id, pellet.CFrame, cast)
 		end
-		Network:FireAllClients("Attack", player, attackData, attackDetails, origin)
+		Network:FireAllClients("Attack", player, attackData, origin, attackDetails)
 	end
 
 	combatPlayer:Attack()
@@ -136,7 +138,13 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	local attackPosition = attackData.HitPosition or attackData.Cast:GetPosition()
 	local attackDiff = (attackPosition - localTargetPosition).Magnitude
 	if attackDiff > Config.MaximumAllowedLatencyVariation * attackData.Data.ProjectileSpeed then
-		warn(player, "Had too large of a difference between bullet positions")
+		warn(
+			player,
+			"Had too large of a difference between bullet positions: ",
+			attackDiff,
+			attackPosition,
+			localTargetPosition
+		)
 		return
 	end
 

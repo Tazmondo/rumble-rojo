@@ -65,9 +65,12 @@ function CombatClient.new(heroName: string)
 	self.humanoid = self.character.Humanoid :: Humanoid
 	self.HRP = self.humanoid.RootPart
 	self.lastMousePosition = Vector3.new()
+	self.lastAimDirection = nil :: Vector3?
 	self.connections = {} :: { RBXScriptConnection }
-	self.rotating = false
 	self.mouseDown = false
+	self.preRotateAttack = true
+	self.completedRotation = true
+	self.attemptingAttack = false
 	self.scheduleRotateBack = {}
 
 	self.combatPlayer = CombatPlayer.new(heroName, self.humanoid)
@@ -166,32 +169,59 @@ function CombatClient.SetupCharacterRotation(self: CombatClient)
 	table.insert(
 		self.connections,
 		RunService.RenderStepped:Connect(function(dt)
-			local worldDirection = self:NormaliseClickTarget().Direction
-			local flattenedDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
-
+			-- Only update the aim direction while holding mouse
 			if self.mouseDown then
+				local worldDirection = self:NormaliseClickTarget().Direction
+				self.lastAimDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
+			end
+
+			-- Always want to finish rotating to the aim direction, so even if they release mouse, keep rotating until angle reached
+			if self.lastAimDirection and (self.mouseDown or not self.completedRotation) then
 				self.HRP.CFrame = self.HRP.CFrame:Lerp(
-					CFrame.lookAt(self.HRP.Position, self.HRP.Position + flattenedDirection),
+					CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.lastAimDirection),
 					dt * 8
 				)
 
-				local angleDifference = self.HRP.CFrame.LookVector:Angle(flattenedDirection)
-				print(math.deg(angleDifference))
-			else
-				self.rotating = false
+				local angleDifference = self.HRP.CFrame.LookVector:Angle(self.lastAimDirection)
+				if angleDifference < math.rad(5) then
+					self.preRotateAttack = true
+					self.completedRotation = true
+				elseif angleDifference < math.rad(60) then
+					self.preRotateAttack = true
+					self.completedRotation = false
+				else
+					self.completedRotation = false
+					self.preRotateAttack = false
+				end
 			end
 		end)
 	)
 end
 
 function CombatClient.HandleMouseDown(self: CombatClient)
-	self.mouseDown = true
-	self.humanoid.AutoRotate = false
+	if not self.attemptingAttack then
+		self.mouseDown = true
+		self.humanoid.AutoRotate = false
+	end
 end
 
 function CombatClient.HandleMouseUp(self: CombatClient)
+	if self.attemptingAttack or not self.mouseDown then
+		return
+	end
+
 	self.mouseDown = false
-	self:Attack(Ray.new(self.HRP.Position, self.HRP.CFrame.LookVector))
+	self.attemptingAttack = true
+
+	-- Wait to finish rotating to click direction before firing
+	while not self.preRotateAttack do
+		task.wait()
+	end
+	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection))
+	while not self.completedRotation do
+		task.wait()
+	end
+	self.attemptingAttack = false
 	self.humanoid.AutoRotate = true
 end
 
@@ -242,10 +272,6 @@ function CombatClient.GetInputs(self: CombatClient)
 	-- end)
 end
 
-function CombatClient.FastCastFire(self: CombatClient, attackId, ...)
-	self.FastCast:Fire(...).UserData.Id = attackId
-end
-
 function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 	if not self.combatPlayer:CanAttack() then
 		return
@@ -255,29 +281,13 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 	trajectory = trajectory.Unit
 	local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
 
-	local attackData = self.combatPlayer.heroData.Attack
+	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin)
 
-	local behaviour = AttackRenderer.GetCastBehaviour(attackData, self.character)
+	local renderFunction =
+		AttackRenderer.GetRendererForAttack(self.player, self.combatPlayer.heroData.Attack, origin, attackDetails)
 
-	if attackData.AttackType == Enums.AttackType.Shotgun then
-		local angle = attackData.Angle
-		local pelletCount = attackData.ShotCount
-		local attackDetails = AttackLogic.Shotgun(angle, pelletCount, origin, function()
-			return self.combatPlayer:GetNextAttackId()
-		end)
-
-		for index, pellet in pairs(attackDetails.pellets) do
-			self:FastCastFire(
-				pellet.id,
-				pellet.CFrame.Position,
-				pellet.CFrame.LookVector,
-				attackData.ProjectileSpeed + pellet.speedVariance,
-				behaviour
-			)
-		end
-
-		Network:FireServer("Attack", origin, attackDetails)
-	end
+	renderFunction(self.FastCast)
+	Network:FireServer("Attack", origin, attackDetails)
 end
 
 export type CombatClient = typeof(CombatClient.new(...))

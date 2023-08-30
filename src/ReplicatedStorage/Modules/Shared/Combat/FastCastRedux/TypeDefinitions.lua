@@ -29,7 +29,7 @@ export type Caster = {
 	RayHit: RBXScriptSignal,
 	RayPierced: RBXScriptSignal,
 	CastTerminating: RBXScriptSignal,
-	Fire: (Caster, Vector3, Vector3, Vector3 | number, FastCastBehavior) -> (),
+	Fire: (Caster, Vector3, Vector3, Vector3 | number, FastCastBehavior) -> ActiveCast,
 }
 
 -- Represents a FastCastBehavior :: https://etithespirit.github.io/FastCastAPIDocs/fastcast-objects/fcbehavior/
