@@ -21,8 +21,6 @@ local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 local DataService: typeof(require(script.Parent.DataService)) = Loader:LoadModule("DataService")
 
-local nameTagTemplate = ReplicatedStorage.Assets.NameTag
-
 -- Only for players currently fighting.
 local CombatPlayerData: { [Model]: CombatPlayer.CombatPlayer } = {}
 local PlayersInCombat: { [Player]: string } = {}

@@ -36,7 +36,7 @@ end
 
 -- Player is optional as NPCs can be combatplayers
 function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
-	local self = setmetatable({}, CombatPlayer)
+	local self: CombatPlayer = setmetatable({}, CombatPlayer) :: CombatPlayer
 
 	self.heroData = HeroData[heroName] :: typeof(HeroData.Fabio)
 

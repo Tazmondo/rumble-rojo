@@ -15,6 +15,7 @@ local AimRenderer = require(script.Parent.AimRenderer)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
 local AttackRenderer = require(script.Parent.AttackRenderer)
 local CombatCamera = require(script.Parent.CombatCamera)
+local Janitor = require(ReplicatedStorage.Packages.Janitor)
 
 local AttackLogic = require(combatFolder.AttackLogic)
 local FastCast = require(combatFolder.FastCastRedux)
@@ -67,26 +68,28 @@ local function ScreenPointCast(x: number, y: number, exclude: { Instance }?)
 end
 
 function CombatClient.new(heroName: string)
-	local self = setmetatable({}, CombatClient)
+	local self = setmetatable({}, CombatClient) :: CombatClient
+	self.janitor = Janitor.new()
 
 	self.player = Players.LocalPlayer
 	self.character = self.player.Character
 	self.humanoid = self.character.Humanoid :: Humanoid
 	self.HRP = self.humanoid.RootPart
 	self.lastMousePosition = Vector3.new()
+	self.currentMouseDirection = nil :: Vector3?
 	self.lastAimDirection = nil :: Vector3?
-	self.connections = {} :: { RBXScriptConnection }
 	self.mouseDown = false
 	self.preRotateAttack = true
 	self.completedRotation = true
 	self.attemptingAttack = false
 	self.scheduleRotateBack = {}
 
-	self.combatPlayer = CombatPlayer.new(heroName, self.humanoid)
-	self.combatCamera = CombatCamera.new()
+	self.combatPlayer = self.janitor:Add(CombatPlayer.new(heroName, self.humanoid))
+	self.combatCamera = self.janitor:Add(CombatCamera.new())
 	self.combatCamera:Enable()
 
-	-- self.aimRenderer = AimRenderer.new(self.combatPlayer.heroData.Attack, self.character)
+	self.aimRenderer =
+		self.janitor:Add(AimRenderer.new(self.combatPlayer.heroData.Attack, self.character) :: AimRenderer.AimRenderer)
 
 	self.FastCast = FastCast.new()
 
@@ -120,13 +123,8 @@ function CombatClient.Destroy(self: CombatClient)
 	end
 
 	print("Destroying combat client", debug.traceback())
-	for _, connection in pairs(self.connections) do
-		connection:Disconnect()
-	end
+	self.janitor:Destroy()
 	self.humanoid.AutoRotate = true
-	self.combatPlayer:Destroy()
-	self.combatCamera:Destroy()
-	self.nameTag:Destroy()
 
 	self.destroyed = true
 end
@@ -177,45 +175,52 @@ end
 function CombatClient.HandleMove(self: CombatClient, input: InputObject)
 	local screenPosition = input.Position
 	self.lastMousePosition = screenPosition
+	self.currentMouseDirection = self:NormaliseClickTarget().Direction
+
+	if self.mouseDown or not self.preRotateAttack then
+		self.aimRenderer:Update(self.currentMouseDirection)
+
+		local aimColor = if self.combatPlayer:CanAttack() then Color3.new(1, 1, 1) else Color3.new(1, 0, 0)
+		self.aimRenderer:SetTint(aimColor)
+	end
 end
 
 function CombatClient.SetupCharacterRotation(self: CombatClient)
-	table.insert(
-		self.connections,
-		RunService.RenderStepped:Connect(function(dt)
-			-- Only update the aim direction while holding mouse
-			if self.mouseDown then
-				local worldDirection = self:NormaliseClickTarget().Direction
-				self.lastAimDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
-			end
+	self.janitor:Add(RunService.RenderStepped:Connect(function(dt)
+		-- Only update the aim direction while holding mouse
+		if self.mouseDown then
+			local worldDirection = self.currentMouseDirection
+			self.lastAimDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
+		end
 
-			-- Always want to finish rotating to the aim direction, so even if they release mouse, keep rotating until angle reached
-			if self.lastAimDirection and (self.mouseDown or not self.completedRotation) then
-				self.HRP.CFrame = self.HRP.CFrame:Lerp(
-					CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.lastAimDirection),
-					dt * 8
-				)
+		-- Always want to finish rotating to the aim direction, so even if they release mouse, keep rotating until angle reached
+		if self.lastAimDirection and (self.mouseDown or not self.completedRotation) then
+			self.HRP.CFrame = self.HRP.CFrame:Lerp(
+				CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.lastAimDirection),
+				dt * 8
+			)
 
-				local angleDifference = self.HRP.CFrame.LookVector:Angle(self.lastAimDirection)
-				if angleDifference < math.rad(5) then
-					self.preRotateAttack = true
-					self.completedRotation = true
-				elseif angleDifference < math.rad(60) then
-					self.preRotateAttack = true
-					self.completedRotation = false
-				else
-					self.completedRotation = false
-					self.preRotateAttack = false
-				end
+			local angleDifference = self.HRP.CFrame.LookVector:Angle(self.lastAimDirection)
+			if angleDifference < math.rad(5) then
+				self.preRotateAttack = true
+				self.completedRotation = true
+			elseif angleDifference < math.rad(60) then
+				self.preRotateAttack = true
+				self.completedRotation = false
+			else
+				self.completedRotation = false
+				self.preRotateAttack = false
 			end
-		end)
-	)
+		end
+	end))
 end
 
 function CombatClient.HandleMouseDown(self: CombatClient)
 	if not self.attemptingAttack then
 		self.mouseDown = true
 		self.humanoid.AutoRotate = false
+		self.aimRenderer:Update(self.currentMouseDirection)
+		self.aimRenderer:Enable()
 	end
 end
 
@@ -231,6 +236,7 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 	while not self.preRotateAttack do
 		task.wait()
 	end
+	self.aimRenderer:Disable()
 	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection))
 	while not self.completedRotation do
 		task.wait()
@@ -240,44 +246,35 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 end
 
 function CombatClient.GetInputs(self: CombatClient)
-	table.insert(
-		self.connections,
-		UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
-			if processed then
-				return
-			end
+	self.janitor:Add(UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
+		if processed then
+			return
+		end
 
-			if input.UserInputType == Enum.UserInputType.MouseMovement then
-				self:HandleMove(input)
-			end
-		end)
-	)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			self:HandleMove(input)
+		end
+	end))
 
-	table.insert(
-		self.connections,
-		UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
-			if processed then
-				return
-			end
+	self.janitor:Add(UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+		if processed then
+			return
+		end
 
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				self:HandleMouseDown()
-			end
-		end)
-	)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			self:HandleMouseDown()
+		end
+	end))
 
-	table.insert(
-		self.connections,
-		UserInputService.InputEnded:Connect(function(input: InputObject, processed: boolean)
-			if processed then
-				return
-			end
+	self.janitor:Add(UserInputService.InputEnded:Connect(function(input: InputObject, processed: boolean)
+		if processed then
+			return
+		end
 
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				self:HandleMouseUp()
-			end
-		end)
-	)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			self:HandleMouseUp()
+		end
+	end))
 
 	-- RunService.RenderStepped:Connect(function()
 	-- 	if self.mouseDown then
