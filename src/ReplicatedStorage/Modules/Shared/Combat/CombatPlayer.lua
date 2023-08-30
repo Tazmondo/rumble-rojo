@@ -44,11 +44,14 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid)
 	self.reloadSpeed = self.heroData.Attack.ReloadSpeed - LATENCYALLOWANCE
 
 	self.humanoid = humanoid
-	self.humanoid:AddTag("CombatPlayer")
+	self.humanoidData = { humanoid.MaxHealth, humanoid.WalkSpeed, humanoid.DisplayDistanceType } :: { any }
+
 	self.humanoid.MaxHealth = self.maxHealth
 	self.humanoid.Health = self.health
 	self.humanoid.WalkSpeed = self.movementSpeed
+	self.humanoid:AddTag(Config.CombatPlayerTag)
 	self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+	self.humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 
 	self.state = self.StateEnum.Idle
 	self.lastAttackTime = 0 -- os.clock based
@@ -155,7 +158,7 @@ function CombatPlayer.RegisterAttack(self: CombatPlayer, attackId, attackCF, cas
 end
 
 function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
-	self.health -= amount
+	self.health = math.max(0, self.health - amount)
 	self.humanoid.Health = self.health
 	if self.health <= 0 then
 		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
@@ -169,8 +172,12 @@ function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
 end
 
 function CombatPlayer.Destroy(self: CombatPlayer)
-	warn("CombatPlayer was destroyed, but this is undefined behaviour! Killing humanoid instead.")
-	self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
+	-- warn("CombatPlayer was destroyed, but this is undefined behaviour! Killing humanoid instead.")
+	-- self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
+	self.humanoid.MaxHealth, self.humanoid.WalkSpeed, self.humanoid.DisplayDistanceType =
+		table.unpack(self.humanoidData)
+	self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+	self.humanoid:RemoveTag(Config.CombatPlayerTag)
 end
 
 export type Attack = {

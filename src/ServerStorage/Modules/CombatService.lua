@@ -2,7 +2,7 @@
 -- Shouldn't be very long, as combat data is mostly decided by scripts in client
 -- This just validates that they haven't been tampered with before replicating them to other clients
 
-local Main = {}
+local CombatService = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -17,6 +17,8 @@ local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 local DataService: typeof(require(script.Parent.DataService)) = Loader:LoadModule("DataService")
+
+local nameTagTemplate = ReplicatedStorage.Assets.NameTag
 
 -- Only for players currently fighting.
 local CombatPlayerData: { [Model]: CombatPlayer.CombatPlayer } = {}
@@ -161,7 +163,7 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	print(killerData)
 end
 
-function Main:GetCombatPlayerForPlayer(player: Player): CombatPlayer.CombatPlayer?
+function CombatService:GetCombatPlayerForPlayer(player: Player): CombatPlayer.CombatPlayer?
 	if player.Character and CombatPlayerData[player.Character] then
 		return CombatPlayerData[player.Character]
 	else
@@ -169,22 +171,64 @@ function Main:GetCombatPlayerForPlayer(player: Player): CombatPlayer.CombatPlaye
 	end
 end
 
-function Main:Initialize()
-	Players.PlayerAdded:Connect(function(player: Player)
-		player.CharacterAdded:Connect(function(char)
-			local heroName = "Fabio"
-			local humanoid = assert(char:FindFirstChildOfClass("Humanoid"), "CharacterAdded without humanoid")
+function CombatService:EnterPlayerCombat(player: Player, heroName: string)
+	local char = player.Character
+	if char then
+		local humanoid = assert(char:FindFirstChildOfClass("Humanoid"), "CharacterAdded without humanoid")
+		local combatPlayer = CombatPlayer.new(heroName, humanoid)
+		CombatPlayerData[char] = combatPlayer
 
-			local combatPlayer = CombatPlayer.new(heroName, humanoid)
-			CombatPlayerData[char] = combatPlayer
+		Network:FireClient(player, "CombatPlayer Initialize", heroName)
 
-			Network:FireClient(player, "CombatPlayer Initialize", heroName)
+		local NameTag = nameTagTemplate:Clone()
 
-			char.Destroying:Wait()
-			CombatPlayerData[char]:Destroy()
-			CombatPlayerData[char] = nil
+		NameTag.PlayerName.Text = player.Name
+
+		NameTag.Parent = char.Head
+
+		task.wait()
+		while char.Parent ~= nil do
+			combatPlayer:TakeDamage(10)
+			for i = 1, 3 do
+				local AmmoBar = NameTag.AmmoBar:FindFirstChild("Ammo" .. i)
+
+				if AmmoBar then
+					AmmoBar.Visible = i <= combatPlayer.ammo
+				end
+			end
+			NameTag.HealthNumber.Text = combatPlayer.health
+			local healthRatio = combatPlayer.health / combatPlayer.maxHealth
+			-- Size the smaller bar as a percentage of the size of the parent bar, based off player health percentage
+			NameTag.HealthBar.HealthBar.Size = UDim2.new(healthRatio, 0, 0, NameTag.HealthBar.HealthBar.Size.Y.Offset)
+			local colour1 = Color3.fromHSV(healthRatio * 100 / 255, 206 / 255, 1)
+			local colour2 = Color3.fromHSV(healthRatio * 88 / 255, 197 / 255, 158 / 255)
+			NameTag.HealthBar.HealthBar.UIGradient.Color = ColorSequence.new(colour1, colour2)
+
+			task.wait()
+		end
+	end
+end
+
+function CombatService:Initialize()
+	local enableTest = true
+	if enableTest then
+		warn("CombatService test still enabled!")
+		Players.PlayerAdded:Connect(function(player: Player)
+			player.CharacterAdded:Connect(function(char)
+				local heroName = "Fabio"
+				local humanoid = assert(char:FindFirstChildOfClass("Humanoid"), "CharacterAdded without humanoid")
+
+				local combatPlayer = CombatPlayer.new(heroName, humanoid)
+				CombatPlayerData[char] = combatPlayer
+
+				self:EnterPlayerCombat(player, heroName)
+
+				char.Destroying:Wait()
+				CombatPlayerData[char]:Destroy()
+				CombatPlayerData[char] = nil
+			end)
 		end)
-	end)
+	end
 
 	Network:OnServerEvent("Attack", handleAttack)
 	Network:OnServerEvent("Hit", handleClientHit)
@@ -194,4 +238,4 @@ function Main:Initialize()
 	end
 end
 
-return Main
+return CombatService

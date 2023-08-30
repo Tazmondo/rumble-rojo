@@ -88,7 +88,10 @@ function CombatClient.new(heroName: string)
 	end)
 
 	self:GetInputs()
+	self:SetupCharacterRotation()
 
+	self.humanoid.Died:Wait()
+	self:Destroy()
 	return self
 end
 
@@ -125,58 +128,6 @@ function CombatClient.CastTerminating(self: CombatClient, activeCast)
 	end
 end
 
--- function CombatClient.SetupCharacterRotation(self: CombatClient)
--- 	self.humanoid.AutoRotate = false
-
--- 	table.insert(
--- 		self.connections,
--- 		RunService.RenderStepped:Connect(function()
--- 			if not self.lastMousePosition then
--- 				return
--- 			end
-
--- 			local hitPosition =
--- 				ScreenPointCast(self.lastMousePosition.X, self.lastMousePosition.Y, { self.character })[1]
-
--- 			local targetCFrame =
--- 				CFrame.lookAt(self.HRP.Position, Vector3.new(hitPosition.X, self.HRP.Position.Y, hitPosition.Z))
-
--- 			self.HRP.CFrame = self.HRP.CFrame:Lerp(targetCFrame, 0.4)
--- 		end)
--- 	)
--- end
-
-function CombatClient.SetupCharacterRotation(self: CombatClient)
-	local rotateCharacter
-	rotateCharacter = RunService.RenderStepped:Connect(function(dt)
-		local worldDirection = self:NormaliseClickTarget().Direction
-		-- local flattenedDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
-		-- local angleDifference = math.deg(Vector3.new(0, 0, -1):Angle(flattenedDirection))
-
-		-- print(angleDifference)
-
-		-- local changeSign = accelTween.t * angleDifference < 0 and math.abs(accelTween.t) > 90
-		-- if changeSign then
-		-- 	accelTween.p = -accelTween.p
-		-- 	accelTween.v = -accelTween.v
-		-- end
-		-- accelTween.t = angleDifference
-
-		if self.mouseDown then
-			-- self.HRP.CFrame = CFrame.new(self.HRP.Position) * CFrame.Angles(0, math.rad(-accelTween.p), 0)
-			self.HRP.CFrame =
-				self.HRP.CFrame:Lerp(CFrame.lookAt(self.HRP.Position, self.HRP.Position + worldDirection), dt * 8)
-		else
-			rotateCharacter:Disconnect()
-		end
-	end)
-end
-
-function CombatClient.HandleMove(self: CombatClient, input: InputObject)
-	local screenPosition = input.Position
-	self.lastMousePosition = screenPosition
-end
-
 function CombatClient.NormaliseClickTarget(self: CombatClient): Ray
 	local lastPosition, lastInstance, lastNormal =
 		table.unpack(ScreenPointCast(self.lastMousePosition.X, self.lastMousePosition.Y, { self.character }))
@@ -203,21 +154,42 @@ function CombatClient.NormaliseClickTarget(self: CombatClient): Ray
 	return ray
 end
 
-function CombatClient.HandleClick(self: CombatClient)
-	local trajectory = self:NormaliseClickTarget()
-	self:Attack(trajectory.Unit)
+function CombatClient.HandleMove(self: CombatClient, input: InputObject)
+	local screenPosition = input.Position
+	self.lastMousePosition = screenPosition
+end
+
+function CombatClient.SetupCharacterRotation(self: CombatClient)
+	table.insert(
+		self.connections,
+		RunService.RenderStepped:Connect(function(dt)
+			local worldDirection = self:NormaliseClickTarget().Direction
+			local flattenedDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
+
+			if self.mouseDown then
+				self.HRP.CFrame = self.HRP.CFrame:Lerp(
+					CFrame.lookAt(self.HRP.Position, self.HRP.Position + flattenedDirection),
+					dt * 8
+				)
+
+				local angleDifference = self.HRP.CFrame.LookVector:Angle(flattenedDirection)
+				print(math.deg(angleDifference))
+			else
+				self.rotating = false
+			end
+		end)
+	)
 end
 
 function CombatClient.HandleMouseDown(self: CombatClient)
 	self.mouseDown = true
 	self.humanoid.AutoRotate = false
-	self:SetupCharacterRotation()
 end
 
 function CombatClient.HandleMouseUp(self: CombatClient)
 	self.mouseDown = false
-	self.humanoid.AutoRotate = true
 	self:Attack(Ray.new(self.HRP.Position, self.HRP.CFrame.LookVector))
+	self.humanoid.AutoRotate = true
 end
 
 function CombatClient.GetInputs(self: CombatClient)
@@ -271,33 +243,10 @@ function CombatClient.FastCastFire(self: CombatClient, attackId, ...)
 	self.FastCast:Fire(...).UserData.Id = attackId
 end
 
-function CombatClient.RotateToAngleYield(self: CombatClient, worldDirection: Vector3)
-	self.rotating = true
-	local flattenedDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
-	local angleDifference = self.HRP.CFrame.LookVector:Angle(flattenedDirection, Vector3.new(0, 1, 0))
-
-	local startCFrameRotation = self.HRP.CFrame.Rotation
-
-	local accelTween = AccelTween.new(360)
-	accelTween.t = angleDifference
-
-	local rotationTime = accelTween.rtime
-	local start = os.clock()
-	while os.clock() - start < rotationTime do
-		RunService.RenderStepped:Wait()
-		self.HRP.CFrame = CFrame.new(self.HRP.Position) * startCFrameRotation * CFrame.Angles(0, accelTween.p, 0)
-	end
-	self.rotating = false
-
-	return Ray.new(self.HRP.Position, worldDirection)
-end
-
 function CombatClient.Attack(self: CombatClient, trajectory: Ray)
-	if not self.combatPlayer:CanAttack() or self.rotating then
+	if not self.combatPlayer:CanAttack() then
 		return
 	end
-	trajectory = self:RotateToAngleYield(trajectory.Direction)
-
 	self.combatPlayer:Attack()
 
 	trajectory = trajectory.Unit

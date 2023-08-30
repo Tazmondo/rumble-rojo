@@ -1,7 +1,7 @@
 local Main = {
 	Modules = {},
 	LoadedModules = {},
-	Loaded = false
+	Loaded = false,
 }
 
 local RunService = game:GetService("RunService")
@@ -11,14 +11,18 @@ local ClientModules = Modules.Client
 local Network
 
 function Main:LoadAllModules()
-	for i,v in pairs(game.ReplicatedStorage.Modules:GetDescendants()) do
-		if v:IsA("ModuleScript") and v ~= script and (RunService:IsServer() and not v:IsDescendantOf(ClientModules) or RunService:IsClient()) then
+	for i, v in pairs(game.ReplicatedStorage.Modules:GetDescendants()) do
+		if
+			v:IsA("ModuleScript")
+			and v ~= script
+			and (RunService:IsServer() and not v:IsDescendantOf(ClientModules) or RunService:IsClient())
+		then
 			self.Modules[v.Name] = v
 		end
 	end
 
 	if RunService:IsServer() then
-		for i,v in pairs(game.ServerStorage.Modules:GetDescendants()) do
+		for i, v in pairs(game.ServerStorage.Modules:GetDescendants()) do
 			if v:IsA("ModuleScript") then
 				self.Modules[v.Name] = v
 			end
@@ -46,7 +50,8 @@ local function SetValues(Module)
 					if not Last:FindFirstChild(CutParameter) then
 						-- fire event
 						wait()
-						while 1 do end
+						while 1 do
+						end
 						return true
 					else
 						Last = Last[CutParameter]
@@ -68,7 +73,7 @@ local function SetValues(Module)
 				AddMetatable()
 
 				if not Cheating then
-					return Value;
+					return Value
 				else
 					return
 				end
@@ -78,7 +83,7 @@ local function SetValues(Module)
 
 				setmetatable(Module, nil)
 
-				if not Cheating then 
+				if not Cheating then
 					self[index] = value
 				end
 
@@ -121,11 +126,10 @@ function Main:LoadModule(ModuleName)
 	return Module
 end
 
-
 if not Main.Loaded then
 	Main.Loaded = true
 
 	SetValues(Main)
 end
 
-return Main;
+return Main
