@@ -196,6 +196,9 @@ function Main:StartMatch()
 	for player, heroName in pairs(self.Players) do
 		CombatService:EnterPlayerCombat(player, heroName, spawns[spawnCount])
 		spawnCount += 1
+		player.Character:WaitForChild("Humanoid").Died:Once(function()
+			self.Players[player] = nil
+		end)
 	end
 
 	for i = Values.RoundCountdown.Value, 1, -1 do
@@ -286,6 +289,11 @@ function Main:Initialize()
 		end
 	end)
 	--
+
+	Players.PlayerRemoving:Connect(function(player)
+		self.Queue[player] = nil
+		self.Players[player] = nil
+	end)
 end
 
 return Main
