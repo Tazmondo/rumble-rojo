@@ -139,6 +139,7 @@ function CombatPlayer.Attack(self: CombatPlayer)
 	-- self:ScheduleStateChange(0.1, StateEnum.Idle)
 end
 
+-- Different from attack since attacks with multiple bullets will "attack" once but call this for each bullet fired
 function CombatPlayer.RegisterAttack(self: CombatPlayer, attackId, attackCF, cast)
 	self.attacks[attackId] = {
 		AttackId = attackId,
@@ -160,6 +161,11 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 		self:ChangeState(self.StateEnum.Dead)
 	end
+end
+
+function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
+	self.maxHealth = newMaxHealth
+	self.health = math.clamp(self.health, 0, newMaxHealth)
 end
 
 function CombatPlayer.Destroy(self: CombatPlayer)
