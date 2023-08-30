@@ -149,6 +149,11 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		return
 	end
 
+	if not victimCombatPlayer:CanTakeDamage() then
+		print("Character is invulnerable")
+		return
+	end
+
 	local beforeState = victimCombatPlayer:GetState()
 	victimCombatPlayer:TakeDamage(attackData.Data.Damage) -- Will update state to dead if this kills
 	local afterState = victimCombatPlayer:GetState()
@@ -219,7 +224,7 @@ function CombatService:SetupCombatPlayer(player: Player, heroName: string)
 	local char = assert(player.Character, "no character")
 	local humanoid = assert(char:FindFirstChildOfClass("Humanoid"), "no humanoid")
 
-	local combatPlayer = CombatPlayer.new(heroName, humanoid)
+	local combatPlayer = CombatPlayer.new(heroName, humanoid, player)
 	CombatPlayerData[char] = combatPlayer
 
 	Network:FireClient(player, "CombatPlayer Initialize", heroName)

@@ -7,14 +7,18 @@
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 
 local CombatPlayer = {}
 CombatPlayer.__index = CombatPlayer
 
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
+local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 
 local GameValues = ReplicatedStorage.GameValues.Arena
+
+local SYNCEVENT = "CombatPlayerSync"
 
 CombatPlayer.StateEnum = {
 	Idle = 0,
@@ -30,7 +34,8 @@ if RunService:IsClient() then
 	LATENCYALLOWANCE = 0
 end
 
-function CombatPlayer.new(heroName: string, humanoid: Humanoid)
+-- Player is optional as NPCs can be combatplayers
+function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	local self = setmetatable({}, CombatPlayer)
 
 	self.heroData = HeroData[heroName] :: typeof(HeroData.Fabio)
@@ -61,6 +66,14 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid)
 	self.scheduledChange = {} -- We use a table so if it updates we can detect and cancel the change
 	self.scheduledReloads = 0
 
+	if RunService:IsClient() then
+		Network:OnClientEvent(SYNCEVENT, function(func, ...)
+			self[func](self, ...)
+		end)
+	else
+		self.player = player :: Player?
+	end
+
 	return self
 end
 
@@ -72,6 +85,12 @@ function CombatPlayer.GetAncestorWhichIsACombatPlayer(instance: Instance)
 		end
 	end
 	return nil
+end
+
+function CombatPlayer.Sync(self: CombatPlayer, funcName, ...)
+	if RunService:IsServer() and self.player then
+		Network:FireClient(self.player, SYNCEVENT, funcName, ...)
+	end
 end
 
 function CombatPlayer.GetState(self: CombatPlayer)
@@ -164,6 +183,11 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 		self:ChangeState(self.StateEnum.Dead)
 	end
+	self:Sync("TakeDamage", amount)
+end
+
+function CombatPlayer.CanTakeDamage(self: CombatPlayer)
+	return true
 end
 
 function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
