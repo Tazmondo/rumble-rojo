@@ -19,7 +19,6 @@ local FastCast = require(combatFolder.FastCastRedux)
 local CombatPlayer = require(combatFolder.CombatPlayer)
 local Enums = require(combatFolder.Enums)
 
-local AccelTween = require(ReplicatedStorage.Modules.Shared.AccelTween)
 local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
 local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 
@@ -90,17 +89,21 @@ function CombatClient.new(heroName: string)
 	self:GetInputs()
 	self:SetupCharacterRotation()
 
-	self.humanoid.Died:Wait()
-	self:Destroy()
+	task.spawn(function()
+		self.humanoid.Died:Wait()
+		self:Destroy()
+	end)
+
 	return self
 end
 
 function CombatClient.Destroy(self: CombatClient)
 	if self.destroyed then
+		print("Already destroyed: ", debug.traceback())
 		return
 	end
 
-	print("Destroying combat client")
+	print("Destroying combat client", debug.traceback())
 	for _, connection in pairs(self.connections) do
 		connection:Disconnect()
 	end

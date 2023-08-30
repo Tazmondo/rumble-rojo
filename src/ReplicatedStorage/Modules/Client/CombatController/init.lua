@@ -22,6 +22,7 @@ local function InitializeCombatClient(heroName)
 	end
 
 	print("Initializing combat client")
+
 	-- Can be called before the character has replicated from the server to the client
 	if not localPlayer.Character or localPlayer.Character.Parent == nil then
 		print("Received combat initialise before character loaded, waiting...")
@@ -30,11 +31,9 @@ local function InitializeCombatClient(heroName)
 	localPlayer.Character:WaitForChild("Humanoid") -- Also need to wait for the character to get populated
 	localPlayer.Character:WaitForChild("HumanoidRootPart")
 
-	localPlayer.CharacterRemoving:Once(function(character)
-		if combatClient.character == character then
-			combatClient:GetInputs()
-			combatClient:Destroy()
-		end
+	localPlayer.CharacterRemoving:Once(function()
+		print("destroying combat client")
+		combatClient:Destroy()
 	end)
 
 	combatClient = CombatClient.new(heroName)

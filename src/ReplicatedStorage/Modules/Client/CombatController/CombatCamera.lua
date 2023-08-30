@@ -38,6 +38,7 @@ function CombatCamera.new()
 	self.transitioning = false
 
 	self.connections = {}
+	self.destroyed = false
 
 	self:SetupInput()
 	self:SetupCamera()
@@ -64,33 +65,36 @@ function CombatCamera.SetupCamera(self: CombatCamera)
 	-- Here splitting the camera CFraming into two parts fixes a stuttering issue with the player character.
 
 	-- Necessary to use step since it's based off the position of a part (the HRP)
-	RunService.Stepped:Connect(function(t: number, dt)
-		if self.enabled and not self.transitioning then
-			local targetCFrame = self:GetCFrame()
-			local currentCFrame = self.camera.CFrame
-			local differenceVector: Vector3 = targetCFrame.Position - currentCFrame.Position
+	table.insert(
+		self.connections,
+		RunService.Stepped:Connect(function(t: number, dt)
+			if self.enabled and not self.transitioning then
+				local targetCFrame = self:GetCFrame()
+				local currentCFrame = self.camera.CFrame
+				local differenceVector: Vector3 = targetCFrame.Position - currentCFrame.Position
 
-			self.accelTween.p = -differenceVector.Magnitude
+				self.accelTween.p = -differenceVector.Magnitude
 
-			-- Move camera in direction of target based on current velocity of the spring. Preserve its rotation.
-			currentCFrame = CFrame.new(currentCFrame.Position + self.accelTween.v * differenceVector.Unit * dt)
-				* currentCFrame.Rotation
+				-- Move camera in direction of target based on current velocity of the spring. Preserve its rotation.
+				currentCFrame = CFrame.new(currentCFrame.Position + self.accelTween.v * differenceVector.Unit * dt)
+					* currentCFrame.Rotation
 
-			differenceVector = targetCFrame.Position - currentCFrame.Position
-			self.accelTween.p = -differenceVector.Magnitude
+				differenceVector = targetCFrame.Position - currentCFrame.Position
+				self.accelTween.p = -differenceVector.Magnitude
 
-			self.camera.CFrame = currentCFrame
+				self.camera.CFrame = currentCFrame
 
-			-- 	-- Lerp can actually take alpha > 1, which causes camera to overshoot and mess up completely
-			-- 	local alpha = math.clamp(dt * 8.5, 0, 1)
+				-- 	-- Lerp can actually take alpha > 1, which causes camera to overshoot and mess up completely
+				-- 	local alpha = math.clamp(dt * 8.5, 0, 1)
 
-			-- 	local targetCFrame = self:GetCFrame()
-			-- local smoothCFrame = CFrame.new()
-			-- 	smoothCFrame = self.camera.CFrame:Lerp(targetCFrame, alpha)
+				-- 	local targetCFrame = self:GetCFrame()
+				-- local smoothCFrame = CFrame.new()
+				-- 	smoothCFrame = self.camera.CFrame:Lerp(targetCFrame, alpha)
 
-			-- 	self.camera.CFrame = smoothCFrame
-		end
-	end)
+				-- 	self.camera.CFrame = smoothCFrame
+			end
+		end)
+	)
 end
 
 function CombatCamera.Transition(self: CombatCamera, enable: boolean)
@@ -113,7 +117,8 @@ function CombatCamera.Transition(self: CombatCamera, enable: boolean)
 	self.savedCFrame = initialOffset
 
 	local startTime
-	local transitionStep = RunService.Stepped:Connect(function(t: number)
+	local transitionStep
+	transitionStep = RunService.Stepped:Connect(function(t: number)
 		if not startTime then
 			startTime = t
 		end
@@ -129,14 +134,18 @@ function CombatCamera.Transition(self: CombatCamera, enable: boolean)
 		-- local targetCFrame = CFrame.lookAt(targetPosition, HRP.Position)
 
 		self.camera.CFrame = newStartPosition:Lerp(targetCFrame, alpha)
+		if self.destroyed then
+			transitionStep:Disconnect()
+		end
 	end)
 
 	task.delay(transitionTime, function()
 		transitionStep:Disconnect()
-
-		self.transitioning = false
-		if not enable then
-			self.camera.CameraType = Enum.CameraType.Custom
+		if not self.destroyed then
+			self.transitioning = false
+			if not enable then
+				self.camera.CameraType = Enum.CameraType.Custom
+			end
 		end
 	end)
 end
@@ -160,36 +169,40 @@ function CombatCamera.Disable(self: CombatCamera)
 end
 
 function CombatCamera.SetupInput(self: CombatCamera)
-	UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
-		if processed then
-			return
-		end
-		if input.KeyCode == Enum.KeyCode.F then
-			if self.enabled then
-				self:Disable()
-			else
-				self:Enable()
+	table.insert(
+		self.connections,
+		UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+			if processed then
+				return
 			end
-		end
-	end)
+			if input.KeyCode == Enum.KeyCode.F then
+				if self.enabled then
+					self:Disable()
+				else
+					self:Enable()
+				end
+			end
+		end)
+	)
 end
 
 function CombatCamera.Destroy(self: CombatCamera)
 	if self.destroyed then
 		return
 	end
+
+	-- This creates a weird jump when the character dies, but i dont know how i really want this to behave just yet
+	-- 	so im leaving it like this
 	self.camera.CameraType = Enum.CameraType.Custom
 
 	for _, connection in pairs(self.connections) do
 		connection:Disconnect()
 	end
-	RunService:UnbindFromRenderStep("CombatCamera")
-	RunService:UnbindFromRenderStep("CombatCameraSmoothing")
 
-	self.destroyed = true
 	if prevCamera == self then
 		prevCamera = nil
 	end
+	self.destroyed = true
 end
 
 export type CombatCamera = typeof(CombatCamera.new(...))

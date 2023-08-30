@@ -1,6 +1,8 @@
 -- Initializes and handles the of the server-side combat system
 -- Shouldn't be very long, as combat data is mostly decided by scripts in client
 -- This just validates that they haven't been tampered with before replicating them to other clients
+-- The way this is programmed may seem convoluted, but I want to avoid race conditions from CharacterAdded and make sure
+-- 		the whole spawning process is clearly defined
 
 local CombatService = {}
 
@@ -22,6 +24,7 @@ local nameTagTemplate = ReplicatedStorage.Assets.NameTag
 
 -- Only for players currently fighting.
 local CombatPlayerData: { [Model]: CombatPlayer.CombatPlayer } = {}
+local PlayersInCombat: { [Player]: string } = {}
 local fastCast = FastCast.new()
 
 local function getAllCombatPlayerCharacters()
@@ -160,10 +163,11 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 			victimData.Stats.KillStreak = 0
 		end
 	end
-	print(killerData)
 end
 
 function CombatService:GetCombatPlayerForPlayer(player: Player): CombatPlayer.CombatPlayer?
+	self = self :: CombatService
+
 	if player.Character and CombatPlayerData[player.Character] then
 		return CombatPlayerData[player.Character]
 	else
@@ -171,24 +175,19 @@ function CombatService:GetCombatPlayerForPlayer(player: Player): CombatPlayer.Co
 	end
 end
 
-function CombatService:EnterPlayerCombat(player: Player, heroName: string)
-	local char = player.Character
-	if char then
-		local humanoid = assert(char:FindFirstChildOfClass("Humanoid"), "CharacterAdded without humanoid")
-		local combatPlayer = CombatPlayer.new(heroName, humanoid)
-		CombatPlayerData[char] = combatPlayer
+function CombatService:InitializeNameTag(player: Player, combatPlayer: CombatPlayer.CombatPlayer)
+	self = self :: CombatService
 
-		Network:FireClient(player, "CombatPlayer Initialize", heroName)
+	local char = assert(player.Character, "Tried to initialize nametag on player without a character")
+	assert(player.Character.Parent, "Character has not been parented to workspace yet!")
+	local NameTag = nameTagTemplate:Clone()
 
-		local NameTag = nameTagTemplate:Clone()
+	NameTag.PlayerName.Text = player.Name
 
-		NameTag.PlayerName.Text = player.Name
+	NameTag.Parent = char.Head
 
-		NameTag.Parent = char.Head
-
-		task.wait()
+	task.spawn(function()
 		while char.Parent ~= nil do
-			combatPlayer:TakeDamage(10)
 			for i = 1, 3 do
 				local AmmoBar = NameTag.AmmoBar:FindFirstChild("Ammo" .. i)
 
@@ -206,28 +205,81 @@ function CombatService:EnterPlayerCombat(player: Player, heroName: string)
 
 			task.wait()
 		end
+	end)
+end
+
+function CombatService:EnterPlayerCombat(player: Player, heroName: string)
+	self = self :: CombatService
+
+	PlayersInCombat[player] = heroName
+	self:SpawnCharacter(player)
+end
+
+function CombatService:ExitPlayerCombat(player: Player)
+	self = self :: CombatService
+
+	PlayersInCombat[player] = nil
+	if player.Character then
+		CombatPlayerData[player.Character]:Destroy()
+		CombatPlayerData[player.Character] = nil
 	end
+	self:SpawnCharacter(player)
+end
+
+function CombatService:SetupCombatPlayer(player: Player, heroName: string)
+	self = self :: CombatService
+	local char = assert(player.Character, "no character")
+	local humanoid = assert(char:FindFirstChildOfClass("Humanoid"), "no humanoid")
+
+	local combatPlayer = CombatPlayer.new(heroName, humanoid)
+	CombatPlayerData[char] = combatPlayer
+
+	Network:FireClient(player, "CombatPlayer Initialize", heroName)
+
+	self:InitializeNameTag(player, combatPlayer)
+end
+
+function CombatService:SpawnCharacter(player: Player)
+	self = self :: CombatService
+
+	-- TODO: Do spawning
+	player.CharacterAdded:Once(function(char)
+		print(player, "Character was added, processing")
+
+		task.wait() -- Let it get parented to workspace
+		print(player, "Character initialized to workspace")
+		if PlayersInCombat[player] then
+			self:SetupCombatPlayer(player, PlayersInCombat[player])
+		end
+
+		char:FindFirstChild("Humanoid").Died:Once(function()
+			-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
+			self:SpawnCharacter(player)
+		end)
+		-- TODO: Move to spawnpoint
+	end)
+	print(player, "Loading char")
+	player:LoadCharacter()
+end
+
+function CombatService:PlayerAdded(player: Player)
+	self = self :: CombatService
+
+	warn("Testing combatservice: All players auto enter combat")
+	PlayersInCombat[player] = "Fabio"
+	self:SpawnCharacter(player)
 end
 
 function CombatService:Initialize()
-	local enableTest = true
-	if enableTest then
-		warn("CombatService test still enabled!")
-		Players.PlayerAdded:Connect(function(player: Player)
-			player.CharacterAdded:Connect(function(char)
-				local heroName = "Fabio"
-				local humanoid = assert(char:FindFirstChildOfClass("Humanoid"), "CharacterAdded without humanoid")
+	self = self :: CombatService
 
-				local combatPlayer = CombatPlayer.new(heroName, humanoid)
-				CombatPlayerData[char] = combatPlayer
+	game.Players.CharacterAutoLoads = false
 
-				self:EnterPlayerCombat(player, heroName)
-
-				char.Destroying:Wait()
-				CombatPlayerData[char]:Destroy()
-				CombatPlayerData[char] = nil
-			end)
-		end)
+	Players.PlayerAdded:Connect(function(...)
+		self:PlayerAdded(...)
+	end)
+	for _, player in pairs(Players:GetPlayers()) do
+		self:PlayerAdded(player)
 	end
 
 	Network:OnServerEvent("Attack", handleAttack)
@@ -237,5 +289,7 @@ function CombatService:Initialize()
 		CombatPlayerData[workspace.Rig] = CombatPlayer.new("Fabio", workspace.Rig.Humanoid)
 	end
 end
+
+export type CombatService = typeof(CombatService)
 
 return CombatService

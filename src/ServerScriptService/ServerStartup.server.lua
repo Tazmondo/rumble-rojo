@@ -1,3 +1,5 @@
+game.Players.CharacterAutoLoads = false
+
 local LoadOrder = { "DataService", "ArenaService", "CombatService" }
 
 require(game.ReplicatedStorage.Modules.Shared.Network):Initialize()
