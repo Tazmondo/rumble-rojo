@@ -16,7 +16,7 @@ Enums.AttackRange = {
 }
 
 Enums.ProjectileSpeed = {
-	Medium = 50,
+	Medium = 40,
 }
 
 return Enums

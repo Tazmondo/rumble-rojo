@@ -61,8 +61,12 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
 				warn(player, "mismatched attack ids, could be cheating.")
 				return
 			end
-			local cast =
-				fastCast:Fire(pellet.CFrame.Position, pellet.CFrame.LookVector, attackData.ProjectileSpeed, behaviour)
+			local cast = fastCast:Fire(
+				pellet.CFrame.Position,
+				pellet.CFrame.LookVector,
+				attackData.ProjectileSpeed + pellet.speedVariance,
+				behaviour
+			)
 			cast.UserData.Id = pellet.id
 			combatPlayer:RegisterAttack(pellet.id, pellet.CFrame, cast)
 		end

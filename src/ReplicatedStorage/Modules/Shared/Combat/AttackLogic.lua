@@ -23,9 +23,12 @@ function AttackLogic.Shotgun(
 
 		local id = idFunction()
 
+		local speedVariance = random:NextNumber(-5, 5)
+
 		pellets[pellet] = {
 			CFrame = rotatedCFrame,
 			id = id,
+			speedVariance = speedVariance,
 		}
 	end
 

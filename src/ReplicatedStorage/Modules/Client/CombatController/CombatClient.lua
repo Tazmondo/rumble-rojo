@@ -292,7 +292,7 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 				pellet.id,
 				pellet.CFrame.Position,
 				pellet.CFrame.LookVector,
-				attackData.ProjectileSpeed,
+				attackData.ProjectileSpeed + pellet.speedVariance,
 				behaviour
 			)
 		end
