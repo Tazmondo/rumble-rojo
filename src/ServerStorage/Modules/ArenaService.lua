@@ -1,10 +1,11 @@
 -- variables
 local Main = {
-	Queue = {},
-	Players = {},
+	Queue = {} :: { [Player]: string },
+	Players = {} :: { [Player]: string },
 	Arena = "",
 
-	Intermission = 30, -- 30
+	Intermission = 20, -- 30
+	HeroSelection = 10, -- 15
 	RoundLength = 120, -- 2mimnutes
 	RoundsAmount = 1, -- default is 1 although can support multiple rounds
 
@@ -26,6 +27,7 @@ local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
 local Network = Loader:LoadModule("Network")
 local DataService = Loader:LoadModule("DataService")
 local MapService = Loader:LoadModule("MapService")
+local CombatService: typeof(require(script.Parent.CombatService)) = Loader:LoadModule("CombatService")
 local SharedMemory = Loader:LoadModule("SharedMemory")
 
 -- functions
@@ -38,7 +40,7 @@ end
 function Main:CountQueue()
 	local Count = 0
 
-	for _, Player in pairs(self.Queue) do
+	for Player, heroName in pairs(self.Queue) do
 		Count = Count + 1
 	end
 
@@ -51,7 +53,7 @@ function Main:CountPlayers()
 	local Count = 0
 	local WinningPlayer
 
-	for _, Player in pairs(self.Players) do
+	for Player, _ in pairs(self.Players) do
 		Count += 1
 		WinningPlayer = Player
 	end
@@ -91,8 +93,8 @@ function Main:CloseQueue(List)
 	end
 
 	-- push queue to players
-	for _, Player in pairs(self.Queue) do
-		self.Players[Player] = Player
+	for Player, heroName in pairs(self.Queue) do
+		self.Players[Player] = heroName
 	end
 
 	self:ClearQueue()
@@ -100,15 +102,11 @@ function Main:CloseQueue(List)
 end
 
 function Main:ClearQueue()
-	for _, Player in pairs(Players:GetPlayers()) do
-		self.Queue[Player] = nil
-	end
+	self.Queue = {}
 end
 
 function Main:ClearPlayers()
-	for _, Player in pairs(Players:GetPlayers()) do
-		self.Players[Player] = nil
-	end
+	self.Players = {}
 end
 
 function Main:TeleportToArena()
@@ -129,7 +127,7 @@ function Main:TeleportToSpawn()
 end
 
 function Main:HandleResults(WinningPlayer)
-	for _, Player in pairs(self.Players) do
+	for Player, heroName in pairs(self.Players) do
 		local PlayerData = DataService.CurrentPlayerData["Player_" .. Player.UserId]
 
 		if PlayerData and PlayerData.DataLoaded then
@@ -152,7 +150,7 @@ function Main:StartIntermission()
 
 	local PlayerCount = self:CountQueue()
 
-	while PlayerCount ~= self.MinPlayers do
+	while PlayerCount < self.MinPlayers do
 		wait(1)
 		PlayerCount = self:CountQueue()
 	end
@@ -169,7 +167,7 @@ function Main:StartIntermission()
 	wait(2)
 	MapService:MoveDoorsAndMap(true)
 	Values.RoundStatus.Value = "CharacterSelection"
-	wait(15)
+	wait(Main.HeroSelection)
 
 	if Values.QueueSize.Value < self.MinPlayers then
 		self:StartIntermission()
@@ -181,7 +179,7 @@ function Main:StartIntermission()
 	wait(5)
 
 	-- ok
-	for _, Player in pairs(self.Players) do
+	for Player, heroName in pairs(self.Players) do
 		Network:FireClient(Player, "UpdateMatchStatus", true, self.Players)
 	end
 
@@ -192,7 +190,13 @@ function Main:StartMatch()
 	Values.RoundStatus.Value = "Starting"
 	Values.RoundCountdown.Value = 5
 
-	self:TeleportToArena()
+	local spawnCount = 1
+	local spawns = MapService:GetMapSpawns()
+
+	for player, heroName in pairs(self.Players) do
+		CombatService:EnterPlayerCombat(player, heroName, spawns[spawnCount])
+		spawnCount += 1
+	end
 
 	for i = Values.RoundCountdown.Value, 1, -1 do
 		wait(1)
@@ -236,9 +240,12 @@ function Main:EndMatch()
 	Values.RoundStatus.Value = "Ended"
 	wait(3)
 	Values.RoundStatus.Value = "Intermission"
-	self:TeleportToSpawn()
 
-	for _, Player in pairs(self.Players) do
+	for Player, heroName in pairs(self.Players) do
+		if Player.Parent == nil then
+			continue
+		end
+		CombatService:ExitPlayerCombat(Player)
 		Network:FireClient(Player, "UpdateMatchStatus", false, self.Players)
 	end
 
@@ -264,12 +271,19 @@ function Main:Initialize()
 
 	-- remotes
 	Network:OnServerInvoke("QueueStatus", function(Player, Status)
-		self.Queue[Player] = Status and Player or nil
+		print("invoked")
+		self.Queue[Player] = if Status then "Fabio" else nil
+
 		self:CountQueue()
 	end)
 
 	Network:OnServerInvoke("PlayerDied", function(Player)
 		self.Players[Player] = nil
+	end)
+
+	Network:OnServerEvent("SelectCharacter", function(Player)
+		if self.Players[Player] then
+		end
 	end)
 	--
 end

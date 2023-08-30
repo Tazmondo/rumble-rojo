@@ -14,7 +14,6 @@ local TweenService = game:GetService("TweenService")
 -- load modules
 local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
 local Network = Loader:LoadModule("Network")
-local MapsModule = Loader:LoadModule("Maps")
 
 -- transition stuff
 local Part1Closed, Part2Closed = Arena.Doors.One.CFrame, Arena.Doors.Two.CFrame
@@ -80,13 +79,22 @@ end
 function Main:GetMapPool()
 	local MapPool = {}
 
-	for i = 1, #MapsModule do
-		local MapData = MapsModule[i]
-
-		table.insert(MapPool, MapData.MapName)
+	for _, mapFolder in pairs(game.ServerStorage.Maps:GetChildren()) do
+		table.insert(MapPool, mapFolder.Name)
 	end
 
 	return MapPool
+end
+
+function Main:GetMapSpawns(): { CFrame }
+	local map = assert(MapFolder:GetChildren()[1], "Tried to get map spawns without map existing")
+	local spawns = assert(map.Spawns, "Loaded map does not have a spawns folder")
+	local output = {}
+
+	for _, part in pairs(spawns:GetChildren()) do
+		table.insert(output, part.CFrame)
+	end
+	return output
 end
 
 function Main:LoadRandomMap()

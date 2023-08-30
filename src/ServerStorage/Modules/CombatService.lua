@@ -196,11 +196,11 @@ function CombatService:InitializeNameTag(player: Player, combatPlayer: CombatPla
 	end)
 end
 
-function CombatService:EnterPlayerCombat(player: Player, heroName: string)
+function CombatService:EnterPlayerCombat(player: Player, heroName: string, newCFrame: CFrame?)
 	self = self :: CombatService
 
 	PlayersInCombat[player] = heroName
-	self:SpawnCharacter(player)
+	self:SpawnCharacter(player, newCFrame)
 end
 
 function CombatService:ExitPlayerCombat(player: Player)
@@ -241,7 +241,7 @@ function CombatService:LoadCharacterWithModel(player: Player, characterModel: Mo
 	end
 end
 
-function CombatService:SpawnCharacter(player: Player)
+function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	self = self :: CombatService
 
 	-- TODO: Do spawning
@@ -250,6 +250,7 @@ function CombatService:SpawnCharacter(player: Player)
 
 		task.wait() -- Let it get parented to workspace
 		print(player, "Character initialized to workspace")
+
 		if PlayersInCombat[player] then
 			self:SetupCombatPlayer(player, PlayersInCombat[player])
 		end
@@ -258,20 +259,23 @@ function CombatService:SpawnCharacter(player: Player)
 			-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
 			self:SpawnCharacter(player)
 		end)
-		-- TODO: Move to spawnpoint
+
+		if spawnCFrame then
+			char:PivotTo(spawnCFrame)
+		end
 	end)
 	print(player, "Loading char")
-	self:LoadCharacterWithModel(
-		player,
-		ReplicatedStorage.Assets.CharacterModels:FindFirstChild(PlayersInCombat[player])
-	)
+
+	local heroName = PlayersInCombat[player] or ""
+
+	self:LoadCharacterWithModel(player, ReplicatedStorage.Assets.CharacterModels:FindFirstChild(heroName))
 end
 
 function CombatService:PlayerAdded(player: Player)
 	self = self :: CombatService
 
-	warn("Testing combatservice: All players auto enter combat")
-	PlayersInCombat[player] = "Fabio"
+	-- warn("Testing combatservice: All players auto enter combat")
+	-- PlayersInCombat[player] = "Fabio"
 	self:SpawnCharacter(player)
 end
 
