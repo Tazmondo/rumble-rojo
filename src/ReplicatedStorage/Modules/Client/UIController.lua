@@ -140,7 +140,7 @@ function Main:Initialize()
 	end
 
 	RunService.RenderStepped:Connect(function()
-		UI.Queue.Frame.Title.Text = "Players Ready: " .. GameStats.QueueSize.Value .. "/10"
+		UI.Queue.Frame.Title.Text = "Players ready: " .. GameStats.QueueSize.Value .. "/10"
 		Scoreboard.Time.Visible = GameStats.QueueSize.Value >= self.MinPlayers
 	end)
 

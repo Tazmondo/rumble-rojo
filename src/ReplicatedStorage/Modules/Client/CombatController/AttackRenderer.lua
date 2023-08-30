@@ -60,7 +60,7 @@ function AttackRenderer.GetCastBehaviour(attackData: HeroData.AttackData, exclud
 
 	local FastCastBehaviour = FastCast.newBehavior()
 	FastCastBehaviour.RaycastParams = RaycastParams
-	FastCastBehaviour.CosmeticBulletTemplate = templatePart
+	FastCastBehaviour.CosmeticBulletTemplate = ReplicatedStorage.Assets.VFX.Fabio.Attack
 	FastCastBehaviour.CosmeticBulletContainer = projectileFolder
 	FastCastBehaviour.MaxDistance = attackData.Range
 
