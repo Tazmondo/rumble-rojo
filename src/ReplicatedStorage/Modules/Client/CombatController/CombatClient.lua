@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 
 local combatFolder = ReplicatedStorage.Modules.Shared.Combat
 
+local AimRenderer = require(script.Parent.AimRenderer)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
 local AttackRenderer = require(script.Parent.AttackRenderer)
 local CombatCamera = require(script.Parent.CombatCamera)
@@ -38,6 +39,14 @@ end
 
 -- Returns hit position, instance, normal
 local function ScreenPointCast(x: number, y: number, exclude: { Instance }?)
+	exclude = exclude or {}
+	assert(exclude)
+
+	if workspace.Arena.Map:FindFirstChild("Arena") then
+		local border: Instance = assert(workspace.Arena.Map.Arena.Border)
+		table.insert(exclude, border)
+	end
+
 	local params = RaycastParams.new()
 	-- local mapFolder = workspace:FindFirstChild("Map")
 	-- assert(mapFolder, "map folder not found")
@@ -76,6 +85,8 @@ function CombatClient.new(heroName: string)
 	self.combatPlayer = CombatPlayer.new(heroName, self.humanoid)
 	self.combatCamera = CombatCamera.new()
 	self.combatCamera:Enable()
+
+	-- self.aimRenderer = AimRenderer.new(self.combatPlayer.heroData.Attack, self.character)
 
 	self.FastCast = FastCast.new()
 

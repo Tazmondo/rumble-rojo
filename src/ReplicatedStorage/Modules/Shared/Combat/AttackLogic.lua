@@ -2,6 +2,7 @@
 -- Used by server and client to generate data deterministically for attacks (using seeding)
 
 local CombatPlayer = require(script.Parent.CombatPlayer)
+local Config = require(script.Parent.Config)
 local Enums = require(script.Parent.Enums)
 local HeroData = require(script.Parent.HeroData)
 
@@ -39,7 +40,7 @@ function AttackLogic.Shotgun(
 
 	for pellet = 1, pelletCount do
 		local decidedAngle = (-angleSpread / 2) + (angleSpread / (pelletCount - 1)) * (pellet - 1)
-		local randomAngle = random:NextNumber(-2, 2)
+		local randomAngle = random:NextNumber(-Config.ShotgunRandomSpread, Config.ShotgunRandomSpread)
 
 		local originalCFrame = origin
 		local rotatedCFrame = originalCFrame * CFrame.Angles(0, math.rad(decidedAngle + randomAngle), 0)
