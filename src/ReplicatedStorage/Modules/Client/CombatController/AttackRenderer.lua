@@ -9,8 +9,6 @@ local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local FastCast = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux)
 local FastCastTypes = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux.TypeDefinitions)
-local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
-local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 
 local localPlayer = game:GetService("Players").LocalPlayer
 

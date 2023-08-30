@@ -243,6 +243,7 @@ end
 
 function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	self = self :: CombatService
+	print("Spawning Character", player, debug.traceback())
 
 	-- TODO: Do spawning
 	player.CharacterAdded:Once(function(char)
@@ -257,7 +258,12 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 
 		char:FindFirstChild("Humanoid").Died:Once(function()
 			-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
-			self:SpawnCharacter(player)
+			task.wait(1)
+			if PlayersInCombat[player] then
+				self:ExitPlayerCombat(player)
+			else
+				self:SpawnCharacter(player)
+			end
 		end)
 
 		if spawnCFrame then

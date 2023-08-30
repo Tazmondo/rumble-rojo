@@ -6,7 +6,6 @@ local Main = {
 }
 
 local Player = game.Players.LocalPlayer
-local Mouse = Player:GetMouse()
 
 -- services
 
