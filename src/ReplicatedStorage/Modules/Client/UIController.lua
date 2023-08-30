@@ -23,6 +23,7 @@ local Players = game:GetService("Players")
 local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
 local Network = Loader:LoadModule("Network")
 local SharedMemory = Loader:LoadModule("SharedMemory")
+local SoundService = Loader:LoadModule("SoundService")
 local LeaderboardController
 
 -- functions
@@ -48,6 +49,7 @@ function Main:UpdateStartTime()
 			CountdownText.Text = GameStats.RoundCountdown.Value
 
 			if GameStats.RoundCountdown.Value == "0" then -- lazy
+				SoundService:PlaySound("Fight Start")
 				CountdownText.Visible = false
 				ArenaUI.Game.StartFight.Visible = true
 				wait(1)
@@ -120,7 +122,7 @@ function Main:UpdateStartTime()
 		ArenaUI.Game.Visible = false
 		Player.Character.HumanoidRootPart.Anchored = false
 	elseif GameStats.RoundStatus.Value == "Intermission" then
-		Scoreboard.Visible = SharedMemory.InQueue
+		Scoreboard.Visible = true
 		local Time = GameStats.RoundIntermission.Value
 
 		Scoreboard.Time.Timer.Text = Time
@@ -139,6 +141,10 @@ function Main:Initialize()
 		Player.CharacterAdded:wait()
 	end
 
+	if self.InMatch ~= true then
+		SoundService:PlaySound("Lobby Music")
+	end
+
 	RunService.RenderStepped:Connect(function()
 		UI.Queue.Frame.Title.Text = "Players ready: " .. GameStats.QueueSize.Value .. "/10"
 		Scoreboard.Time.Visible = GameStats.QueueSize.Value >= self.MinPlayers
@@ -155,6 +161,8 @@ function Main:Initialize()
 		SharedMemory.InQueue = Ready
 		Network:InvokeServer("QueueStatus", Ready)
 
+		SoundService:PlaySound("Queued")
+
 		UI.Queue.Ready.Visible = false
 		UI.Queue.Exit.Visible = true
 	end)
@@ -170,7 +178,8 @@ function Main:Initialize()
 	for i, v in pairs(ArenaUI.CharacterSelection.Heros:GetChildren()) do
 		if v:IsA("ImageLabel") then
 			v.Button.MouseButton1Down:Connect(function()
-				print("ok")
+				-- print("ok")
+				SoundService:PlaySound("Select Character")
 				Selected = not Selected
 				SelectedHero = v.Name
 
@@ -225,9 +234,13 @@ function Main:Initialize()
 		SharedMemory.MatchedPlayers = Players
 
 		if Status then
+			SoundService:PlaySound("Battle Music")
+			SoundService:StopSound("Lobby Music")
 			ArenaUI.Game.Countdown.Visible = true
 			LeaderboardController:CreateScoreboard(Players)
 		else
+			SoundService:PlaySound("Lobby Music")
+			SoundService:StopSound("Battle Music")
 			ArenaUI.Game.Visible = false
 			-- Scoreboard.Visible = false
 		end

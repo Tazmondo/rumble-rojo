@@ -50,7 +50,7 @@ function Main:CreateScoreboard(PlayerList)
 
 	local FrameIndex = 1
 
-	for _, Player in pairs(PlayerList) do
+	for Player, Hero in pairs(PlayerList) do
 		local Frame = Templates:WaitForChild("ScoreboardPlayer"):Clone()
 		local Avatar =
 			Players:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
@@ -82,7 +82,7 @@ function Main:Initialize()
 		Scoreboard.List2.Visible = SharedMemory.InMatch == true
 
 		if SharedMemory.InMatch then
-			for _, Player in SharedMemory.MatchedPlayers do
+			for Player, Hero in SharedMemory.MatchedPlayers do
 				local Character = Player.Character
 				local Frame = self.PlayerFrameMap[Player.Name]
 
