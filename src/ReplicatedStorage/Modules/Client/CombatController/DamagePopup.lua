@@ -6,9 +6,14 @@ DamagePopup.__index = DamagePopup
 
 local LIFETIME = 3
 local template = ReplicatedStorage.Assets.DamagePopup
+
+local hitHighlightTemplate = ReplicatedStorage.Assets.VFX.General.HitHighlight
+local fillTransparency = hitHighlightTemplate.fillTransparency
+local outlineTransparency = hitHighlightTemplate.outlineTransparency
+
 local popups: { [Instance]: DamagePopup } = {}
 
-function DamagePopup.get(color: Color3, anchor: Instance)
+function DamagePopup.get(color: Color3, anchor: Instance, highlight: Instance)
 	local self = setmetatable({}, DamagePopup)
 
 	if popups[anchor] then
@@ -34,6 +39,13 @@ function DamagePopup.get(color: Color3, anchor: Instance)
 	self.currentOffset = 0
 	self.maxOffset = 2
 	self.riseTime = 0.3
+
+	self.highlight = self.janitor:Add(hitHighlightTemplate:Clone()) :: Highlight
+	self.highlight.Parent = highlight
+	self.highlight.FillTransparency = 0
+	self.highlight.OutlineTransparency = 0
+	self.highlightProgress = 1
+	self.highlightTime = 0.2
 
 	self.lastUpdated = os.clock()
 
@@ -64,6 +76,10 @@ function DamagePopup:Update(dt: number)
 
 	self.gui.DamageNumber.Text = self.damage
 	self.gui.DamageNumber.TextColor3 = self.color
+
+	self.highlightProgress = math.clamp(self.highlightProgress + (dt / self.highlightTime), 0, 1)
+	self.highlight.FillTransparency = 1 - (1 - self.highlightProgress * (1 - fillTransparency))
+	self.highlight.OutlineTransparency = 1 - (1 - self.highlightProgress * (1 - outlineTransparency))
 end
 
 function DamagePopup:AddDamage(damage: number)
@@ -71,6 +87,7 @@ function DamagePopup:AddDamage(damage: number)
 
 	self.damage += damage
 	self.currentOffset = 0
+	self.highlightProgress = 0
 	self.lastUpdated = os.clock()
 end
 

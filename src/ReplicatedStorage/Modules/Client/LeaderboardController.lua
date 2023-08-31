@@ -50,24 +50,24 @@ function Main:CreateScoreboard(PlayerList)
 
 	local FrameIndex = 1
 
-	for Player, Hero in pairs(PlayerList) do
-		local Frame = Templates:WaitForChild("ScoreboardPlayer"):Clone()
-		local Avatar =
-			Players:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+	-- for Player, Hero in pairs(PlayerList) do
+	-- 	local Frame = Templates:WaitForChild("ScoreboardPlayer"):Clone()
+	-- 	local Avatar =
+	-- 		Players:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
 
-		Frame.Avatar.Character.Image = Avatar
-		Frame.Name = tostring(Player)
-		Frame.Visible = true
+	-- 	Frame.Avatar.Character.Image = Avatar
+	-- 	Frame.Name = tostring(Player)
+	-- 	Frame.Visible = true
 
-		if FrameIndex == 1 then
-			Frame.Parent = Scoreboard.List1
-		else
-			Frame.Parent = Scoreboard.List2
-		end
+	-- 	if FrameIndex == 1 then
+	-- 		Frame.Parent = Scoreboard.List1
+	-- 	else
+	-- 		Frame.Parent = Scoreboard.List2
+	-- 	end
 
-		self.PlayerFrameMap[Player.Name] = Frame
-		FrameIndex = (FrameIndex % 2) + 1
-	end
+	-- 	self.PlayerFrameMap[Player.Name] = Frame
+	-- 	FrameIndex = (FrameIndex % 2) + 1
+	-- end
 end
 
 function Main:UpdateHealth(Frame, Health)

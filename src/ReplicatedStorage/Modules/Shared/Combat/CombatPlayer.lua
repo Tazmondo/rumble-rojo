@@ -147,7 +147,7 @@ function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, new
 	end)
 end
 
-function CombatPlayer.GetNextAttackId(self: CombatPlayer)
+function CombatPlayer.GetNextAttackId(self: CombatPlayer): number
 	self.attackId += 1
 	return self.attackId
 end

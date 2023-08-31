@@ -8,6 +8,7 @@ local PlayerGui = Player.PlayerGui
 local DamagePopup = require(script.Parent.DamagePopup)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
+
 local CombatUI = {}
 CombatUI.__index = CombatUI
 
@@ -50,7 +51,7 @@ function CombatUI:HandleDamageDealt(amount: number, target: Model?)
 	end
 	local head = target:FindFirstChild("Head")
 
-	local popup = DamagePopup.get(Color3.fromHSV(0, 0, 1), head)
+	local popup = DamagePopup.get(Color3.fromHSV(0, 0, 1), head, target)
 	popup:AddDamage(amount)
 end
 
@@ -59,14 +60,14 @@ function CombatUI:HandleDamageTaken(amount: number)
 
 	local head = self.character:FindFirstChild("Head")
 
-	local popup = DamagePopup.get(Color3.fromHSV(0, 1, 1), head)
+	local popup = DamagePopup.get(Color3.fromHSV(0, 1, 1), head, self.character)
 	popup:AddDamage(amount)
 end
 
 function CombatUI:RenderLoop()
 	self = self :: CombatUI
 
-	self.janitor:Add(RunService.RenderStepped:Connect(function()
+	self.janitor:Add(RunService.RenderStepped:Connect(function(dt)
 		local superChargeFill = self.combatPlayer.superCharge / self.combatPlayer.requiredSuperCharge
 		if superChargeFill < 1 then
 			self.superAttackCharge.Visible = true
