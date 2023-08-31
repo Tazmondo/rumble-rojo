@@ -29,10 +29,13 @@ local PlayerDatastore
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Red = require(ReplicatedStorage.Packages.Red)
 
 -- load modules
-local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
-local Network = Loader:LoadModule("Network")
+Net = Red.Server("game")
+
 -- functions
 function Main:GetDataTableForPlayer(player: Player)
 	self = self :: Main
@@ -75,8 +78,6 @@ function Main:NewPlayer(Player)
 
 		-- Player should never already have a table, so if this is true something has gone wrong.
 		if self.CurrentPlayerData["Player_" .. Player.UserId] then
-			local HttpService = game:GetService("HttpService")
-
 			warn(HttpService:JSONEncode(self.CurrentPlayerData["Player_" .. Player.UserId]))
 			Player:Kick("A strange error occured! Please let the devs know. Error: Data already exists")
 			return
@@ -168,7 +169,7 @@ function Main:NewPlayer(Player)
 
 		if Success then
 			warn("loaded", Player.Name)
-			Network:FireClient(Player, "LoadData", PlayerData.Data)
+			Net:Fire(Player, "LoadData", PlayerData.Data)
 		end
 	end)
 end
@@ -284,11 +285,13 @@ function Main:Initialize()
 		end
 	end)
 
-	Network:OnServerEvent("GetData", function(Player)
+	Net:On("GetData", function(Player)
 		local PlayerData = self.CurrentPlayerData["Player_" .. Player.UserId]
 
 		if PlayerData then
 			return PlayerData.Data
+		else
+			return nil
 		end
 	end)
 end

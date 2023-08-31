@@ -7,19 +7,25 @@
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
-local Signal = require(ReplicatedStorage.Packages.Signal)
+local Red = require(ReplicatedStorage.Packages.Red)
+
+local SYNCEVENT = "CombatPlayerSync"
+local NetServer
+local NetClient
+if RunService:IsServer() then
+	NetServer = Red.Server("game", { SYNCEVENT })
+else
+	NetClient = Red.Client("game")
+end
+local Signal = Red.Signal
 
 local CombatPlayer = {}
 CombatPlayer.__index = CombatPlayer
 
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
-local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
 
 local GameValues = ReplicatedStorage.GameValues.Arena
-
-local SYNCEVENT = "CombatPlayerSync"
 
 CombatPlayer.StateEnum = {
 	Idle = 0,
@@ -80,7 +86,7 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	self.scheduledReloads = 0
 
 	if RunService:IsClient() then
-		Network:OnClientEvent(SYNCEVENT, function(func, ...)
+		NetClient:On(SYNCEVENT, function(func, ...)
 			self[func](self, ...)
 		end)
 	end
@@ -100,7 +106,7 @@ end
 
 function CombatPlayer.Sync(self: CombatPlayer, funcName, ...)
 	if RunService:IsServer() and self.player then
-		Network:FireClient(self.player, SYNCEVENT, funcName, ...)
+		NetServer:Fire(self.player, SYNCEVENT, funcName, ...)
 	end
 end
 

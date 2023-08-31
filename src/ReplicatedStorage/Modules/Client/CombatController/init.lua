@@ -10,8 +10,9 @@ local Players = game:GetService("Players")
 
 local AttackRenderer = require(script.AttackRenderer)
 local CombatClient = require(script.CombatClient)
-local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
-local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
+local Red = require(ReplicatedStorage.Packages.Red)
+
+local Net = Red.Client("game")
 
 local localPlayer = Players.LocalPlayer
 local combatClient: CombatClient.CombatClient
@@ -49,8 +50,8 @@ end)
 
 function CombatController:Initialize()
 	print("Initializing combat controller")
-	Network:OnClientEvent("CombatPlayer Initialize", InitializeCombatClient)
-	Network:OnClientEvent("Attack", AttackRenderer.HandleAttackRender)
+	Net:On("CombatPlayerInitialize", InitializeCombatClient)
+	Net:On("Attack", AttackRenderer.HandleAttackRender)
 end
 
 return CombatController

@@ -18,13 +18,13 @@ local AttackRenderer = require(script.Parent.AttackRenderer)
 local CombatCamera = require(script.Parent.CombatCamera)
 local CombatUI = require(script.Parent.CombatUI)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
+local Red = require(ReplicatedStorage.Packages.Red)
 
 local AttackLogic = require(combatFolder.AttackLogic)
 local FastCast = require(combatFolder.FastCastRedux)
 local CombatPlayer = require(combatFolder.CombatPlayer)
 
-local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
-local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
+local Net = Red.Client("game")
 
 local function _VisualiseRay(ray: Ray)
 	local part = Instance.new("Part")
@@ -148,7 +148,7 @@ function CombatClient.RayHit(self: CombatClient, activeCast, result: RaycastResu
 
 	local character = CombatPlayer.GetAncestorWhichIsACombatPlayer(instance)
 	if character then
-		Network:FireServer("Hit", instance, position, activeCast.UserData.Id)
+		Net:Fire("Hit", instance, position, activeCast.UserData.Id)
 	end
 end
 
@@ -369,7 +369,7 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 		AttackRenderer.GetRendererForAttack(self.player, self.combatPlayer.heroData.Attack, origin, attackDetails)
 
 	renderFunction(self.FastCast)
-	Network:FireServer("Attack", origin, attackDetails)
+	Net:Fire("Attack", origin, attackDetails)
 end
 
 function CombatClient.SuperAttack(self: CombatClient, trajectory: Ray)
@@ -388,7 +388,7 @@ function CombatClient.SuperAttack(self: CombatClient, trajectory: Ray)
 		AttackRenderer.GetRendererForAttack(self.player, self.combatPlayer.heroData.Super, origin, attackDetails)
 
 	renderFunction(self.FastCast)
-	Network:FireServer("Super", origin, attackDetails)
+	Net:Fire("Super", origin, attackDetails)
 end
 
 export type CombatClient = typeof(CombatClient.new(...))

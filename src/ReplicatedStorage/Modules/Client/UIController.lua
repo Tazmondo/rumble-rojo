@@ -14,17 +14,19 @@ local ArenaUI = Player:WaitForChild("PlayerGui"):WaitForChild("ArenaUI").Interfa
 local Scoreboard = ArenaUI:WaitForChild("ScoreBoard")
 
 -- services
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
+local Red = require(ReplicatedStorage.Packages.Red)
+local LeaderboardController = require(script.Parent.LeaderboardController)
+local SoundController = require(script.Parent.SoundController)
 
 -- load modules
-local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
-local Network = Loader:LoadModule("Network")
-local SharedMemory = Loader:LoadModule("SharedMemory")
-local SoundService = Loader:LoadModule("SoundService")
-local LeaderboardController
+
+local Net = Red.Client("game")
+
+local inMatch = false
+local inQueue = false
 
 -- functions
 function UIController:IsAlive()
@@ -34,22 +36,22 @@ function UIController:IsAlive()
 end
 
 function UIController:UpdateStartTime()
-	ArenaUI.Game.Visible = GameStats.RoundStatus.Value == "Starting" and SharedMemory.InMatch
-	ArenaUI.Game.Countdown.Visible = GameStats.RoundStatus.Value == "Starting" and SharedMemory.InMatch
+	ArenaUI.Game.Visible = GameStats.RoundStatus.Value == "Starting" and inMatch
+	ArenaUI.Game.Countdown.Visible = GameStats.RoundStatus.Value == "Starting" and inMatch
 	Scoreboard.Time.Timer.Text = GameStats.RoundStatus.Value == "Starting" and "2:00" or "" -- visual beauty
-	ArenaUI.CharacterSelection.Visible = GameStats.RoundStatus.Value == "CharacterSelection" and SharedMemory.InQueue
+	ArenaUI.CharacterSelection.Visible = GameStats.RoundStatus.Value == "CharacterSelection" and inQueue
 
 	if self.LastStartTime ~= GameStats.RoundCountdown.Value then
 		self.LastStartTime = GameStats.RoundCountdown.Value
 
-		if GameStats.RoundStatus.Value == "Starting" and SharedMemory.InMatch then
+		if GameStats.RoundStatus.Value == "Starting" and inMatch then
 			Player.Character.HumanoidRootPart.Anchored = true
 
 			local CountdownText = ArenaUI.Game.Countdown
 			CountdownText.Text = GameStats.RoundCountdown.Value
 
 			if GameStats.RoundCountdown.Value == "0" then -- lazy
-				SoundService:PlaySound("Fight Start")
+				SoundController:PlaySound("Fight Start")
 				CountdownText.Visible = false
 				ArenaUI.Game.StartFight.Visible = true
 				wait(1)
@@ -78,9 +80,9 @@ function UIController:UpdateStartTime()
 	if GameStats.RoundStatus.Value == "Game" then
 		ArenaUI.CharacterSelection.Visible = false
 
-		if SharedMemory.InMatch then
+		if inMatch then
 			Player.Character.HumanoidRootPart.Anchored = false
-			Scoreboard.Visible = SharedMemory.InMatch
+			Scoreboard.Visible = inMatch
 
 			local Seconds = math.ceil(GameStats.RoundTime.Value)
 			local Minutes = math.floor(Seconds / 60)
@@ -113,7 +115,7 @@ function UIController:UpdateStartTime()
 			Scoreboard.Visible = false
 			Arena.Status.Visible = true
 		end
-	elseif GameStats.RoundStatus.Value == "Ended" and SharedMemory.InMatch then
+	elseif GameStats.RoundStatus.Value == "Ended" and inMatch then
 		Player.Character.HumanoidRootPart.Anchored = true
 		ArenaUI.Game.Visible = true
 		ArenaUI.Game.RoundOver.Visible = true
@@ -126,23 +128,17 @@ function UIController:UpdateStartTime()
 		local Time = GameStats.RoundIntermission.Value
 
 		Scoreboard.Time.Timer.Text = Time
-	elseif GameStats.RoundStatus.Value == "CharacterSelection" and SharedMemory.InQueue then
+	elseif GameStats.RoundStatus.Value == "CharacterSelection" and inQueue then
 		local Selection = ArenaUI.CharacterSelection
 
 		Scoreboard.Visible = false
-		-- Selection.Visible = GameStats.RoundStatus.Value == "CharacterSelection" --and SharedMemory.InQueue
+		-- Selection.Visible = GameStats.RoundStatus.Value == "CharacterSelection" --and inQueue
 	end
 end
 
 function UIController:Initialize()
-	LeaderboardController = Loader:LoadModule("LeaderboardController")
-
-	if not Player.Character then
-		Player.CharacterAdded:wait()
-	end
-
 	if self.InMatch ~= true then
-		SoundService:PlaySound("Lobby Music")
+		SoundController:PlaySound("Lobby Music")
 	end
 
 	RunService.RenderStepped:Connect(function()
@@ -158,18 +154,16 @@ function UIController:Initialize()
 
 	UI.Queue.Ready.MouseButton1Down:Connect(function()
 		Ready = true
-		SharedMemory.InQueue = Ready
-		Network:InvokeServer("QueueStatus", Ready)
+		Net:Fire("QueueStatus", Ready)
 
-		SoundService:PlaySound("Queued")
+		SoundController:PlaySound("Queued")
 
 		UI.Queue.Ready.Visible = false
 		UI.Queue.Exit.Visible = true
 	end)
 	UI.Queue.Exit.MouseButton1Down:Connect(function()
 		Ready = false
-		SharedMemory.InQueue = Ready
-		Network:InvokeServer("QueueStatus", Ready)
+		Net:Fire("QueueStatus", Ready)
 
 		UI.Queue.Ready.Visible = true
 		UI.Queue.Exit.Visible = false
@@ -179,7 +173,7 @@ function UIController:Initialize()
 		if v:IsA("ImageLabel") then
 			v.Button.MouseButton1Down:Connect(function()
 				-- print("ok")
-				SoundService:PlaySound("Select Character")
+				SoundController:PlaySound("Select Character")
 				Selected = not Selected
 				SelectedHero = v.Name
 
@@ -214,7 +208,7 @@ function UIController:Initialize()
 	--
 
 	-- remotes
-	Network:OnClientEvent("QueueDisplay", function(Status)
+	Net:On("QueueDisplay", function(Status)
 		UI.Queue.Ready.Visible = true
 		UI.Queue.Exit.Visible = false
 
@@ -229,27 +223,22 @@ function UIController:Initialize()
 		Ready = false
 	end)
 
-	Network:OnClientEvent("UpdateMatchStatus", function(Status, Players)
-		SharedMemory.InMatch = Status
-		SharedMemory.MatchedPlayers = Players
+	Net:On("UpdateMatchStatus", function(Status, Players)
+		inMatch = Status
 
 		if Status then
-			SoundService:PlaySound("Battle Music")
-			SoundService:StopSound("Lobby Music")
+			SoundController:PlaySound("Battle Music")
+			SoundController:StopSound("Lobby Music")
 			ArenaUI.Game.Countdown.Visible = true
 			LeaderboardController:CreateScoreboard(Players)
 		else
-			SoundService:PlaySound("Lobby Music")
-			SoundService:StopSound("Battle Music")
+			SoundController:PlaySound("Lobby Music")
+			SoundController:StopSound("Battle Music")
 			ArenaUI.Game.Visible = false
 			-- Scoreboard.Visible = false
 		end
 	end)
 	--
-
-	Player.Character.Humanoid.Died:Connect(function()
-		Network:InvokeServer("PlayerDied")
-	end)
 end
 
 return UIController

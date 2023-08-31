@@ -12,8 +12,6 @@ local offset = Vector3.new
 local TweenService = game:GetService("TweenService")
 
 -- load modules
-local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
-local Network = Loader:LoadModule("Network")
 
 -- transition stuff
 local Part1Closed, Part2Closed = Arena.Doors.One.CFrame, Arena.Doors.Two.CFrame

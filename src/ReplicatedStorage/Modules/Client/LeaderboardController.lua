@@ -6,24 +6,15 @@ local Main = {
 }
 
 local Player = game.Players.LocalPlayer
-local Mouse = Player:GetMouse()
-local UI = Player:WaitForChild("PlayerGui"):WaitForChild("MainUI")
 local ArenaUI = Player:WaitForChild("PlayerGui"):WaitForChild("ArenaUI").Interface
 
-local Templates = ArenaUI.Parent.Templates -- laziness
 local Scoreboard = ArenaUI:WaitForChild("ScoreBoard")
 
 -- services
-local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
 local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
 
 -- load modules
-local ModuleLoader = require(game.ReplicatedStorage.Modules.Shared.Loader)
-local Network = ModuleLoader:LoadModule("Network")
-local SharedMemory = ModuleLoader:LoadModule("SharedMemory")
-local UIController = ModuleLoader:LoadModule("UIController")
 
 -- functions
 function Main:IsAlive()
@@ -77,35 +68,35 @@ function Main:UpdateHealth(Frame, Health)
 end
 
 function Main:Initialize()
-	RunService.RenderStepped:Connect(function()
-		Scoreboard.List1.Visible = SharedMemory.InMatch == true -- these 2 lists are just annoying
-		Scoreboard.List2.Visible = SharedMemory.InMatch == true
+	-- RunService.RenderStepped:Connect(function()
+	-- 	Scoreboard.List1.Visible = SharedMemory.InMatch == true -- these 2 lists are just annoying
+	-- 	Scoreboard.List2.Visible = SharedMemory.InMatch == true
 
-		if SharedMemory.InMatch then
-			for Player, Hero in SharedMemory.MatchedPlayers do
-				local Character = Player.Character
-				local Frame = self.PlayerFrameMap[Player.Name]
+	-- 	if SharedMemory.InMatch then
+	-- 		for Player, Hero in SharedMemory.MatchedPlayers do
+	-- 			local Character = Player.Character
+	-- 			local Frame = self.PlayerFrameMap[Player.Name]
 
-				if Character and Frame then
-					self:UpdateHealth(Frame, Character.Humanoid.Health)
-				end
-			end
-		end
-	end)
+	-- 			if Character and Frame then
+	-- 				self:UpdateHealth(Frame, Character.Humanoid.Health)
+	-- 			end
+	-- 		end
+	-- 	end
+	-- end)
 
-	spawn(function()
-		while wait() do
-			local Success, Error = pcall(function()
-				if not game:GetService("RunService"):IsStudio() then
-					StarterGui:SetCore("ResetButtonCallback", false)
-				end
-			end)
+	-- spawn(function()
+	-- 	while wait() do
+	-- 		local Success, Error = pcall(function()
+	-- 			if not game:GetService("RunService"):IsStudio() then
+	-- 				StarterGui:SetCore("ResetButtonCallback", false)
+	-- 			end
+	-- 		end)
 
-			if not Error then
-				break
-			end
-		end
-	end)
+	-- 		if not Error then
+	-- 			break
+	-- 		end
+	-- 	end
+	-- end)
 end
 
 return Main

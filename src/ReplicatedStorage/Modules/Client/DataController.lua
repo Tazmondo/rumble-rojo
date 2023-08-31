@@ -1,3 +1,5 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Red = require(ReplicatedStorage.Packages.Red)
 -- variables
 local Main = {
 	DataLoaded = false,
@@ -10,8 +12,7 @@ local Player = game.Players.LocalPlayer
 -- services
 
 -- load modules
-local ModuleLoader = require(game.ReplicatedStorage.Modules.Shared.Loader)
-local Network = ModuleLoader:LoadModule("Network")
+local Net = Red.Client("game")
 
 -- functions
 function Main:OnLoad(ReturnFunction)
@@ -58,11 +59,11 @@ end
 function Main:Initialize()
 	-- warn("initialized data controller")
 
-	Network:OnClientEvent("LoadData", function(Data)
+	Net:On("LoadData", function(Data)
 		self:LoadData(Data)
 	end)
 
-	Network:OnClientEvent("UpdateData", function(ToUpdate)
+	Net:On("UpdateData", function(ToUpdate)
 		for Key, Value in pairs(ToUpdate) do
 			self.Data[Key] = Value
 
@@ -74,7 +75,7 @@ function Main:Initialize()
 		end
 	end)
 
-	local Data = Network:InvokeServer("GetData")
+	local Data = Net:Call("GetData"):Await()
 
 	if Data then
 		self:LoadData(Data) -- if for some reason the server sends you data before you are initialized

@@ -1,6 +1,6 @@
-game.Players.CharacterAutoLoads = false
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
+local Loader = require(ReplicatedStorage.Packages.Loader)
 
-local LoadOrder = { "DataService", "ArenaService", "CombatService" }
-
-require(game.ReplicatedStorage.Modules.Shared.Network):Initialize()
-require(game.ReplicatedStorage.Modules.Shared.Startup):Initialize(LoadOrder)
+local loaded = Loader.LoadChildren(ServerStorage.Modules)
+Loader.SpawnAll(loaded, "Initialize")

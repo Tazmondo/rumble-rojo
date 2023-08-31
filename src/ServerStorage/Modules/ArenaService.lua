@@ -20,15 +20,14 @@ local Arena = workspace.Arena
 -- services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 
+local Red = require(ReplicatedStorage.Packages.Red)
+local CombatService = require(script.Parent.CombatService)
+local DataService = require(script.Parent.DataService)
+local MapService = require(script.Parent.MapService)
+
+local Net = Red.Server("game")
 -- load modules
-local Loader = require(game.ReplicatedStorage.Modules.Shared.Loader)
-local Network = Loader:LoadModule("Network")
-local DataService = Loader:LoadModule("DataService")
-local MapService = Loader:LoadModule("MapService")
-local CombatService: typeof(require(script.Parent.CombatService)) = Loader:LoadModule("CombatService")
-local SharedMemory = Loader:LoadModule("SharedMemory")
 
 -- functions
 function Main:IsAlive(Player)
@@ -73,7 +72,7 @@ function Main:OpenQueue() -- enables queue button on all palyesr
 			continue
 		end
 
-		Network:FireClient(Player, "QueueDisplay", true)
+		Net:Fire(Player, "QueueDisplay", true)
 	end
 
 	self.QueueStatus = true
@@ -84,11 +83,11 @@ function Main:CloseQueue(List)
 
 	if List then
 		for _, Player in pairs(List) do
-			Network:FireClient(Player, "QueueDisplay", false)
+			Net:Fire(Player, "QueueDisplay", false)
 		end
 	else
 		for _, Player in pairs(Players:GetPlayers()) do
-			Network:FireClient(Player, "QueueDisplay", false)
+			Net:Fire(Player, "QueueDisplay", false)
 		end
 	end
 
@@ -180,7 +179,7 @@ function Main:StartIntermission()
 
 	-- ok
 	for Player, heroName in pairs(self.Players) do
-		Network:FireClient(Player, "UpdateMatchStatus", true, self.Players)
+		Net:Fire(Player, "UpdateMatchStatus", true, self.Players)
 	end
 
 	self:StartMatch()
@@ -249,7 +248,7 @@ function Main:EndMatch()
 			continue
 		end
 		CombatService:ExitPlayerCombat(Player)
-		Network:FireClient(Player, "UpdateMatchStatus", false, self.Players)
+		Net:Fire(Player, "UpdateMatchStatus", false, self.Players)
 	end
 
 	self:ClearPlayers()
@@ -268,23 +267,19 @@ function Main:Initialize()
 	game.Players.PlayerAdded:Connect(function(Player)
 		wait(3)
 		if self.QueueStatus then
-			Network:FireClient(Player, "QueueDisplay", true)
+			Net:Fire(Player, "QueueDisplay", true)
 		end
 	end)
 
 	-- remotes
-	Network:OnServerInvoke("QueueStatus", function(Player, Status)
+	Net:On("QueueStatus", function(Player, Status)
 		print("invoked")
 		self.Queue[Player] = if Status then "Fabio" else nil
 
 		self:CountQueue()
 	end)
 
-	Network:OnServerInvoke("PlayerDied", function(Player)
-		self.Players[Player] = nil
-	end)
-
-	Network:OnServerEvent("SelectCharacter", function(Player)
+	Net:On("SelectCharacter", function(Player)
 		if self.Players[Player] then
 		end
 	end)

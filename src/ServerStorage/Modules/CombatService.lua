@@ -10,6 +10,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
+local LoadedService = require(script.Parent.LoadedService)
+local DataService = require(script.Parent.DataService)
+
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
@@ -17,10 +20,8 @@ local FastCast = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
-local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
-
-local Network: typeof(require(ReplicatedStorage.Modules.Shared.Network)) = Loader:LoadModule("Network")
-local DataService: typeof(require(script.Parent.DataService)) = Loader:LoadModule("DataService")
+local Red = require(ReplicatedStorage.Packages.Red)
+local Net = Red.Server("game", { "CombatPlayerInitialize" })
 
 -- Only for players currently fighting.
 local CombatPlayerData: { [Model]: CombatPlayer.CombatPlayer } = {}
@@ -71,7 +72,7 @@ local function replicateAttack(
 			cast.UserData.Id = pellet.id
 			combatPlayer:RegisterAttack(pellet.id, pellet.CFrame, cast, attackData)
 		end
-		Network:FireAllClients("Attack", player, attackData, origin, attackDetails)
+		Net:FireAll("Attack", player, attackData, origin, attackDetails)
 	end
 end
 
@@ -252,7 +253,8 @@ function CombatService:SetupCombatPlayer(player: Player, heroName: string)
 	local combatPlayer = CombatPlayer.new(heroName, humanoid, player)
 	CombatPlayerData[char] = combatPlayer
 
-	Network:FireClient(player, "CombatPlayer Initialize", heroName)
+	print("Asking client to initialize combat player")
+	Net:Fire(player, "CombatPlayerInitialize", heroName)
 
 	self:InitializeNameTag(char, combatPlayer, player)
 end
@@ -307,14 +309,27 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	self:LoadCharacterWithModel(player, ReplicatedStorage.Assets.CharacterModels:FindFirstChild(heroName))
 end
 
+function CombatService:LoadPlayerGuis(player: Player)
+	-- This function is necessary as startergui is only cloned into playergui when character spawns, but we take control of character spawning.
+	for _, gui in pairs(game:GetService("StarterGui"):GetChildren()) do
+		gui:Clone().Parent = player.PlayerGui
+	end
+end
+
 function CombatService:PlayerAdded(player: Player)
 	self = self :: CombatService
+
+	self:LoadPlayerGuis(player)
 
 	if RunService:IsStudio() then
 		PlayersInCombat[player] = "Fabio"
 	end
 
-	self:SpawnCharacter(player)
+	local resolve, reject = LoadedService.PromiseLoad(player):Await()
+	print(resolve, reject)
+	if resolve then
+		self:SpawnCharacter(player)
+	end
 end
 
 function CombatService:Initialize()
@@ -329,9 +344,9 @@ function CombatService:Initialize()
 		self:PlayerAdded(player)
 	end
 
-	Network:OnServerEvent("Attack", handleAttack)
-	Network:OnServerEvent("Super", handleSuper)
-	Network:OnServerEvent("Hit", handleClientHit)
+	Net:On("Attack", handleAttack)
+	Net:On("Super", handleSuper)
+	Net:On("Hit", handleClientHit)
 
 	for _, v in pairs(workspace:GetChildren()) do
 		if v.Name == "Rig" then
