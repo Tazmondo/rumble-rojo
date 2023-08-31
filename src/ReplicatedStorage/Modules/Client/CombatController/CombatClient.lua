@@ -92,11 +92,15 @@ function CombatClient.new(heroName: string)
 	self.combatCamera:Enable()
 
 	self.aimRenderer = self.janitor:Add(
-		AimRenderer.new(self.combatPlayer.heroData.Attack, self.character, self.combatPlayer) :: AimRenderer.AimRenderer
+		AimRenderer.new(self.combatPlayer.heroData.Attack, self.character, self.combatPlayer, function()
+			return self.combatPlayer:CanAttack()
+		end) :: AimRenderer.AimRenderer
 	)
 
 	self.superAimRenderer =
-		self.janitor:Add(AimRenderer.new(self.combatPlayer.heroData.Super, self.character, self.combatPlayer))
+		self.janitor:Add(AimRenderer.new(self.combatPlayer.heroData.Super, self.character, self.combatPlayer, function()
+			return self.combatPlayer:CanSuperAttack()
+		end))
 
 	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer))
 
@@ -273,7 +277,12 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 end
 
 function CombatClient.HandleSuperDown(self: CombatClient)
-	if not self.attemptingAttack and not self.attackButtonDown and not self.superButtonDown then
+	if
+		not self.attemptingAttack
+		and not self.attackButtonDown
+		and not self.superButtonDown
+		and self.combatPlayer:CanSuperAttack()
+	then
 		self.superButtonDown = true
 		self.humanoid.AutoRotate = false
 		self.superAimRenderer:Update(self.currentMouseDirection)

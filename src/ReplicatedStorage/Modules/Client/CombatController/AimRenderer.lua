@@ -20,7 +20,12 @@ local aimPartTemplates = {
 	[AttackType.Shotgun] = GeneralVFX.AimCone,
 }
 
-function AimRenderer.new(attackData: HeroData.AttackData, character: Model, combatPlayer: CombatPlayer.CombatPlayer)
+function AimRenderer.new(
+	attackData: HeroData.AttackData,
+	character: Model,
+	combatPlayer: CombatPlayer.CombatPlayer,
+	validFunction: () -> boolean
+)
 	local self = setmetatable({}, AimRenderer) :: AimRenderer
 	self.janitor = Janitor.new()
 
@@ -36,6 +41,8 @@ function AimRenderer.new(attackData: HeroData.AttackData, character: Model, comb
 
 	self.aimPart = aimPartTemplates[attackData.AttackType]:Clone() :: BasePart
 	self.aimPart.Parent = workspace
+
+	self.validFunction = validFunction
 
 	self:StartRendering()
 
@@ -80,7 +87,7 @@ function AimRenderer.StartRendering(self: AimRenderer)
 			self.aimPart.Size = Vector3.new(horizontalDistance, 0, depth)
 		end
 
-		local tint = if self.combatPlayer:CanAttack() then Color3.new(1, 1, 1) else Color3.new(1, 0, 0)
+		local tint = if self.validFunction() then Color3.new(1, 1, 1) else Color3.new(1, 0, 0)
 		self:SetTint(tint)
 
 		self.aimPart.CFrame = CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.direction)
