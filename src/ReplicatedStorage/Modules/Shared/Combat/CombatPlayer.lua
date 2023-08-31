@@ -36,7 +36,7 @@ end
 
 -- Player is optional as NPCs can be combatplayers
 function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
-	local self: CombatPlayer = setmetatable({}, CombatPlayer) :: CombatPlayer
+	local self = setmetatable({}, CombatPlayer)
 
 	self.heroData = HeroData[heroName] :: typeof(HeroData.Fabio)
 
@@ -64,16 +64,15 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	self.lastAttackTime = 0 -- os.clock based
 	self.attackId = 1
 	self.attacks = {} :: { [number]: Attack }
+	self.player = player
 
 	self.scheduledChange = {} -- We use a table so if it updates we can detect and cancel the change
 	self.scheduledReloads = 0
 
 	if RunService:IsClient() then
-		Network:OnClientEvent(SYNCEVENT, function(func, ...)
-			self[func](self, ...)
+		Network:OnClientEvent(SYNCEVENT, function(property, value)
+			self[property] = value
 		end)
-	else
-		self.player = player :: Player?
 	end
 
 	return self
@@ -143,11 +142,16 @@ function CombatPlayer.GetNextAttackId(self: CombatPlayer)
 	return self.attackId
 end
 
+function CombatPlayer:AttackingEnabled()
+	self = self :: CombatPlayer
+	return (GameValues.RoundStatus.Value == "Game" or RunService:IsStudio())
+end
+
 function CombatPlayer.CanAttack(self: CombatPlayer)
 	local canAttack = self.state == self.StateEnum.Idle
 		and os.clock() - self.lastAttackTime >= self.reloadSpeed
 		and self.ammo > 0
-		and (GameValues.RoundStatus.Value == "Game" or RunService:IsStudio()) -- Make sure round is in-progress
+		and self:AttackingEnabled()
 	return canAttack
 end
 -- warn("Take CanAttack function out of testing!")
@@ -185,7 +189,7 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 		self:ChangeState(self.StateEnum.Dead)
 	end
-	self:Sync("TakeDamage", amount)
+	self:Sync("health", self.health)
 end
 
 function CombatPlayer.CanTakeDamage(self: CombatPlayer)
@@ -196,18 +200,18 @@ function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
 	self.maxHealth = newMaxHealth
 	self.health = math.clamp(self.health, 0, newMaxHealth)
 
-	self:Sync("SetMaxHealth", newMaxHealth)
+	self:Sync("maxHealth", self.maxHealth)
 end
 
 function CombatPlayer.ChargeSuper(self: CombatPlayer, amount: number)
 	self.superCharge = math.min(self.requiredSuperCharge, self.superCharge + amount)
 
-	self:Sync("ChargeSuper", amount)
+	self:Sync("superCharge", self.superCharge)
 end
 
 function CombatPlayer.CanSuperAttack(self: CombatPlayer)
 	local canAttack = self.state == self.StateEnum.Idle
-		and (GameValues.RoundStatus.Value == "Game" or RunService:IsStudio()) -- Make sure round is in-progress
+		and self:AttackingEnabled() -- Make sure round is in-progress
 		and self.superCharge >= self.requiredSuperCharge
 	return canAttack
 end
