@@ -32,6 +32,8 @@ function AttackRenderer.GenerateLengthChangedFunction(attackData: HeroData.Attac
 end
 
 function AttackRenderer.GetCastBehaviour(attackData: HeroData.AttackData, excludeCharacter: Model?)
+	local super = attackData.AbilityType == Enums.AbilityType.Super
+
 	local RaycastParams = RaycastParams.new()
 	RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	if excludeCharacter then
@@ -48,7 +50,9 @@ function AttackRenderer.GetCastBehaviour(attackData: HeroData.AttackData, exclud
 
 	local FastCastBehaviour = FastCast.newBehavior()
 	FastCastBehaviour.RaycastParams = RaycastParams
-	FastCastBehaviour.CosmeticBulletTemplate = ReplicatedStorage.Assets.VFX.Fabio.Attack
+	FastCastBehaviour.CosmeticBulletTemplate = if super
+		then ReplicatedStorage.Assets.VFX.Super[attackData.Name]
+		else ReplicatedStorage.Assets.VFX.Attack[attackData.Name]
 	FastCastBehaviour.CosmeticBulletContainer = projectileFolder
 	FastCastBehaviour.MaxDistance = attackData.Range
 

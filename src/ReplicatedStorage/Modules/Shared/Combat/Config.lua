@@ -17,6 +17,9 @@ local Config = {
 
 	-- Random shotgun spread to apply in degrees on either side (value of 2 means between -2 and 2)
 	ShotgunRandomSpread = 2,
+
+	-- Key to use super
+	SuperKey = Enum.KeyCode.E,
 }
 
 return Config

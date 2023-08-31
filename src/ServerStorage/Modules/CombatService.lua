@@ -35,16 +35,13 @@ local function getAllCombatPlayerCharacters()
 	return out
 end
 
-local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
-	if not player.Character then
-		return
-	end
-	local combatPlayer = CombatPlayerData[player.Character]
-	if not combatPlayer or not combatPlayer:CanAttack() then
-		return
-	end
-	local attackData = combatPlayer.heroData.Attack :: HeroData.AttackData
-
+local function replicateAttack(
+	player: Player,
+	origin: CFrame,
+	combatPlayer: CombatPlayer.CombatPlayer,
+	attackData: HeroData.AttackData,
+	localAttackDetails
+)
 	local behaviour = FastCast.newBehavior()
 	behaviour.MaxDistance = attackData.Range
 	behaviour.RaycastParams = RaycastParams.new()
@@ -79,8 +76,36 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
 		end
 		Network:FireAllClients("Attack", player, attackData, origin, attackDetails)
 	end
+end
+
+local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
+	if not player.Character then
+		return
+	end
+	local combatPlayer = CombatPlayerData[player.Character]
+	if not combatPlayer or not combatPlayer:CanAttack() then
+		return
+	end
+	local attackData = combatPlayer.heroData.Attack :: HeroData.AttackData
+
+	replicateAttack(player, origin, combatPlayer, attackData, localAttackDetails)
 
 	combatPlayer:Attack()
+end
+
+local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
+	if not player.Character then
+		return
+	end
+	local combatPlayer = CombatPlayerData[player.Character]
+	if not combatPlayer or not combatPlayer:CanSuperAttack() then
+		return
+	end
+	local attackData = combatPlayer.heroData.Super :: HeroData.AttackData
+
+	replicateAttack(player, origin, combatPlayer, attackData, localAttackDetails)
+
+	combatPlayer:SuperAttack()
 end
 
 local function handleRayHit(cast, result)
@@ -152,6 +177,7 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		print("Character is invulnerable")
 		return
 	end
+	combatPlayer:ChargeSuper(1)
 
 	local beforeState = victimCombatPlayer:GetState()
 	victimCombatPlayer:TakeDamage(attackData.Data.Damage) -- Will update state to dead if this kills
@@ -304,6 +330,7 @@ function CombatService:Initialize()
 	end
 
 	Network:OnServerEvent("Attack", handleAttack)
+	Network:OnServerEvent("Super", handleSuper)
 	Network:OnServerEvent("Hit", handleClientHit)
 
 	if workspace:FindFirstChild("Rig") then

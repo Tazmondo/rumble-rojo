@@ -47,6 +47,8 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	self.ammo = self.maxAmmo
 	self.ammoRegen = self.heroData.Attack.AmmoRegen - LATENCYALLOWANCE
 	self.reloadSpeed = self.heroData.Attack.ReloadSpeed - LATENCYALLOWANCE
+	self.requiredSuperCharge = self.heroData.Super.Charge
+	self.superCharge = 0
 
 	self.humanoid = humanoid
 	self.humanoidData = { humanoid.MaxHealth, humanoid.WalkSpeed, humanoid.DisplayDistanceType } :: { any }
@@ -193,6 +195,25 @@ end
 function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
 	self.maxHealth = newMaxHealth
 	self.health = math.clamp(self.health, 0, newMaxHealth)
+
+	self:Sync("SetMaxHealth", newMaxHealth)
+end
+
+function CombatPlayer.ChargeSuper(self: CombatPlayer, amount: number)
+	self.superCharge = math.min(self.requiredSuperCharge, self.superCharge + amount)
+
+	self:Sync("ChargeSuper", amount)
+end
+
+function CombatPlayer.CanSuperAttack(self: CombatPlayer)
+	local canAttack = self.state == self.StateEnum.Idle
+		and (GameValues.RoundStatus.Value == "Game" or RunService:IsStudio()) -- Make sure round is in-progress
+		and self.superCharge >= self.requiredSuperCharge
+	return canAttack
+end
+
+function CombatPlayer.SuperAttack(self: CombatPlayer)
+	self.superCharge = 0
 end
 
 function CombatPlayer.Destroy(self: CombatPlayer)

@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 
 local combatFolder = ReplicatedStorage.Modules.Shared.Combat
 
+local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local AimRenderer = require(script.Parent.AimRenderer)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
 local AttackRenderer = require(script.Parent.AttackRenderer)
@@ -78,7 +79,8 @@ function CombatClient.new(heroName: string)
 	self.lastMousePosition = Vector3.new()
 	self.currentMouseDirection = nil :: Vector3?
 	self.lastAimDirection = nil :: Vector3?
-	self.mouseDown = false
+	self.attackButtonDown = false
+	self.superButtonDown = false
 	self.preRotateAttack = true
 	self.completedRotation = true
 	self.attemptingAttack = false
@@ -91,6 +93,9 @@ function CombatClient.new(heroName: string)
 	self.aimRenderer = self.janitor:Add(
 		AimRenderer.new(self.combatPlayer.heroData.Attack, self.character, self.combatPlayer) :: AimRenderer.AimRenderer
 	)
+
+	self.superAimRenderer =
+		self.janitor:Add(AimRenderer.new(self.combatPlayer.heroData.Super, self.character, self.combatPlayer))
 
 	self.FastCast = FastCast.new()
 
@@ -196,21 +201,24 @@ function CombatClient.HandleMove(self: CombatClient, input: InputObject)
 	self.lastMousePosition = screenPosition
 	self.currentMouseDirection = self:NormaliseClickTarget().Direction
 
-	if self.mouseDown or not self.preRotateAttack then
+	if self.attackButtonDown or not self.preRotateAttack then
 		self.aimRenderer:Update(self.currentMouseDirection)
+	end
+	if self.superButtonDown or not self.preRotateAttack then
+		self.superAimRenderer:Update(self.currentMouseDirection)
 	end
 end
 
 function CombatClient.SetupCharacterRotation(self: CombatClient)
 	self.janitor:Add(RunService.RenderStepped:Connect(function(dt)
 		-- Only update the aim direction while holding mouse
-		if self.mouseDown then
+		if self.attackButtonDown or self.superButtonDown then
 			local worldDirection = self.currentMouseDirection
 			self.lastAimDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
 		end
 
 		-- Always want to finish rotating to the aim direction, so even if they release mouse, keep rotating until angle reached
-		if self.lastAimDirection and (self.mouseDown or not self.completedRotation) then
+		if self.lastAimDirection and (self.superButtonDown or self.attackButtonDown or not self.completedRotation) then
 			self.HRP.CFrame = self.HRP.CFrame:Lerp(
 				CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.lastAimDirection),
 				dt * 8
@@ -232,8 +240,8 @@ function CombatClient.SetupCharacterRotation(self: CombatClient)
 end
 
 function CombatClient.HandleMouseDown(self: CombatClient)
-	if not self.attemptingAttack then
-		self.mouseDown = true
+	if not self.attemptingAttack and not self.attackButtonDown and not self.superButtonDown then
+		self.attackButtonDown = true
 		self.humanoid.AutoRotate = false
 		self.aimRenderer:Update(self.currentMouseDirection)
 		self.aimRenderer:Enable()
@@ -241,11 +249,11 @@ function CombatClient.HandleMouseDown(self: CombatClient)
 end
 
 function CombatClient.HandleMouseUp(self: CombatClient)
-	if self.attemptingAttack or not self.mouseDown then
+	if self.attemptingAttack or not self.attackButtonDown or not self.lastAimDirection then
 		return
 	end
 
-	self.mouseDown = false
+	self.attackButtonDown = false
 	self.attemptingAttack = true
 
 	-- Wait to finish rotating to click direction before firing
@@ -254,6 +262,36 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 	end
 	self.aimRenderer:Disable()
 	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection))
+	while not self.completedRotation do
+		task.wait()
+	end
+	self.attemptingAttack = false
+	self.humanoid.AutoRotate = true
+end
+
+function CombatClient.HandleSuperDown(self: CombatClient)
+	if not self.attemptingAttack and not self.attackButtonDown and not self.superButtonDown then
+		self.superButtonDown = true
+		self.humanoid.AutoRotate = false
+		self.superAimRenderer:Update(self.currentMouseDirection)
+		self.superAimRenderer:Enable()
+	end
+end
+
+function CombatClient.HandleSuperUp(self: CombatClient)
+	if self.attemptingAttack or not self.superButtonDown or not self.lastAimDirection then
+		return
+	end
+
+	self.superButtonDown = false
+	self.attemptingAttack = true
+
+	-- Wait to finish rotating to click direction before firing
+	while not self.preRotateAttack do
+		task.wait()
+	end
+	self.superAimRenderer:Disable()
+	self:SuperAttack(Ray.new(self.HRP.Position, self.lastAimDirection))
 	while not self.completedRotation do
 		task.wait()
 	end
@@ -279,6 +317,8 @@ function CombatClient.GetInputs(self: CombatClient)
 
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			self:HandleMouseDown()
+		elseif input.KeyCode == Config.SuperKey then
+			self:HandleSuperDown()
 		end
 	end))
 
@@ -289,11 +329,13 @@ function CombatClient.GetInputs(self: CombatClient)
 
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			self:HandleMouseUp()
+		elseif input.KeyCode == Config.SuperKey then
+			self:HandleSuperUp()
 		end
 	end))
 
 	-- RunService.RenderStepped:Connect(function()
-	-- 	if self.mouseDown then
+	-- 	if self.attackButtonDown then
 	-- 		self:HandleClick()
 	-- 	end
 	-- end)
@@ -309,13 +351,32 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 	trajectory = trajectory.Unit
 	local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
 
-	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin)
+	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, self.combatPlayer.heroData.Attack)
 
 	local renderFunction =
 		AttackRenderer.GetRendererForAttack(self.player, self.combatPlayer.heroData.Attack, origin, attackDetails)
 
 	renderFunction(self.FastCast)
 	Network:FireServer("Attack", origin, attackDetails)
+end
+
+function CombatClient.SuperAttack(self: CombatClient, trajectory: Ray)
+	if not self.combatPlayer:CanSuperAttack() then
+		print("Tried to super attack but can't.", self.combatPlayer.superCharge)
+		return
+	end
+	self.combatPlayer:SuperAttack()
+
+	trajectory = trajectory.Unit
+	local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
+
+	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, self.combatPlayer.heroData.Super)
+
+	local renderFunction =
+		AttackRenderer.GetRendererForAttack(self.player, self.combatPlayer.heroData.Super, origin, attackDetails)
+
+	renderFunction(self.FastCast)
+	Network:FireServer("Super", origin, attackDetails)
 end
 
 export type CombatClient = typeof(CombatClient.new(...))

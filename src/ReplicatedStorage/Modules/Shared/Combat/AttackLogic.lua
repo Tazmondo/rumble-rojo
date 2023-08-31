@@ -8,8 +8,11 @@ local HeroData = require(script.Parent.HeroData)
 
 local AttackLogic = {}
 
-function AttackLogic.MakeAttack(combatPlayer: CombatPlayer.CombatPlayer, origin: CFrame): any
-	local attackData = combatPlayer.heroData.Attack
+function AttackLogic.MakeAttack(
+	combatPlayer: CombatPlayer.CombatPlayer,
+	origin: CFrame,
+	attackData: HeroData.AttackData
+): any
 	if attackData.AttackType == Enums.AttackType.Shotgun then
 		return AttackLogic.Shotgun(
 			attackData.Angle,

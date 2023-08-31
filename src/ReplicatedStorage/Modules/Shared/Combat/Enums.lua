@@ -3,7 +3,9 @@
 local Enums = {}
 
 Enums.MovementSpeed = {
-	Normal = 16,
+	Normal = 10,
+	Fast = 14,
+	Slow = 8,
 }
 
 Enums.AttackType = {
@@ -13,12 +15,23 @@ Enums.AttackType = {
 
 Enums.AttackRange = {
 	Short = 32,
-	Medium = 64,
-	MediumLarge = 96,
+	Medium = 48,
+	MediumLarge = 64,
 }
 
 Enums.ProjectileSpeed = {
 	Medium = 40,
+	MediumFast = 50,
+}
+
+Enums.Modifiers = {
+	Knockback = 0,
+	BreakBarrier = 1,
+}
+
+Enums.AbilityType = {
+	Attack = 0,
+	Super = 1,
 }
 
 return Enums
