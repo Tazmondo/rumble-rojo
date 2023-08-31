@@ -39,6 +39,10 @@ end
 function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	local self = setmetatable({}, CombatPlayer) :: CombatPlayer
 
+	if not player then
+		LATENCYALLOWANCE = 0
+	end
+
 	self.heroData = HeroData[heroName] :: typeof(HeroData.Fabio)
 
 	self.maxHealth = self.heroData.Health
