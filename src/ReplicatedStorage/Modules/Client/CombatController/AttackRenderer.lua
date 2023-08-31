@@ -109,7 +109,7 @@ function AttackRenderer.HandleAttackRender(
 	if not cachedCaster then
 		cachedCaster = FastCast.new()
 		cachedCasts[attackName] = cachedCaster
-		assert(cachedCaster) -- Appease type checker
+		assert(cachedCaster, "Appease type checker")
 
 		cachedCaster.LengthChanged:Connect(AttackRenderer.GenerateLengthChangedFunction(attackData))
 		cachedCaster.RayHit:Connect(RayHit)
