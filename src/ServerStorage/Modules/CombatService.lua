@@ -42,6 +42,12 @@ local function replicateAttack(
 	attackData: HeroData.AttackData,
 	localAttackDetails
 )
+	local character = player.Character
+	local HRP = character.HumanoidRootPart
+	if (HRP.Position - origin.Position).Magnitude > Config.MaximumPlayerPositionDifference then
+		warn(player, "fired from a position too far from their server position")
+		return
+	end
 	local behaviour = FastCast.newBehavior()
 	behaviour.MaxDistance = attackData.Range
 	behaviour.RaycastParams = RaycastParams.new()
