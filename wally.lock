@@ -13,6 +13,11 @@ version = "1.15.6"
 dependencies = [["Promise", "evaera/promise@4.0.0"]]
 
 [[package]]
+name = "sleitnick/signal"
+version = "1.5.0"
+dependencies = []
+
+[[package]]
 name = "tazmondo/rumble-rojo"
 version = "0.1.0"
-dependencies = [["Janitor", "howmanysmall/janitor@1.15.6"], ["Promise", "evaera/promise@4.0.0"]]
+dependencies = [["Janitor", "howmanysmall/janitor@1.15.6"], ["Promise", "evaera/promise@4.0.0"], ["Signal", "sleitnick/signal@1.5.0"]]
