@@ -228,10 +228,10 @@ function CombatPlayer.SuperAttack(self: CombatPlayer)
 	self.superCharge = 0
 end
 
-function CombatPlayer.DealDamage(self: CombatPlayer, damage: number)
+function CombatPlayer.DealDamage(self: CombatPlayer, damage: number, targetCharacter: Model?)
 	self.damageDealt += damage
-	self:Sync("DealDamage", damage)
-	self.DamageDealtSignal:Fire(damage)
+	self:Sync("DealDamage", damage, targetCharacter)
+	self.DamageDealtSignal:Fire(damage, targetCharacter)
 end
 
 function CombatPlayer.Destroy(self: CombatPlayer)

@@ -4,7 +4,7 @@ local Janitor = require(ReplicatedStorage.Packages.Janitor)
 local DamagePopup = {}
 DamagePopup.__index = DamagePopup
 
-local LIFETIME = 100
+local LIFETIME = 3
 local template = ReplicatedStorage.Assets.DamagePopup
 local popups: { [Instance]: DamagePopup } = {}
 

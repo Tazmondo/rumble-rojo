@@ -185,7 +185,8 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	if attackData.Data.AbilityType == Enums.AbilityType.Attack then
 		combatPlayer:ChargeSuper(1)
 	end
-	combatPlayer:DealDamage(attackData.Data.Damage)
+	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
+	combatPlayer:DealDamage(attackData.Data.Damage, victimCharacter)
 
 	local beforeState = victimCombatPlayer:GetState()
 	victimCombatPlayer:TakeDamage(attackData.Data.Damage) -- Will update state to dead if this kills

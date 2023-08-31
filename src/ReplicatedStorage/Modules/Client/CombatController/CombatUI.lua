@@ -43,10 +43,14 @@ function CombatUI:SubscribeToCombatPlayerEvents()
 	end))
 end
 
-function CombatUI:HandleDamageDealt(amount: number)
+function CombatUI:HandleDamageDealt(amount: number, target: Model?)
 	self = self :: CombatUI
+	if not target or not target:FindFirstChild("Head") then
+		return
+	end
+	local head = target:FindFirstChild("Head")
 
-	local popup = DamagePopup.get(Color3.fromHSV(0, 0, 1), self.character.Head)
+	local popup = DamagePopup.get(Color3.fromHSV(0, 0, 1), head)
 	popup:AddDamage(amount)
 end
 
