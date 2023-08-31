@@ -18,7 +18,8 @@ function CombatUI.new(combatPlayer: CombatPlayer.CombatPlayer)
 	self.mainUI = PlayerGui.CombatUI
 	self.attackFrame = self.mainUI.Attacks
 	self.attackButton = self.attackFrame.BasicAttack
-	self.superAttackFrame = self.attackFrame.SuperAttack.CanvasGroup
+	self.superAttackCharge = self.attackFrame.SuperAttackCharge.CanvasGroup
+	self.readySuperButton = self.attackFrame.SuperAttackReady
 
 	self.mainUI.Enabled = true
 	self.attackFrame.Visible = true
@@ -33,10 +34,17 @@ function CombatUI:RenderLoop()
 
 	self.janitor:Add(RunService.RenderStepped:Connect(function()
 		local superChargeFill = self.combatPlayer.superCharge / self.combatPlayer.requiredSuperCharge
-		local leftFill = math.clamp(superChargeFill / 0.5, 0, 1)
-		local rightFill = math.clamp((superChargeFill - 0.5) / 0.5, 0, 1)
-		self.superAttackFrame.LeftFill.Size = UDim2.fromScale(0.5, leftFill)
-		self.superAttackFrame.RightFill.Size = UDim2.fromScale(0.5, rightFill)
+		if superChargeFill < 1 then
+			self.superAttackCharge.Visible = true
+			self.readySuperButton.Visible = false
+			local leftFill = math.clamp(superChargeFill / 0.5, 0, 1)
+			local rightFill = math.clamp((superChargeFill - 0.5) / 0.5, 0, 1)
+			self.superAttackCharge.LeftFill.Size = UDim2.fromScale(0.5, leftFill)
+			self.superAttackCharge.RightFill.Size = UDim2.fromScale(0.5, rightFill)
+		else
+			self.superAttackCharge.Visible = false
+			self.readySuperButton.Visible = true
+		end
 	end))
 end
 

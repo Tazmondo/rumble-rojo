@@ -341,8 +341,10 @@ function CombatService:Initialize()
 	Network:OnServerEvent("Super", handleSuper)
 	Network:OnServerEvent("Hit", handleClientHit)
 
-	if workspace:FindFirstChild("Rig") then
-		CombatPlayerData[workspace.Rig] = CombatPlayer.new("Fabio", workspace.Rig.Humanoid)
+	for _, v in pairs(workspace:GetChildren()) do
+		if v.Name == "Rig" then
+			CombatPlayerData[v] = CombatPlayer.new("Fabio", v.Humanoid)
+		end
 	end
 end
 
