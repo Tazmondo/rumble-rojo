@@ -8,6 +8,7 @@ local CombatService = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
@@ -283,8 +284,10 @@ end
 function CombatService:PlayerAdded(player: Player)
 	self = self :: CombatService
 
-	-- warn("Testing combatservice: All players auto enter combat")
-	-- PlayersInCombat[player] = "Fabio"
+	if RunService:IsStudio() then
+		PlayersInCombat[player] = "Fabio"
+	end
+
 	self:SpawnCharacter(player)
 end
 

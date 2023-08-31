@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GeneralVFX = ReplicatedStorage.Assets.VFX.General
 
+local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
@@ -19,13 +20,15 @@ local aimPartTemplates = {
 	[AttackType.Shotgun] = GeneralVFX.AimCone,
 }
 
-function AimRenderer.new(attackData: HeroData.AttackData, character: Model)
+function AimRenderer.new(attackData: HeroData.AttackData, character: Model, combatPlayer: CombatPlayer.CombatPlayer)
 	local self = setmetatable({}, AimRenderer) :: AimRenderer
 	self.janitor = Janitor.new()
 
 	self.character = character
 	self.humanoid = assert(character:FindFirstChild("Humanoid")) :: Humanoid
 	self.HRP = assert(character:FindFirstChild("HumanoidRootPart")) :: BasePart
+
+	self.combatPlayer = combatPlayer
 	self.attackData = attackData
 	self.type = attackData.AttackType
 	self.enabled = false
@@ -77,9 +80,12 @@ function AimRenderer.StartRendering(self: AimRenderer)
 			self.aimPart.Size = Vector3.new(horizontalDistance, 0, depth)
 		end
 
+		local tint = if self.combatPlayer:CanAttack() then Color3.new(1, 1, 1) else Color3.new(1, 0, 0)
+		self:SetTint(tint)
+
 		self.aimPart.CFrame = CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.direction)
 			* CFrame.Angles(0, math.rad(180), 0)
-			* CFrame.new(0, -self.humanoid.HipHeight - self.HRP.Size.Y / 2 + 0.3, self.aimPart.Size.Z / 2)
+			* CFrame.new(0, -self.humanoid.HipHeight - self.HRP.Size.Y / 2 + 0.2, self.aimPart.Size.Z / 2)
 	end))
 end
 

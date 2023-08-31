@@ -88,8 +88,9 @@ function CombatClient.new(heroName: string)
 	self.combatCamera = self.janitor:Add(CombatCamera.new())
 	self.combatCamera:Enable()
 
-	self.aimRenderer =
-		self.janitor:Add(AimRenderer.new(self.combatPlayer.heroData.Attack, self.character) :: AimRenderer.AimRenderer)
+	self.aimRenderer = self.janitor:Add(
+		AimRenderer.new(self.combatPlayer.heroData.Attack, self.character, self.combatPlayer) :: AimRenderer.AimRenderer
+	)
 
 	self.FastCast = FastCast.new()
 
@@ -179,9 +180,6 @@ function CombatClient.HandleMove(self: CombatClient, input: InputObject)
 
 	if self.mouseDown or not self.preRotateAttack then
 		self.aimRenderer:Update(self.currentMouseDirection)
-
-		local aimColor = if self.combatPlayer:CanAttack() then Color3.new(1, 1, 1) else Color3.new(1, 0, 0)
-		self.aimRenderer:SetTint(aimColor)
 	end
 end
 
