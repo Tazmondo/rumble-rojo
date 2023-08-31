@@ -102,7 +102,7 @@ function CombatClient.new(heroName: string)
 			return self.combatPlayer:CanSuperAttack()
 		end))
 
-	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer))
+	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer, self.character))
 
 	self.FastCast = FastCast.new()
 

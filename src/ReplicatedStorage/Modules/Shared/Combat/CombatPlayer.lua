@@ -8,6 +8,7 @@ local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Loader = require(ReplicatedStorage.Modules.Shared.Loader)
+local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local CombatPlayer = {}
 CombatPlayer.__index = CombatPlayer
@@ -36,7 +37,7 @@ end
 
 -- Player is optional as NPCs can be combatplayers
 function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
-	local self = setmetatable({}, CombatPlayer)
+	local self = setmetatable({}, CombatPlayer) :: CombatPlayer
 
 	self.heroData = HeroData[heroName] :: typeof(HeroData.Fabio)
 
@@ -66,12 +67,17 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	self.attacks = {} :: { [number]: Attack }
 	self.player = player
 
+	self.damageDealt = 0
+
+	self.DamageDealtSignal = Signal.new()
+	self.TookDamageSignal = Signal.new()
+
 	self.scheduledChange = {} -- We use a table so if it updates we can detect and cancel the change
 	self.scheduledReloads = 0
 
 	if RunService:IsClient() then
-		Network:OnClientEvent(SYNCEVENT, function(property, value)
-			self[property] = value
+		Network:OnClientEvent(SYNCEVENT, function(func, ...)
+			self[func](self, ...)
 		end)
 	end
 
@@ -189,24 +195,26 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 		self:ChangeState(self.StateEnum.Dead)
 	end
-	self:Sync("health", self.health)
+	self:Sync("TakeDamage", amount)
+	self.TookDamageSignal:Fire(amount)
 end
 
 function CombatPlayer.CanTakeDamage(self: CombatPlayer)
-	return true
+	-- TODO: return false if has a barrier or shield or something
+	return self.state ~= self.StateEnum.Dead
 end
 
 function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
 	self.maxHealth = newMaxHealth
 	self.health = math.clamp(self.health, 0, newMaxHealth)
 
-	self:Sync("maxHealth", self.maxHealth)
+	self:Sync("SetMaxHealth", newMaxHealth)
 end
 
 function CombatPlayer.ChargeSuper(self: CombatPlayer, amount: number)
 	self.superCharge = math.min(self.requiredSuperCharge, self.superCharge + amount)
 
-	self:Sync("superCharge", self.superCharge)
+	self:Sync("ChargeSuper", amount)
 end
 
 function CombatPlayer.CanSuperAttack(self: CombatPlayer)
@@ -218,6 +226,12 @@ end
 
 function CombatPlayer.SuperAttack(self: CombatPlayer)
 	self.superCharge = 0
+end
+
+function CombatPlayer.DealDamage(self: CombatPlayer, damage: number)
+	self.damageDealt += damage
+	self:Sync("DealDamage", damage)
+	self.DamageDealtSignal:Fire(damage)
 end
 
 function CombatPlayer.Destroy(self: CombatPlayer)
