@@ -56,6 +56,11 @@ end
 
 function CombatUI:HandleDamageTaken(amount: number)
 	self = self :: CombatUI
+
+	local head = self.character:FindFirstChild("Head")
+
+	local popup = DamagePopup.get(Color3.fromHSV(0, 1, 1), head)
+	popup:AddDamage(amount)
 end
 
 function CombatUI:RenderLoop()

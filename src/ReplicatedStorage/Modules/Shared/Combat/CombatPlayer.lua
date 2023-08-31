@@ -195,12 +195,13 @@ end
 function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 	self.health = math.max(0, self.health - amount)
 	self.humanoid.Health = self.health
+	self:Sync("TakeDamage", amount)
+	self.TookDamageSignal:Fire(amount)
+
 	if self.health <= 0 then
 		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 		self:ChangeState(self.StateEnum.Dead)
 	end
-	self:Sync("TakeDamage", amount)
-	self.TookDamageSignal:Fire(amount)
 end
 
 function CombatPlayer.CanTakeDamage(self: CombatPlayer)

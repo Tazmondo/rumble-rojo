@@ -63,6 +63,7 @@ function DamagePopup:Update(dt: number)
 	self.gui.ExtentsOffset = self.baseOffset + Vector3.new(0, self.currentOffset, 0)
 
 	self.gui.DamageNumber.Text = self.damage
+	self.gui.DamageNumber.TextColor3 = self.color
 end
 
 function DamagePopup:AddDamage(damage: number)
