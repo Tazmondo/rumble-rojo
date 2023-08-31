@@ -39,33 +39,33 @@ local function _VisualiseRay(ray: Ray)
 end
 
 -- Returns hit position, instance, normal
-local function ScreenPointCast(x: number, y: number, exclude: { Instance }?)
-	exclude = exclude or {}
-	assert(exclude)
+-- local function ScreenPointCast(x: number, y: number, exclude: { Instance }?)
+-- 	exclude = exclude or {}
+-- 	assert(exclude)
 
-	if workspace.Arena.Map:FindFirstChild("Arena") then
-		local border: Instance = assert(workspace.Arena.Map.Arena.Border)
-		table.insert(exclude, border)
-	end
+-- 	if workspace.Arena.Map:FindFirstChild("Arena") then
+-- 		local border: Instance = assert(workspace.Arena.Map.Arena.Border)
+-- 		table.insert(exclude, border)
+-- 	end
 
-	local params = RaycastParams.new()
-	-- local mapFolder = workspace:FindFirstChild("Map")
-	-- assert(mapFolder, "map folder not found")
-	-- params.FilterDescendantsInstances = { mapFolder }
-	-- params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = exclude or {}
-	params.FilterType = Enum.RaycastFilterType.Exclude
+-- 	local params = RaycastParams.new()
+-- 	-- local mapFolder = workspace:FindFirstChild("Map")
+-- 	-- assert(mapFolder, "map folder not found")
+-- 	-- params.FilterDescendantsInstances = { mapFolder }
+-- 	-- params.FilterType = Enum.RaycastFilterType.Include
+-- 	params.FilterDescendantsInstances = exclude or {}
+-- 	params.FilterType = Enum.RaycastFilterType.Exclude
 
-	local cam = workspace.CurrentCamera
-	local ray = cam:ScreenPointToRay(x, y)
+-- 	local cam = workspace.CurrentCamera
+-- 	local ray = cam:ScreenPointToRay(x, y)
 
-	local cast = workspace:Raycast(ray.Origin, ray.Direction * 1000, params)
-	if cast then
-		return { cast.Position, cast.Instance, cast.Normal }
-	else
-		return { ray.Origin + ray.Direction * 1000, nil, nil } -- Mimics the behaviour of Player.Mouse
-	end
-end
+-- 	local cast = workspace:Raycast(ray.Origin, ray.Direction * 1000, params)
+-- 	if cast then
+-- 		return { cast.Position, cast.Instance, cast.Normal }
+-- 	else
+-- 		return { ray.Origin + ray.Direction * 1000, nil, nil } -- Mimics the behaviour of Player.Mouse
+-- 	end
+-- end
 
 function CombatClient.new(heroName: string)
 	local self = setmetatable({}, CombatClient) :: CombatClient
@@ -147,30 +147,48 @@ function CombatClient.CastTerminating(self: CombatClient, activeCast)
 	end
 end
 
-function CombatClient.NormaliseClickTarget(self: CombatClient): Ray
-	local lastPosition, lastInstance, lastNormal =
-		table.unpack(ScreenPointCast(self.lastMousePosition.X, self.lastMousePosition.Y, { self.character }))
-
-	local targetHeight = self.HRP.Position.Y
-
-	if lastInstance and lastInstance.Parent:FindFirstChild("Humanoid") then
-		-- If they clicked on a player, we do not need to correct the aim height
-		targetHeight = lastInstance.Parent.HumanoidRootPart.Position.Y
-	else
-		-- Here we are making sure they clicked on a sloped surface, so a player could actually be standing on it.
-		-- If the angle is greater than 80, then the surface is pretty much a wall, and it would not make sense to target it.
-		if lastNormal then
-			local angleToVertical = math.deg(Vector3.new(0, 1, 0):Angle(lastNormal))
-			if angleToVertical <= 80 then
-				targetHeight = lastPosition.Y + 3
-			end
-		end
+local function RayPlaneIntersection(origin, normal, rayOrigin, unitRayDirection)
+	local rpoint = rayOrigin - origin
+	local dot = unitRayDirection:Dot(normal)
+	if dot == 0 then
+		-- Parallel
+		return nil
 	end
 
-	local ray =
-		Ray.new(self.HRP.Position, Vector3.new(lastPosition.X, targetHeight, lastPosition.Z) - self.HRP.Position)
+	local t = -rpoint:Dot(normal) / dot
+	return rayOrigin + t * unitRayDirection, t
+end
 
-	return ray
+function CombatClient.NormaliseClickTarget(self: CombatClient): Ray
+	local ray = workspace.CurrentCamera:ScreenPointToRay(self.lastMousePosition.X, self.lastMousePosition.Y)
+	local rayPlaneIntersection =
+		RayPlaneIntersection(self.HRP.Position, Vector3.new(0, 1, 0), ray.Origin, ray.Direction)
+
+	return Ray.new(self.HRP.Position, rayPlaneIntersection - self.HRP.Position).Unit
+
+	-- We do not need this code anymore as maps are flat
+
+	-- local lastPosition, lastInstance, lastNormal =
+	-- 	table.unpack(ScreenPointCast(self.lastMousePosition.X, self.lastMousePosition.Y, { self.character }))
+
+	-- if lastInstance and lastInstance.Parent:FindFirstChild("Humanoid") then
+	-- 	-- If they clicked on a player, we do not need to correct the aim height
+	-- 	targetHeight = lastInstance.Parent.HumanoidRootPart.Position.Y
+	-- else
+	-- 	-- Here we are making sure they clicked on a sloped surface, so a player could actually be standing on it.
+	-- 	-- If the angle is greater than 80, then the surface is pretty much a wall, and it would not make sense to target it.
+	-- 	if lastNormal then
+	-- 		local angleToVertical = math.deg(Vector3.new(0, 1, 0):Angle(lastNormal))
+	-- 		if angleToVertical <= 80 then
+	-- 			targetHeight = lastPosition.Y + 3
+	-- 		end
+	-- 	end
+	-- end
+
+	-- local ray =
+	-- 	Ray.new(self.HRP.Position, Vector3.new(lastPosition.X, targetHeight, lastPosition.Z) - self.HRP.Position)
+
+	-- return ray
 end
 
 function CombatClient.HandleMove(self: CombatClient, input: InputObject)
