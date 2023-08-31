@@ -177,7 +177,9 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		print("Character is invulnerable")
 		return
 	end
-	combatPlayer:ChargeSuper(1)
+	if attackData.Data.AbilityType == Enums.AbilityType.Attack then
+		combatPlayer:ChargeSuper(1)
+	end
 
 	local beforeState = victimCombatPlayer:GetState()
 	victimCombatPlayer:TakeDamage(attackData.Data.Damage) -- Will update state to dead if this kills
