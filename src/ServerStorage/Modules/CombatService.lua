@@ -59,16 +59,7 @@ local function replicateAttack(
 	behaviour.RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	if attackData.AttackType == Enums.AttackType.Shotgun then
-		local attackDetails = AttackLogic.Shotgun(
-			attackData.Angle,
-			attackData.ShotCount,
-			attackData.ProjectileSpeed,
-			origin,
-			localAttackDetails.seed,
-			function()
-				return combatPlayer:GetNextAttackId()
-			end
-		)
+		local attackDetails = AttackLogic.MakeAttack(combatPlayer, origin, attackData, localAttackDetails.seed)
 		localAttackDetails = localAttackDetails :: typeof(attackDetails)
 
 		for index, pellet in pairs(attackDetails.pellets) do

@@ -1,4 +1,3 @@
---!strict
 -- Used by server and client to generate data deterministically for attacks (using seeding)
 
 local CombatPlayer = require(script.Parent.CombatPlayer)
@@ -11,7 +10,8 @@ local AttackLogic = {}
 function AttackLogic.MakeAttack(
 	combatPlayer: CombatPlayer.CombatPlayer,
 	origin: CFrame,
-	attackData: HeroData.AttackData
+	attackData: HeroData.AttackData,
+	seed: number?
 ): any
 	if attackData.AttackType == Enums.AttackType.Shotgun then
 		return AttackLogic.Shotgun(
@@ -19,7 +19,7 @@ function AttackLogic.MakeAttack(
 			attackData.ShotCount,
 			attackData.ProjectileSpeed,
 			origin,
-			nil,
+			seed,
 			function()
 				return combatPlayer:GetNextAttackId()
 			end
