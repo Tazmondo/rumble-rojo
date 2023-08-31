@@ -78,7 +78,7 @@ local function replicateAttack(
 			end
 			local cast = fastCast:Fire(pellet.CFrame.Position, pellet.CFrame.LookVector, pellet.speed, behaviour)
 			cast.UserData.Id = pellet.id
-			combatPlayer:RegisterAttack(pellet.id, pellet.CFrame, cast)
+			combatPlayer:RegisterAttack(pellet.id, pellet.CFrame, cast, attackData)
 		end
 		Network:FireAllClients("Attack", player, attackData, origin, attackDetails)
 	end

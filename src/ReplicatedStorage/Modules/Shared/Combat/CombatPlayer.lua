@@ -168,13 +168,13 @@ function CombatPlayer.Attack(self: CombatPlayer)
 end
 
 -- Different from attack since attacks with multiple bullets will "attack" once but call this for each bullet fired
-function CombatPlayer.RegisterAttack(self: CombatPlayer, attackId, attackCF, cast)
+function CombatPlayer.RegisterAttack(self: CombatPlayer, attackId, attackCF, cast, attackData)
 	self.attacks[attackId] = {
 		AttackId = attackId,
 		FiredTime = os.clock(),
 		FiredCFrame = attackCF,
 		Cast = cast,
-		Data = self.heroData.Attack,
+		Data = attackData,
 		HitPosition = nil,
 	}
 	task.delay(Config.MaxAttackTimeout, function()
@@ -234,7 +234,7 @@ export type Attack = {
 	FiredTime: number,
 	FiredCFrame: CFrame,
 	Cast: any,
-	Data: HeroData.AttackData,
+	Data: HeroData.AttackData | HeroData.SuperData,
 	HitPosition: Vector3?,
 }
 export type CombatPlayer = typeof(CombatPlayer.new(...))

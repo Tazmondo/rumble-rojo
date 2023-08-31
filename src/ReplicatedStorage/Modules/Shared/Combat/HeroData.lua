@@ -24,10 +24,10 @@ local HeroData = {
 		Super = {
 			AbilityType = Enums.AbilityType.Super,
 			Name = "Super Shell",
-			Charge = 1,
+			Charge = 10,
 			Damage = 200,
-			Range = Enums.AttackRange.Medium,
-			ProjectileSpeed = Enums.ProjectileSpeed.Medium,
+			Range = Enums.AttackRange.Short,
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
 
 			AttackType = Enums.AttackType.Shotgun,
@@ -41,5 +41,6 @@ local HeroData = {
 
 export type HeroData = typeof(HeroData)
 export type AttackData = typeof(HeroData.Fabio.Attack)
+export type SuperData = typeof(HeroData.Fabio.Super)
 
 return HeroData
