@@ -16,6 +16,7 @@ local AimRenderer = require(script.Parent.AimRenderer)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
 local AttackRenderer = require(script.Parent.AttackRenderer)
 local CombatCamera = require(script.Parent.CombatCamera)
+local CombatUI = require(script.Parent.CombatUI)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
 
 local AttackLogic = require(combatFolder.AttackLogic)
@@ -96,6 +97,8 @@ function CombatClient.new(heroName: string)
 
 	self.superAimRenderer =
 		self.janitor:Add(AimRenderer.new(self.combatPlayer.heroData.Super, self.character, self.combatPlayer))
+
+	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer))
 
 	self.FastCast = FastCast.new()
 
