@@ -5,7 +5,7 @@ local Config = {
 	-- Default: 0.1
 	MaximumAllowedLatencyVariation = 0.1,
 
-	-- Maximum allowed distance between client position and server position of other players
+	-- Maximum allowed distance between client position and server position of characters
 	MaximumPlayerPositionDifference = 20,
 
 	-- Maximum time allowed between an attack being fired and a registered hit. After this time, attacks will be cancelled.

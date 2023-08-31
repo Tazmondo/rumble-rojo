@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local AccelTween = require(ReplicatedStorage.Modules.Shared.AccelTween)
+local Janitor = require(ReplicatedStorage.Packages.Janitor)
 
 -- Makes sure combat cameras arent forgotten to be cleaned up, as only one should exist at any time anyway
 local prevCamera: CombatCamera? = nil
@@ -20,6 +21,8 @@ function CombatCamera.new()
 		prevCamera:Destroy()
 	end
 	local self = setmetatable({}, CombatCamera) :: CombatCamera
+
+	self.janitor = Janitor.new()
 
 	self.player = Players.LocalPlayer
 	self.character = self.player.Character
@@ -37,19 +40,15 @@ function CombatCamera.new()
 	self.enabled = false
 	self.transitioning = false
 
-	self.connections = {}
 	self.destroyed = false
 
 	self:SetupInput()
 	self:SetupCamera()
 
-	table.insert(
-		self.connections,
-		self.player.CharacterAdded:Connect(function(char)
-			self.character = char
-			self.HRP = char:WaitForChild("HumanoidRootPart")
-		end)
-	)
+	self.janitor:Add(self.player.CharacterAdded:Connect(function(char)
+		self.character = char
+		self.HRP = char:WaitForChild("HumanoidRootPart")
+	end))
 
 	return self
 end
@@ -65,36 +64,33 @@ function CombatCamera.SetupCamera(self: CombatCamera)
 	-- Here splitting the camera CFraming into two parts fixes a stuttering issue with the player character.
 
 	-- Necessary to use step since it's based off the position of a part (the HRP)
-	table.insert(
-		self.connections,
-		RunService.Stepped:Connect(function(t: number, dt)
-			if self.enabled and not self.transitioning then
-				local targetCFrame = self:GetCFrame()
-				local currentCFrame = self.camera.CFrame
-				local differenceVector: Vector3 = targetCFrame.Position - currentCFrame.Position
+	self.janitor:Add(RunService.Stepped:Connect(function(t: number, dt)
+		if self.enabled and not self.transitioning then
+			local targetCFrame = self:GetCFrame()
+			local currentCFrame = self.camera.CFrame
+			local differenceVector: Vector3 = targetCFrame.Position - currentCFrame.Position
 
-				self.accelTween.p = -differenceVector.Magnitude
+			self.accelTween.p = -differenceVector.Magnitude
 
-				-- Move camera in direction of target based on current velocity of the spring. Preserve its rotation.
-				currentCFrame = CFrame.new(currentCFrame.Position + self.accelTween.v * differenceVector.Unit * dt)
-					* currentCFrame.Rotation
+			-- Move camera in direction of target based on current velocity of the spring. Preserve its rotation.
+			currentCFrame = CFrame.new(currentCFrame.Position + self.accelTween.v * differenceVector.Unit * dt)
+				* currentCFrame.Rotation
 
-				differenceVector = targetCFrame.Position - currentCFrame.Position
-				self.accelTween.p = -differenceVector.Magnitude
+			differenceVector = targetCFrame.Position - currentCFrame.Position
+			self.accelTween.p = -differenceVector.Magnitude
 
-				self.camera.CFrame = currentCFrame
+			self.camera.CFrame = currentCFrame
 
-				-- 	-- Lerp can actually take alpha > 1, which causes camera to overshoot and mess up completely
-				-- 	local alpha = math.clamp(dt * 8.5, 0, 1)
+			-- 	-- Lerp can actually take alpha > 1, which causes camera to overshoot and mess up completely
+			-- 	local alpha = math.clamp(dt * 8.5, 0, 1)
 
-				-- 	local targetCFrame = self:GetCFrame()
-				-- local smoothCFrame = CFrame.new()
-				-- 	smoothCFrame = self.camera.CFrame:Lerp(targetCFrame, alpha)
+			-- 	local targetCFrame = self:GetCFrame()
+			-- local smoothCFrame = CFrame.new()
+			-- 	smoothCFrame = self.camera.CFrame:Lerp(targetCFrame, alpha)
 
-				-- 	self.camera.CFrame = smoothCFrame
-			end
-		end)
-	)
+			-- 	self.camera.CFrame = smoothCFrame
+		end
+	end))
 end
 
 function CombatCamera.Transition(self: CombatCamera, enable: boolean)
@@ -117,30 +113,30 @@ function CombatCamera.Transition(self: CombatCamera, enable: boolean)
 	self.savedCFrame = initialOffset
 
 	local startTime
-	local transitionStep
-	transitionStep = RunService.Stepped:Connect(function(t: number)
-		if not startTime then
-			startTime = t
-		end
-		local alpha =
-			TweenService:GetValue((t - startTime) / transitionTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		local newStartPosition = CFrame.new(HRP.Position) * initialOffset
+	self.janitor:Add(
+		RunService.Stepped:Connect(function(t: number)
+			if not startTime then
+				startTime = t
+			end
+			local alpha =
+				TweenService:GetValue((t - startTime) / transitionTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			local newStartPosition = CFrame.new(HRP.Position) * initialOffset
 
-		local targetCFrame = CFrame.new(HRP.Position) * targetOffset
-		if enable then
-			targetCFrame = self:GetCFrame()
-		end
+			local targetCFrame = CFrame.new(HRP.Position) * targetOffset
+			if enable then
+				targetCFrame = self:GetCFrame()
+			end
 
-		-- local targetCFrame = CFrame.lookAt(targetPosition, HRP.Position)
+			-- local targetCFrame = CFrame.lookAt(targetPosition, HRP.Position)
 
-		self.camera.CFrame = newStartPosition:Lerp(targetCFrame, alpha)
-		if self.destroyed then
-			transitionStep:Disconnect()
-		end
-	end)
+			self.camera.CFrame = newStartPosition:Lerp(targetCFrame, alpha)
+		end),
+		"Disconnect",
+		"transitionStep"
+	)
 
 	task.delay(transitionTime, function()
-		transitionStep:Disconnect()
+		self.janitor:Remove("transitionStep")
 		if not self.destroyed then
 			self.transitioning = false
 			if not enable then
@@ -169,21 +165,18 @@ function CombatCamera.Disable(self: CombatCamera)
 end
 
 function CombatCamera.SetupInput(self: CombatCamera)
-	table.insert(
-		self.connections,
-		UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
-			if processed then
-				return
+	self.janitor:Add(UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+		if processed then
+			return
+		end
+		if input.KeyCode == Enum.KeyCode.F then
+			if self.enabled then
+				self:Disable()
+			else
+				self:Enable()
 			end
-			if input.KeyCode == Enum.KeyCode.F then
-				if self.enabled then
-					self:Disable()
-				else
-					self:Enable()
-				end
-			end
-		end)
-	)
+		end
+	end))
 end
 
 function CombatCamera.Destroy(self: CombatCamera)
@@ -195,9 +188,7 @@ function CombatCamera.Destroy(self: CombatCamera)
 	-- 	so im leaving it like this
 	self.camera.CameraType = Enum.CameraType.Custom
 
-	for _, connection in pairs(self.connections) do
-		connection:Disconnect()
-	end
+	self.janitor:Destroy()
 
 	if prevCamera == self then
 		prevCamera = nil

@@ -1,5 +1,5 @@
 -- variables
-local Main = {
+local UIController = {
 	MinPlayers = 2,
 }
 
@@ -27,13 +27,13 @@ local SoundService = Loader:LoadModule("SoundService")
 local LeaderboardController
 
 -- functions
-function Main:IsAlive()
+function UIController:IsAlive()
 	return Player
 		and Player.Character
 		and (Player.Character:FindFirstChild("Humanoid") and Player.Character.Humanoid.Health > 0)
 end
 
-function Main:UpdateStartTime()
+function UIController:UpdateStartTime()
 	ArenaUI.Game.Visible = GameStats.RoundStatus.Value == "Starting" and SharedMemory.InMatch
 	ArenaUI.Game.Countdown.Visible = GameStats.RoundStatus.Value == "Starting" and SharedMemory.InMatch
 	Scoreboard.Time.Timer.Text = GameStats.RoundStatus.Value == "Starting" and "2:00" or "" -- visual beauty
@@ -134,7 +134,7 @@ function Main:UpdateStartTime()
 	end
 end
 
-function Main:Initialize()
+function UIController:Initialize()
 	LeaderboardController = Loader:LoadModule("LeaderboardController")
 
 	if not Player.Character then
@@ -252,4 +252,4 @@ function Main:Initialize()
 	end)
 end
 
-return Main
+return UIController
