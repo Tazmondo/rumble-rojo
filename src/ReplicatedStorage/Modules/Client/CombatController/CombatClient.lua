@@ -112,7 +112,7 @@ function CombatClient.new(heroName: string)
 		self:CastTerminating(...)
 	end)
 
-	self.nameTag = NameTag.Init(self.player, self.combatPlayer, false)
+	self.nameTag = NameTag.Init(self.character, self.combatPlayer)
 
 	self:GetInputs()
 	self:SetupCharacterRotation()

@@ -3,21 +3,20 @@ local NameTag = {}
 
 local nameTagTemplate = game:GetService("ReplicatedStorage").Assets.NameTag
 
-function NameTag.Init(player: Player, combatPlayer: CombatPlayer.CombatPlayer, hide: boolean)
-	local char = assert(player.Character, "Tried to initialize nametag on player without a character")
-	assert(player.Character.Parent, "Character has not been parented to workspace yet!")
+function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer, hide: Player?)
 	local NameTag = nameTagTemplate:Clone()
+	assert(character.Parent, "Character has not been parented to workspace yet!")
 
 	if hide then
-		NameTag.PlayerToHideFrom = player
+		NameTag.PlayerToHideFrom = hide
 	end
 
-	NameTag.PlayerName.Text = player.Name
+	NameTag.PlayerName.Text = character.Name
 
-	NameTag.Parent = char.Head
+	NameTag.Parent = character:FindFirstChild("Head")
 
 	task.spawn(function()
-		while char.Parent ~= nil and NameTag.Parent ~= nil do
+		while character.Parent ~= nil and NameTag.Parent ~= nil do
 			for i = 1, 3 do
 				local AmmoBar = NameTag.AmmoBar:FindFirstChild("Ammo" .. i)
 

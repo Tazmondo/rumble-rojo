@@ -222,12 +222,12 @@ function CombatService:GetCombatPlayerForPlayer(player: Player): CombatPlayer.Co
 	end
 end
 
-function CombatService:InitializeNameTag(player: Player, combatPlayer: CombatPlayer.CombatPlayer)
+function CombatService:InitializeNameTag(character: Model, combatPlayer: CombatPlayer.CombatPlayer, player: Player?)
 	self = self :: CombatService
 
-	local nameTag = NameTag.Init(player, combatPlayer, true)
+	local nameTag = NameTag.Init(character, combatPlayer, player)
 	task.spawn(function()
-		while player.Character and CombatPlayerData[player.Character] do
+		while character and CombatPlayerData[character] do
 			task.wait()
 		end
 		nameTag:Destroy()
@@ -262,7 +262,7 @@ function CombatService:SetupCombatPlayer(player: Player, heroName: string)
 
 	Network:FireClient(player, "CombatPlayer Initialize", heroName)
 
-	self:InitializeNameTag(player, combatPlayer)
+	self:InitializeNameTag(char, combatPlayer, player)
 end
 
 function CombatService:LoadCharacterWithModel(player: Player, characterModel: Model?)
@@ -343,7 +343,9 @@ function CombatService:Initialize()
 
 	for _, v in pairs(workspace:GetChildren()) do
 		if v.Name == "Rig" then
-			CombatPlayerData[v] = CombatPlayer.new("Fabio", v.Humanoid)
+			local combatPlayer = CombatPlayer.new("Fabio", v.Humanoid)
+			CombatPlayerData[v] = combatPlayer
+			self:InitializeNameTag(v, combatPlayer)
 		end
 	end
 end
