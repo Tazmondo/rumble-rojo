@@ -28,7 +28,15 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 			local healthRatio = combatPlayer.health / combatPlayer.maxHealth
 
 			-- Size the smaller bar as a percentage of the size of the parent bar, based off player health percentage
-			NameTag.HealthBar.HealthBar.Size = UDim2.new(healthRatio, 0, 0, NameTag.HealthBar.HealthBar.Size.Y.Offset)
+			local healthBar = NameTag.HealthBar.HealthBar
+			healthBar.Size = UDim2.new(healthRatio, 0, 0, healthBar.Size.Y.Offset)
+
+			-- Fixes weird bug where it would still render with a width at 0, looking incredibly strange.
+			if healthBar.AbsoluteSize.X < 2.1 then
+				healthBar.Visible = false
+			else
+				healthBar.Visible = true
+			end
 
 			local colour1 = Color3.fromHSV(healthRatio * 100 / 255, 206 / 255, 1)
 			local colour2 = Color3.fromHSV(healthRatio * 88 / 255, 197 / 255, 158 / 255)
