@@ -11,6 +11,7 @@ local Player = game.Players.LocalPlayer
 
 local MainUI = Player:WaitForChild("PlayerGui"):WaitForChild("MainUI") :: ScreenGui
 local ArenaUI = Player:WaitForChild("PlayerGui"):WaitForChild("ArenaUI") :: ScreenGui
+local ResultsUI = Player:WaitForChild("PlayerGui"):WaitForChild("ResultsUI") :: ScreenGui
 local TopText = ArenaUI.Interface.TopBar.TopText.Text
 
 -- services
@@ -24,6 +25,7 @@ local Net = Red.Client("game")
 local ready = false
 local selectedHero = false
 local UIState = ""
+local showingMatchReults = false
 
 -- functions
 function UIController:IsAlive()
@@ -48,8 +50,8 @@ end
 function HideAll()
 	ArenaUI.Enabled = false
 	MainUI.Enabled = false
+	ResultsUI.Enabled = false
 	ArenaUI.Interface.CharacterSelection.Visible = false
-	ArenaUI.Interface.MatchResults.Visible = false
 	ArenaUI.Interface.TopBar.Visible = false
 	ArenaUI.Interface.Game.Visible = false
 
@@ -127,14 +129,12 @@ function BattleStartingRender(changed)
 end
 
 local died = false
-local diedProcessed = false
 function BattleRender(changed)
 	-- Combat UI rendering is handled by the combat client
 	ArenaUI.Enabled = true
 
 	if changed then
 		died = false
-		diedProcessed = false
 	end
 
 	local gameFrame = ArenaUI.Interface.Game
@@ -142,12 +142,6 @@ function BattleRender(changed)
 
 	if died then
 		gameFrame.Died.Visible = true
-
-		if not diedProcessed then
-			diedProcessed = true
-			task.wait(1)
-			died = false
-		end
 	else
 		gameFrame.Died.Visible = false
 	end
@@ -181,8 +175,13 @@ function UIController:RenderAllUI()
 
 	local changed = state ~= UIState
 
-	if changed then
+	if changed or showingMatchReults then
 		HideAll()
+	end
+
+	if showingMatchReults then
+		ResultsUI.Enabled = true
+		return
 	end
 
 	if state == "NotEnoughPlayers" then
@@ -266,8 +265,16 @@ function UIController:Initialize()
 		end
 	end
 
+	ResultsUI.Results.Actions.Proceed.Activated:Connect(function()
+		showingMatchReults = false
+	end)
+
 	Net:On("PlayerKilled", function()
 		died = true
+	end)
+
+	Net:On("MatchResults", function()
+		showingMatchReults = true
 	end)
 end
 
