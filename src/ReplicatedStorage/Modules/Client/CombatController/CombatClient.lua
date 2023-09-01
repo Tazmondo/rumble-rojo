@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 
 local combatFolder = ReplicatedStorage.Modules.Shared.Combat
 
+local SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local AimRenderer = require(script.Parent.AimRenderer)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
@@ -119,6 +120,14 @@ function CombatClient.new(heroName: string)
 	end)
 
 	self.nameTag = NameTag.Init(self.character, self.combatPlayer)
+
+	Net:On("CombatKill", function()
+		SoundController:PlayGeneralSound("KO")
+	end)
+
+	-- Net:On("PlayerKill", function()
+	-- 	-- TODO: Render leaderboard, maybe dont do this here
+	-- end)
 
 	self:GetInputs()
 	self:SetupCharacterRotation()
@@ -361,6 +370,7 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 		return
 	end
 	self.combatPlayer:Attack()
+	SoundController:PlayAttackSound(self.combatPlayer.heroData.Attack.Name)
 
 	trajectory = trajectory.Unit
 	local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
@@ -380,6 +390,7 @@ function CombatClient.SuperAttack(self: CombatClient, trajectory: Ray)
 		return
 	end
 	self.combatPlayer:SuperAttack()
+	SoundController:PlayAttackSound(self.combatPlayer.heroData.Super.Name)
 
 	trajectory = trajectory.Unit
 	local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)

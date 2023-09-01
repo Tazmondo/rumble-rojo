@@ -7,6 +7,11 @@
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local SoundController
+if RunService:IsClient() then
+	SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
+end
 local Red = require(ReplicatedStorage.Packages.Red)
 
 local SYNCEVENT = "CombatPlayerSync"
@@ -123,6 +128,9 @@ function CombatPlayer.GetState(self: CombatPlayer)
 end
 
 function CombatPlayer.Reload(self: CombatPlayer)
+	if RunService:IsClient() then
+		SoundController:PlayGeneralSound("ReloadAmmo")
+	end
 	self.ammo = math.min(self.maxAmmo, self.ammo + 1)
 	self.scheduledReloads = math.max(0, self.scheduledReloads - 1)
 
@@ -239,7 +247,13 @@ function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
 end
 
 function CombatPlayer.ChargeSuper(self: CombatPlayer, amount: number)
+	local oldCharge = self.superCharge >= self.requiredSuperCharge
 	self.superCharge = math.min(self.requiredSuperCharge, self.superCharge + amount)
+	local newCharge = self.superCharge >= self.requiredSuperCharge
+
+	if newCharge and not oldCharge and RunService:IsClient() then
+		SoundController:PlayGeneralSound("SuperAttackAvailable")
+	end
 
 	self:Sync("ChargeSuper", amount)
 end

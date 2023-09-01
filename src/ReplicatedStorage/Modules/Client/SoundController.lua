@@ -11,6 +11,7 @@ local soundFolder = ReplicatedStorage.Assets.Sounds
 
 local playingFolder = Instance.new("Folder")
 playingFolder.Parent = localPlayer.PlayerScripts
+playingFolder.Name = "PlayingSounds"
 
 -- Index is original, value is clone
 local playingSounds: { [Sound]: Sound } = {}
@@ -34,6 +35,7 @@ function SoundController:SetAmbience(sound: Sound?)
 end
 
 function SoundController:_PlaySound(sound: Sound, anchor: Instance?)
+	print("Playing", sound.Name, "in", anchor)
 	assert(sound, "Nil sound passed to PlaySound")
 	local clonedSound = playingSounds[sound]
 	if clonedSound then
@@ -67,22 +69,14 @@ function SoundController:PlayGeneralSound(soundName: string, anchor: Instance?)
 	self:_PlaySound(sound, anchor)
 end
 
-function SoundController:PlayAttackSound(heroName: string, character: Model?)
-	local sound = soundFolder.Attack:FindFirstChild(heroName)
+function SoundController:PlayAttackSound(attackName: string, character: Model?)
+	local sound = soundFolder.Attack:FindFirstChild(attackName)
 	if not sound then
-		error("Invalid sound provided: " .. heroName)
+		error("Invalid sound provided: " .. attackName)
 	end
+	local part = if character then character:FindFirstChild("HumanoidRootPart") else nil
 
-	self:_PlaySound(sound, character)
-end
-
-function SoundController:PlaySuperSound(heroName: string, character: Model?)
-	local sound = soundFolder.Super:FindFirstChild(heroName)
-	if not sound then
-		error("Invalid sound provided: " .. heroName)
-	end
-
-	self:_PlaySound(sound, character)
+	self:_PlaySound(sound, part)
 end
 
 function SoundController:StateUpdated()
@@ -110,6 +104,11 @@ function SoundController:Initialize()
 	Net:Folder():GetAttributeChangedSignal("GameState"):Connect(SoundController.StateUpdated)
 	Net:LocalFolder():GetAttributeChangedSignal("InMatch"):Connect(SoundController.StateUpdated)
 	SoundController:StateUpdated()
+
+	Net:On("AttackSound", function(...)
+		SoundController:PlayAttackSound(...)
+	end)
+	print("SoundController initialized")
 end
 
 SoundController:Initialize()

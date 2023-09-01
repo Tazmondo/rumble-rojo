@@ -152,6 +152,7 @@ function BattleStartingRender(changed)
 			gameFrame.StartFight.Visible = true
 
 			if hitZeroNow then
+				SoundController:PlayGeneralSound("FightStart")
 				gameFrame.StartFight:TweenPosition(
 					UDim2.fromScale(0.5, 0.5),
 					Enum.EasingDirection.Out,
@@ -202,6 +203,7 @@ function BattleEndedRender(changed)
 	local roundOver = ArenaUI.Interface.Game.RoundOver
 	ArenaUI.Interface.Game.Visible = true
 	if changed and ready then
+		SoundController:PlayGeneralSound("BattleOver")
 		roundOver.Visible = true
 		task.delay(1, function()
 			roundOver.Visible = false
@@ -217,6 +219,9 @@ function BattleEndedRender(changed)
 end
 
 function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
+	if data.Won then
+		SoundController:PlayGeneralSound("Victory")
+	end
 	showingMatchResults = true
 	ResultsUI.Enabled = true
 
@@ -362,8 +367,9 @@ function UIController:Initialize()
 		end
 	end
 
-	Net:On("PlayerKilled", function()
+	Net:On("PlayerDied", function()
 		died = true
+		SoundController:PlayGeneralSound("Died")
 	end)
 
 	Net:On("MatchResults", RenderMatchResults)

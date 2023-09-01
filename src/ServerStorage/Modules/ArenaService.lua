@@ -39,7 +39,7 @@ if RunService:IsStudio() then
 end
 
 -- Use Net:Folder() predominantly, as multiple scripts on client need access to information about game state
-local Net = Red.Server("game", { "PlayerKilled", "MatchResults" })
+local Net = Red.Server("game", { "PlayerDied", "MatchResults" })
 Net:Folder()
 
 local registeredPlayers: { [Player]: Types.PlayerBattleStats } = {} -- boolean before character select, string afterwards
@@ -307,7 +307,7 @@ function ArenaService.Initialize()
 		end
 		if victimData then
 			victimData.Died = true
-			Net:Fire(data.Victim, "PlayerKilled")
+			Net:Fire(data.Victim, "PlayerDied")
 			ArenaService.HandleResults(data.Victim)
 		end
 	end)

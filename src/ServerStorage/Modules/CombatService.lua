@@ -8,10 +8,12 @@ local CombatService = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 
 local LoadedService = require(script.Parent.LoadedService)
 local DataService = require(script.Parent.DataService)
+local SoundService = require(script.Parent.SoundService)
 
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
@@ -21,7 +23,7 @@ local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
 local Red = require(ReplicatedStorage.Packages.Red)
-local Net = Red.Server("game", { "CombatPlayerInitialize" })
+local Net = Red.Server("game", { "CombatPlayerInitialize", "CombatKill", "PlayerKill" })
 
 -- Only for players currently fighting.
 local CombatPlayerData: { [Model]: CombatPlayer.CombatPlayer } = {}
@@ -89,6 +91,8 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
 
 	replicateAttack(player, origin, combatPlayer, attackData, localAttackDetails)
 
+	SoundService:PlayAttack(player, attackData.Name, player.Character)
+
 	combatPlayer:Attack()
 end
 
@@ -100,9 +104,11 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 	if not combatPlayer or not combatPlayer:CanSuperAttack() then
 		return
 	end
-	local attackData = combatPlayer.heroData.Super :: HeroData.AttackData
+	local superData = combatPlayer.heroData.Super :: HeroData.SuperData
 
-	replicateAttack(player, origin, combatPlayer, attackData, localAttackDetails)
+	replicateAttack(player, origin, combatPlayer, superData, localAttackDetails)
+
+	SoundService:PlayAttack(player, superData.Name, player.Character)
 
 	combatPlayer:SuperAttack()
 end
@@ -199,12 +205,17 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	local died = victimCombatPlayer:GetState() == CombatPlayer.StateEnum.Dead and beforeState ~= afterState
 
 	local victimPlayer = Players:GetPlayerFromCharacter(victimCharacter)
-	if victimPlayer and died then
-		CombatService.KillSignal:Fire({
-			Killer = player,
-			Victim = victimPlayer,
-			Attack = attackData.Data,
-		} :: KillData)
+	if died then
+		Net:Fire(player, "CombatKill", victimCombatPlayer)
+		if victimPlayer and died then
+			local data = {
+				Killer = player,
+				Victim = victimPlayer,
+				Attack = attackData.Data,
+			} :: KillData
+			CombatService.KillSignal:Fire(data)
+			Net:FireAll("PlayerKill", data)
+		end
 	end
 end
 
@@ -341,9 +352,9 @@ function CombatService:PlayerAdded(player: Player)
 
 	self:LoadPlayerGuis(player)
 
-	-- if RunService:IsStudio() then
-	-- PlayersInCombat[player] = "Fabio"
-	-- end
+	if RunService:IsStudio() then
+		PlayersInCombat[player] = "Fabio"
+	end
 
 	LoadedService.PromiseLoad(player):Then(function(resolve)
 		print("Resolved:", resolve)
