@@ -126,11 +126,31 @@ function BattleStartingRender(changed)
 	prevCountdown = countdown
 end
 
+local died = false
+local diedProcessed = false
 function BattleRender(changed)
 	-- Combat UI rendering is handled by the combat client
 	ArenaUI.Enabled = true
 
-	ArenaUI.Interface.Game.Visible = true
+	if changed then
+		died = false
+		diedProcessed = false
+	end
+
+	local gameFrame = ArenaUI.Interface.Game
+	gameFrame.Visible = true
+
+	if died then
+		gameFrame.Died.Visible = true
+
+		if not diedProcessed then
+			diedProcessed = true
+			task.wait(1)
+			died = false
+		end
+	else
+		gameFrame.Died.Visible = false
+	end
 end
 
 function BattleEndedRender(changed)
@@ -245,6 +265,10 @@ function UIController:Initialize()
 			end)
 		end
 	end
+
+	Net:On("PlayerKilled", function()
+		died = true
+	end)
 end
 
 UIController:Initialize()

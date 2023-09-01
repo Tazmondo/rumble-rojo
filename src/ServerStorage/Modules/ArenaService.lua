@@ -38,7 +38,7 @@ if RunService:IsStudio() then
 end
 
 -- Use Net:Folder() predominantly, as multiple scripts on client need access to information about game state
-local Net = Red.Server("game")
+local Net = Red.Server("game", { "PlayerKilled" })
 Net:Folder()
 
 local registeredPlayers = {} :: { [Player]: string | boolean | nil } -- boolean before character select, string afterwards
@@ -154,6 +154,7 @@ function ArenaService.StartMatch()
 			local humanoid = char:FindFirstChild("Humanoid") :: Humanoid
 			humanoid.Died:Once(function()
 				registeredPlayers[player] = nil
+				Net:Fire(player, "PlayerKilled")
 			end)
 
 			-- Wait for character position to correct if spawn is slightly off vertically
@@ -195,7 +196,6 @@ function ArenaService.StartMatch()
 		if ArenaService.GetRegisteredPlayersLength() == 1 then
 			winner = next(registeredPlayers)
 		end
-		--
 
 		RoundTime += task.wait()
 	end
