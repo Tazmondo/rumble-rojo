@@ -25,7 +25,25 @@ local Net = Red.Client("game")
 local ready = false
 local selectedHero = false
 local UIState = ""
-local showingMatchReults = false
+local showingMatchResults = false
+
+function PositionCameraToModel(viewportFrame: ViewportFrame, camera: Camera, model: Model)
+	local fovDeg = camera.FieldOfView
+	local aspectRatio = viewportFrame.AbsoluteSize.X / viewportFrame.AbsoluteSize.Y
+
+	local cf, size = model:GetBoundingBox()
+
+	local radius = math.max(size.X, size.Y) / 2
+
+	local halfFov = 0.5 * math.rad(fovDeg)
+	if aspectRatio < 1 then
+		halfFov = math.atan(aspectRatio * math.tan(halfFov))
+	end
+
+	local distance = radius / math.sin(halfFov)
+
+	camera.CFrame = cf * CFrame.new(0, 0, -distance) * CFrame.Angles(0, math.pi, 0)
+end
 
 -- functions
 function UIController:IsAlive()
@@ -175,12 +193,29 @@ function UIController:RenderAllUI()
 
 	local changed = state ~= UIState
 
-	if changed or showingMatchReults then
+	if changed or showingMatchResults then
 		HideAll()
 	end
 
-	if showingMatchReults then
+	if showingMatchResults then
 		ResultsUI.Enabled = true
+		local characterName = "Fabio"
+		local characterModel = ReplicatedStorage.Assets.CharacterModels[characterName]
+		assert(characterModel, "Match results did not pass in a valid character name??? : " .. characterName)
+
+		characterModel = characterModel:Clone()
+
+		local viewport = ResultsUI.Results.ViewportFrame
+		local camera = viewport:FindFirstChild("Camera")
+		if not camera then
+			camera = Instance.new("Camera")
+			camera.Parent = viewport
+		end
+
+		characterModel.Parent = viewport
+		characterModel:PivotTo(CFrame.new())
+
+		PositionCameraToModel(viewport, camera, characterModel)
 		return
 	end
 
@@ -266,7 +301,7 @@ function UIController:Initialize()
 	end
 
 	ResultsUI.Results.Actions.Proceed.Activated:Connect(function()
-		showingMatchReults = false
+		showingMatchResults = false
 	end)
 
 	Net:On("PlayerKilled", function()
@@ -274,7 +309,7 @@ function UIController:Initialize()
 	end)
 
 	Net:On("MatchResults", function()
-		showingMatchReults = true
+		showingMatchResults = true
 	end)
 end
 
