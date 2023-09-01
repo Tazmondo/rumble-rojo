@@ -36,7 +36,7 @@ end
 local function MoveMap(Parts, Position, Time)
 	for _, Part in pairs(Parts) do
 		if Part:IsA("BasePart") then
-			local newPosition = Position + Part.Position - Arena.Map.Arena.PrimaryPart.Position
+			local newPosition = Position + Part.Position - Arena.Map.Arena:GetPivot().Position
 			local Tween = TweenService:Create(
 				Part,
 				TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
