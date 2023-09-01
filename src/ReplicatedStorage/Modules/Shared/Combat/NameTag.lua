@@ -1,3 +1,4 @@
+local RunService = game:GetService("RunService")
 local CombatPlayer = require(script.Parent.CombatPlayer)
 local NameTag = {}
 
@@ -7,15 +8,21 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 	local nameTag = nameTagTemplate:Clone()
 	assert(character.Parent, "Character has not been parented to workspace yet!")
 
+	print("nametag init", character, combatPlayer, hide)
+
 	if hide then
 		nameTag.PlayerToHideFrom = hide
 	end
 
 	nameTag.PlayerName.Text = character.Name
 
-	nameTag.Parent = character:FindFirstChild("Head")
+	for _, v in pairs(character:GetChildren()) do
+		print(v, v.Parent)
+	end
 
 	task.spawn(function()
+		nameTag.Parent = character:WaitForChild("Head")
+
 		while character.Parent ~= nil and nameTag.Parent ~= nil do
 			for i = 1, 3 do
 				local AmmoBar = nameTag.AmmoBar:FindFirstChild("Ammo" .. i)

@@ -17,6 +17,8 @@ local TopText = ArenaUI.Interface.TopBar.TopText.Text
 -- services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TemporaryCageMeshProvider = game:GetService("TemporaryCageMeshProvider")
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Red = require(ReplicatedStorage.Packages.Red)
 local SoundController = require(script.Parent.SoundController)
 
@@ -68,10 +70,10 @@ end
 function HideAll()
 	ArenaUI.Enabled = false
 	MainUI.Enabled = false
-	ResultsUI.Enabled = false
 	ArenaUI.Interface.CharacterSelection.Visible = false
-	ArenaUI.Interface.TopBar.Visible = false
 	ArenaUI.Interface.Game.Visible = false
+
+	TopText.Visible = false
 
 	for _, element in pairs(ArenaUI.Interface.Game:GetChildren()) do
 		if element:IsA("UIListLayout") then
@@ -99,6 +101,7 @@ function IntermissionRender(changed)
 	end
 
 	UpdateQueueButtons()
+	TopText.Visible = true
 	TopText.Text = Net:Folder():GetAttribute("IntermissionTime")
 end
 
@@ -108,6 +111,7 @@ function CharacterSelectionRender(changed)
 	if ready and not selectedHero then
 		ArenaUI.Interface.CharacterSelection.Visible = true
 	end
+	TopText.Visible = true
 	TopText.Text = "Starting Soon"
 end
 
@@ -118,32 +122,37 @@ function BattleStartingRender(changed)
 	local gameFrame = ArenaUI.Interface.Game
 	gameFrame.Visible = true
 
-	if changed then
-		gameFrame.StartFight.Position = UDim2.fromScale(0.5, 1.5)
-	end
-
-	local countdown = Net:Folder():GetAttribute("RoundCountdown")
-
-	local hitZeroNow = countdown == 0 and countdown ~= prevCountdown
-
-	if countdown > 0 then
-		gameFrame.Countdown.Visible = true
-		gameFrame.Countdown.Text = countdown
-	else
-		gameFrame.Countdown.Visible = false
-		gameFrame.StartFight.Visible = true
-
-		if hitZeroNow then
-			gameFrame.StartFight:TweenPosition(
-				UDim2.fromScale(0.5, 0.5),
-				Enum.EasingDirection.Out,
-				Enum.EasingStyle.Quad,
-				0.4
-			)
-			-- gameFrame.Countdown:Tween
+	if ready then
+		if changed then
+			gameFrame.StartFight.Position = UDim2.fromScale(0.5, 1.5)
 		end
+
+		local countdown = Net:Folder():GetAttribute("RoundCountdown")
+
+		local hitZeroNow = countdown == 0 and countdown ~= prevCountdown
+
+		if countdown > 0 then
+			gameFrame.Countdown.Visible = true
+			gameFrame.Countdown.Text = countdown
+		else
+			gameFrame.Countdown.Visible = false
+			gameFrame.StartFight.Visible = true
+
+			if hitZeroNow then
+				gameFrame.StartFight:TweenPosition(
+					UDim2.fromScale(0.5, 0.5),
+					Enum.EasingDirection.Out,
+					Enum.EasingStyle.Quad,
+					0.4
+				)
+				-- gameFrame.Countdown:Tween
+			end
+		end
+		prevCountdown = countdown
 	end
-	prevCountdown = countdown
+
+	TopText.Visible = true
+	TopText.Text = "Fighters left: " .. Net:Folder():GetAttribute("AliveFighters") or 0
 end
 
 local died = false
@@ -163,6 +172,9 @@ function BattleRender(changed)
 	else
 		gameFrame.Died.Visible = false
 	end
+
+	TopText.Visible = true
+	TopText.Text = "Fighters left: " .. Net:Folder():GetAttribute("AliveFighters") or 0
 end
 
 function BattleEndedRender(changed)
@@ -170,12 +182,62 @@ function BattleEndedRender(changed)
 
 	local roundOver = ArenaUI.Interface.Game.RoundOver
 	ArenaUI.Interface.Game.Visible = true
-	if changed then
+	if changed and ready then
 		roundOver.Visible = true
 		task.delay(1, function()
 			roundOver.Visible = false
 		end)
 	end
+
+	TopText.Visible = true
+	TopText.Text = "Battle over!"
+end
+
+function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
+	showingMatchResults = true
+	ResultsUI.Enabled = true
+
+	local characterName = data.Hero
+
+	-- RENDER HERO MODEL --
+	local characterModel = ReplicatedStorage.Assets.CharacterModels[characterName]
+	assert(characterModel, "Match results did not pass in a valid character name : " .. characterName)
+
+	characterModel = characterModel:Clone()
+
+	local viewport = ResultsUI.Results.ViewportFrame
+	local camera = viewport:FindFirstChild("Camera")
+	if not camera then
+		camera = Instance.new("Camera")
+		camera.Parent = viewport
+	end
+
+	characterModel.Parent = viewport
+	characterModel:PivotTo(CFrame.new())
+
+	PositionCameraToModel(viewport, camera, characterModel)
+
+	-- DISPLAY TROPHY COUNT --
+	local statsFrame = ResultsUI.Results.Stats
+	statsFrame.Victory.Visible = data.Won
+	statsFrame.KnockedOut.Visible = not data.Won
+
+	statsFrame.Total.TextLabel.Text = if trophies >= 0 then "+" .. trophies else trophies
+
+	statsFrame.Count.Victory.Visible = data.Won
+	statsFrame.Count.Death.Visible = data.Died
+
+	if data.Kills > 0 then
+		statsFrame.Count.Ko.Text = "KO x " .. data.Kills .. ": +" .. 2 * data.Kills
+	else
+		statsFrame.Count.Ko.Visible = false
+	end
+
+	ResultsUI.Results.Actions.Proceed.Activated:Wait()
+	ResultsUI.Enabled = false
+	showingMatchResults = false
+
+	return
 end
 
 function ResetRoundVariables()
@@ -193,30 +255,9 @@ function UIController:RenderAllUI()
 
 	local changed = state ~= UIState
 
-	if changed or showingMatchResults then
+	if changed then
+		print("UI State changed to ", UIState, state)
 		HideAll()
-	end
-
-	if showingMatchResults then
-		ResultsUI.Enabled = true
-		local characterName = "Fabio"
-		local characterModel = ReplicatedStorage.Assets.CharacterModels[characterName]
-		assert(characterModel, "Match results did not pass in a valid character name??? : " .. characterName)
-
-		characterModel = characterModel:Clone()
-
-		local viewport = ResultsUI.Results.ViewportFrame
-		local camera = viewport:FindFirstChild("Camera")
-		if not camera then
-			camera = Instance.new("Camera")
-			camera.Parent = viewport
-		end
-
-		characterModel.Parent = viewport
-		characterModel:PivotTo(CFrame.new())
-
-		PositionCameraToModel(viewport, camera, characterModel)
-		return
 	end
 
 	if state == "NotEnoughPlayers" then
@@ -300,17 +341,11 @@ function UIController:Initialize()
 		end
 	end
 
-	ResultsUI.Results.Actions.Proceed.Activated:Connect(function()
-		showingMatchResults = false
-	end)
-
 	Net:On("PlayerKilled", function()
 		died = true
 	end)
 
-	Net:On("MatchResults", function()
-		showingMatchResults = true
-	end)
+	Net:On("MatchResults", RenderMatchResults)
 end
 
 UIController:Initialize()

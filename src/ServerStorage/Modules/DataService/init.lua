@@ -1,24 +1,22 @@
 local DataService = {}
 
 local ProfileTemplate = {
-	Level = 0,
-	Experience = 0,
-	Rank = "",
-	Currency = 0,
-	Stats = {
-		Kills = 0,
-		Deaths = 0,
-		Wins = 0,
-		Losses = 0,
-		WinStreak = 0,
-		BestWinStreak = 0,
-		KillStreak = 0,
-		BestKillStreak = 0,
-		DamageDealt = 0,
-	},
+	Trophies = 0,
 	Playtime = 0,
 	OwnedCharacters = { "Fabio" },
+	Stats = {
+		Kills = 0,
+		KillStreak = 0,
+		BestKillStreak = 0,
+		Deaths = 0,
+		Wins = 0,
+		WinStreak = 0,
+		BestWinStreak = 0,
+		DamageDealt = 0,
+	},
 }
+
+export type ProfileData = typeof(ProfileTemplate)
 
 ----- Loaded Modules -----
 

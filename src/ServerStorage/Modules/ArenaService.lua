@@ -26,6 +26,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Red = require(ReplicatedStorage.Packages.Red)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local CombatService = require(script.Parent.CombatService)
@@ -33,7 +34,7 @@ local DataService = require(script.Parent.DataService)
 local LoadedService = require(script.Parent.LoadedService)
 local MapService = require(script.Parent.MapService)
 
-if RunService:IsStudio() then
+if RunService:IsStudio() and false then
 	CONFIG = studioconfig
 end
 
@@ -41,10 +42,40 @@ end
 local Net = Red.Server("game", { "PlayerKilled", "MatchResults" })
 Net:Folder()
 
-local registeredPlayers = {} :: { [Player]: string | boolean | nil } -- boolean before character select, string afterwards
+local registeredPlayers: { [Player]: Types.PlayerBattleStats } = {} -- boolean before character select, string afterwards
 
 function ArenaService.HandleResults(player)
-	Net:Fire(player, "MatchResults", {})
+	print("Handling results for", player)
+	local battleData = registeredPlayers[player]
+	assert(battleData, "HandleResults called on player without battle data!")
+
+	local trophies = battleData.Kills * 2
+	if battleData.Won then
+		trophies += 10
+	elseif battleData.Died then
+		trophies -= 2
+	end
+
+	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)
+		data.Trophies += trophies
+
+		data.Stats.Kills += battleData.Kills
+		data.Stats.KillStreak += battleData.Kills
+		data.Stats.BestKillStreak = math.max(data.Stats.BestKillStreak, data.Stats.KillStreak)
+
+		if battleData.Won then
+			data.Stats.Wins += 1
+			data.Stats.WinStreak += 1
+			data.Stats.BestWinStreak = math.max(data.Stats.BestWinStreak, data.Stats.WinStreak)
+		elseif battleData.Died then
+			data.Stats.Deaths += 1
+			data.Stats.WinStreak = 0
+			data.Stats.KillStreak = 0
+		end
+	end)
+
+	Net:Fire(player, "MatchResults", trophies, battleData)
+	registeredPlayers[player] = nil
 end
 
 function ArenaService.GetRegisteredPlayersLength(): number
@@ -56,19 +87,27 @@ function ArenaService.GetRegisteredPlayersLength(): number
 			count += 1
 		end
 	end
+
+	Net:Folder():SetAttribute("AliveFighters", count)
 	return count
 end
 
 function ArenaService.StartIntermission()
 	-- WAITING FOR PLAYERS
 	Net:Folder():SetAttribute("GameState", "NotEnoughPlayers")
+	Net:Folder():SetAttribute("QueuedCount", 0)
 
 	registeredPlayers = {}
+
 	local intermissionTime = CONFIG.Intermission
 	Net:Folder():SetAttribute("IntermissionTime", intermissionTime)
 
 	Net:On("Queue", function(player, isJoining)
-		registeredPlayers[player] = if isJoining then true else nil
+		registeredPlayers[player] = {
+			Kills = 0,
+			Won = false,
+			Died = false,
+		}
 		Net:Folder():SetAttribute("QueuedCount", ArenaService.GetRegisteredPlayersLength())
 		return isJoining
 	end)
@@ -108,7 +147,7 @@ function ArenaService.StartIntermission()
 		end
 		DataService.GetProfileData(player):Then(function(data)
 			if table.find(data.OwnedCharacters, hero) and canSelect then
-				registeredPlayers[player] = hero
+				registeredPlayers[player].Hero = hero
 			end
 		end)
 	end)
@@ -131,7 +170,7 @@ function ArenaService.StartIntermission()
 		if typeof(heroName) ~= "string" and player.Parent ~= nil then
 			-- We can await here as player is definitely still ingame
 			local ownedCharacters = DataService.GetProfileData(player):Await().OwnedCharacters
-			registeredPlayers[player] = ownedCharacters[math.random(1, #ownedCharacters)]
+			registeredPlayers[player].Hero = ownedCharacters[math.random(1, #ownedCharacters)]
 		end
 	end
 
@@ -149,18 +188,9 @@ function ArenaService.StartMatch()
 	local spawns = TableUtil.Shuffle(MapService:GetMapSpawns())
 
 	-- Handle removing players when they die
-	for player, heroName in pairs(registeredPlayers) do
-		assert(typeof(heroName) == "string", "Game started without a valid hero name.")
-		CombatService:EnterPlayerCombat(player, heroName, spawns[spawnCount]):Then(function(char: Model)
-			-- We can assume the humanoid exists, as the SpawnCharacter function waits for character to be loaded fully before returning
-			local humanoid = char:FindFirstChild("Humanoid") :: Humanoid
-			humanoid.Died:Once(function()
-				registeredPlayers[player] = nil
-				Net:Fire(player, "PlayerKilled")
-				task.wait(3)
-				ArenaService.HandleResults(player)
-			end)
-
+	for player, data in pairs(registeredPlayers) do
+		assert(data.Hero, "Game started without a valid hero name.")
+		CombatService:EnterPlayerCombat(player, data.Hero, spawns[spawnCount]):Then(function(char: Model)
 			-- Wait for character position to correct if spawn is slightly off vertically
 			task.wait(0.2)
 			local HRP = char:FindFirstChild("HumanoidRootPart") :: BasePart
@@ -179,7 +209,7 @@ function ArenaService.StartMatch()
 	task.wait(1)
 
 	-- Unfreeze characters
-	for player, hero in pairs(registeredPlayers) do
+	for player, data in pairs(registeredPlayers) do
 		local char = player.Character
 		if char then
 			local HRP = char:FindFirstChild("HumanoidRootPart") :: BasePart
@@ -214,12 +244,16 @@ function ArenaService.EndMatch(winner: Player?)
 	task.wait(2)
 
 	if winner then
-		ArenaService.HandleResults(winner)
+		registeredPlayers[winner].Won = true
 	end
 	for player, heroName in pairs(registeredPlayers) do
 		if player.Parent == nil then
 			continue
 		end
+
+		-- Also handles all players when time has run out
+		ArenaService.HandleResults(player)
+
 		CombatService:ExitPlayerCombat(player)
 	end
 
@@ -237,7 +271,7 @@ end
 function ArenaService.Initialize()
 	Net:Folder():SetAttribute("GameState", "NotEnoughPlayers")
 
-	spawn(function()
+	task.spawn(function()
 		ArenaService.StartIntermission()
 	end)
 
@@ -255,6 +289,21 @@ function ArenaService.Initialize()
 
 	Players.PlayerRemoving:Connect(function(player)
 		registeredPlayers[player] = nil
+	end)
+
+	CombatService.KillSignal:Connect(function(data: CombatService.KillData)
+		print("Received kill signal: " .. data.Killer.Name .. " -> " .. data.Victim.Name)
+		local killerData = registeredPlayers[data.Killer]
+		local victimData = registeredPlayers[data.Victim]
+
+		if killerData then
+			killerData.Kills += 1
+		end
+		if victimData then
+			victimData.Died = true
+			Net:Fire(data.Victim, "PlayerKilled")
+			ArenaService.HandleResults(data.Victim)
+		end
 	end)
 end
 

@@ -75,6 +75,8 @@ function CombatClient.new(heroName: string)
 
 	self.player = Players.LocalPlayer
 	self.character = self.player.Character
+	assert(self.character, "Combat Client intialized without character")
+	assert(self.character.Parent, "Combat client character parent is nil")
 	self.humanoid = self.character.Humanoid :: Humanoid
 	self.HRP = self.humanoid.RootPart
 	self.lastMousePosition = Vector3.new()

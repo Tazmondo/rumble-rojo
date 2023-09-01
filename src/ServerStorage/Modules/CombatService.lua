@@ -180,29 +180,24 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
 	combatPlayer:DealDamage(attackData.Data.Damage, victimCharacter)
 
+	-- Update Data
+	DataService.GetProfileData(player):Then(function(data)
+		data.Stats.DamageDealt += attackData.Data.Damage
+	end)
+
 	local beforeState = victimCombatPlayer:GetState()
 	victimCombatPlayer:TakeDamage(attackData.Data.Damage) -- Will update state to dead if this kills
 	local afterState = victimCombatPlayer:GetState()
 
 	local died = victimCombatPlayer:GetState() == CombatPlayer.StateEnum.Dead and beforeState ~= afterState
 
-	-- Update Data
-	DataService.GetProfileData(player):Then(function(data)
-		data.Stats.DamageDealt += attackData.Data.Damage
-		if died then
-			-- TODO: Add experience and level handling
-			data.Stats.Kills += 1
-			data.Stats.KillStreak += 1 -- This could continue between matches, so it should be set to 0 elsewhere
-			data.Stats.BestKillStreak = math.max(data.Stats.BestKillStreak, data.Stats.KillStreak)
-		end
-	end)
-
 	local victimPlayer = Players:GetPlayerFromCharacter(victimCharacter)
 	if victimPlayer and died then
-		DataService.GetProfileData(victimPlayer):Then(function(data)
-			data.Stats.Deaths += 1
-			data.Stats.KillStreak = 0
-		end)
+		CombatService.KillSignal:Fire({
+			Killer = player,
+			Victim = victimPlayer,
+			Attack = attackData,
+		} :: KillData)
 	end
 end
 
@@ -378,6 +373,13 @@ function CombatService:Initialize()
 	end
 end
 
+CombatService.KillSignal = Red.Signal.new()
+
+export type KillData = {
+	Killer: Player,
+	Victim: Player,
+	Attack: HeroData.AttackData | HeroData.SuperData,
+}
 export type CombatService = typeof(CombatService)
 
 CombatService:Initialize()
