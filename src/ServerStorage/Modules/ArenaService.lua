@@ -1,21 +1,15 @@
+--!strict
 -- variables
-local Main = {
-	Queue = {} :: { [Player]: string },
-	Players = {} :: { [Player]: string },
-	Arena = "",
-
+local CONFIG = {
 	Intermission = 20, -- 30
 	HeroSelection = 10, -- 15
 	RoundLength = 120, -- 2mimnutes
-	RoundsAmount = 1, -- default is 1 although can support multiple rounds
 
 	MinPlayers = 2,
 	MaxPlayers = 10,
-
-	QueueStatus = true,
 }
-local Values = game.ReplicatedStorage.GameValues.Arena
-local Arena = workspace.Arena
+
+local ArenaService = {}
 
 -- services
 local Players = game:GetService("Players")
@@ -24,271 +18,177 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Red = require(ReplicatedStorage.Packages.Red)
 local CombatService = require(script.Parent.CombatService)
 local DataService = require(script.Parent.DataService)
+local LoadedService = require(script.Parent.LoadedService)
 local MapService = require(script.Parent.MapService)
 
 local Net = Red.Server("game")
--- load modules
 
--- functions
-function Main:IsAlive(Player)
-	return Player
-		and Player.Character
-		and (Player.Character:FindFirstChild("Humanoid") and Player.Character.Humanoid.Health > 0)
-end
+local registeredPlayers = {} :: { [Player]: string | boolean } -- boolean before character select, string afterwards
 
-function Main:CountQueue()
-	local Count = 0
+function ArenaService:HandleResults(WinningPlayer) end
 
-	for Player, heroName in pairs(self.Queue) do
-		Count = Count + 1
-	end
-
-	Values.QueueSize.Value = Count
-
-	return Count
-end
-
-function Main:CountPlayers()
-	local Count = 0
-	local WinningPlayer
-
-	for Player, _ in pairs(self.Players) do
-		Count += 1
-		WinningPlayer = Player
-	end
-
-	if Count == 1 then
-		return Count, WinningPlayer
-	end
-
-	return Count
-end
-
-function Main:OpenQueue() -- enables queue button on all palyesr
-	self:CountQueue()
-
-	for _, Player in pairs(Players:GetPlayers()) do
-		if self.Players[Player] or self.Queue[Player] then
-			continue
-		end
-
-		Net:Fire(Player, "QueueDisplay", true)
-	end
-
-	self.QueueStatus = true
-end
-
-function Main:CloseQueue(List)
-	self:CountQueue()
-
-	if List then
-		for _, Player in pairs(List) do
-			Net:Fire(Player, "QueueDisplay", false)
-		end
-	else
-		for _, Player in pairs(Players:GetPlayers()) do
-			Net:Fire(Player, "QueueDisplay", false)
+function ArenaService:GetRegisteredPlayersLength(): number
+	local count = 0
+	for player, _ in pairs(registeredPlayers) do
+		if player.Parent == nil then
+			registeredPlayers[player] = nil
+		else
+			count += 1
 		end
 	end
-
-	-- push queue to players
-	for Player, heroName in pairs(self.Queue) do
-		self.Players[Player] = heroName
-	end
-
-	self:ClearQueue()
-	self.QueueStatus = false
+	return count
 end
 
-function Main:ClearQueue()
-	self.Queue = {}
-end
+function ArenaService:StartIntermission()
+	self = self :: ArenaService
 
-function Main:ClearPlayers()
-	self.Players = {}
-end
+	Net:Folder():SetAttribute("GameState", "NotEnoughPlayers")
 
-function Main:TeleportToArena()
-	for _, Player in pairs(self.Players) do
-		local Character = Player.Character
+	registeredPlayers = {}
+	local intermissionTime = CONFIG.Intermission
+	Net:Folder():SetAttribute("IntermissionTime", intermissionTime)
 
-		Character:MoveTo(workspace.Arena.Enter.Position)
-	end
-end
+	Net:On("Queue", function(player, isJoining)
+		registeredPlayers[player] = isJoining
+	end)
 
-function Main:TeleportToSpawn()
-	for _, Player in pairs(self.Players) do
-		local Character = Player.Character
-
-		Character.Humanoid.Health = Character.Humanoid.MaxHealth
-		Character:MoveTo(workspace.Map.SpawnLocation.Position)
-	end
-end
-
-function Main:HandleResults(WinningPlayer)
-	for Player, heroName in pairs(self.Players) do
-		local PlayerData = DataService.CurrentPlayerData["Player_" .. Player.UserId]
-
-		if PlayerData and PlayerData.DataLoaded then
-			if Player == WinningPlayer then
-				PlayerData.Data.Stats.Wins += 1
-				PlayerData.Data.Stats.WinStreak += 1
-			else
-				PlayerData.Data.Stats.Losses += 1
-				PlayerData.Data.Stats.WinStreak = 0
-			end
-		end
-	end
-end
-
-function Main:StartIntermission()
-	Values.RoundIntermission.Value = self.Intermission
-
-	wait(2)
-	self:OpenQueue()
-
-	local PlayerCount = self:CountQueue()
-
-	while PlayerCount < self.MinPlayers do
-		wait(1)
-		PlayerCount = self:CountQueue()
+	while self:GetRegisteredPlayersLength() < CONFIG.MinPlayers do
+		task.wait()
 	end
 
-	Values.RoundStatus.Value = "Intermission"
+	Net:Folder():SetAttribute("GameState", "Intermission")
 
-	for i = self.Intermission, 1, -1 do
-		Values.RoundIntermission.Value = Values.RoundIntermission.Value - 1
-		wait(1)
-	end
-
-	Values.RoundStatus.Value = "Map"
 	MapService:LoadRandomMap()
-	wait(2)
 	MapService:MoveDoorsAndMap(true)
-	Values.RoundStatus.Value = "CharacterSelection"
-	wait(Main.HeroSelection)
 
-	if Values.QueueSize.Value < self.MinPlayers then
+	while intermissionTime > 0 do
+		task.wait(1)
+		intermissionTime -= 1
+		Net:Folder():SetAttribute("IntermissionTime", intermissionTime)
+	end
+
+	Net:Folder():SetAttribute("GameState", "CharacterSelection")
+	Net:On("Queue", nil)
+
+	task.wait(CONFIG.HeroSelection)
+
+	if self:GetRegisteredPlayersLength() < CONFIG.MinPlayers then
+		-- Players have left
 		self:StartIntermission()
 		return
 	end
 
-	self:CloseQueue()
-
-	wait(5)
-
-	-- ok
-	for Player, heroName in pairs(self.Players) do
-		Net:Fire(Player, "UpdateMatchStatus", true, self.Players)
+	-- Select a random owned character if they did not pick a character
+	for player, heroName in pairs(registeredPlayers) do
+		if typeof(heroName) ~= "string" and player.Parent ~= nil then
+			-- We can await here as player is definitely still ingame
+			local ownedCharacters = DataService.GetProfileData(player):Await().OwnedCharacters
+			registeredPlayers[player] = ownedCharacters[math.random(1, #ownedCharacters)]
+		end
 	end
 
 	self:StartMatch()
 end
 
-function Main:StartMatch()
-	Values.RoundStatus.Value = "Starting"
-	Values.RoundCountdown.Value = 5
+function ArenaService:StartMatch()
+	self = self :: ArenaService
+
+	Net:Folder():SetAttribute("GameState", "Starting")
+
+	local roundCountdown = 5
+	Net:Folder():SetAttribute("RoundCountdown", roundCountdown)
 
 	local spawnCount = 1
 	local spawns = MapService:GetMapSpawns()
 
-	for player, heroName in pairs(self.Players) do
-		CombatService:EnterPlayerCombat(player, heroName, spawns[spawnCount])
-		spawnCount += 1
-		player.Character:WaitForChild("Humanoid").Died:Once(function()
-			self.Players[player] = nil
+	-- Handle removing players when they die
+	for player, heroName in pairs(registeredPlayers) do
+		assert(typeof(heroName) == "string", "Game started without a valid hero name.")
+		CombatService:EnterPlayerCombat(player, heroName, spawns[spawnCount]):Then(function(char: Model)
+			-- We can assume the humanoid exists, as the SpawnCharacter function waits for character to be loaded fully before returning
+			local humanoid = char:FindFirstChild("Humanoid") :: Humanoid
+			humanoid.Died:Once(function()
+				registeredPlayers[player] = nil
+			end)
 		end)
+		spawnCount += 1
 	end
 
-	for i = Values.RoundCountdown.Value, 1, -1 do
-		wait(1)
-		Values.RoundCountdown.Value = Values.RoundCountdown.Value - 1
+	while Net:Folder():GetAttribute("RoundCountdown") > 0 do
+		task.wait(1)
+		roundCountdown -= 1
+		Net:Folder():SetAttribute("RoundCountdown", roundCountdown)
 	end
 
-	wait(1)
+	Net:Folder():SetAttribute("GameState", "Battle")
+	local RoundTime = 0
+	local winner = nil
 
-	Values.RoundStatus.Value = "Game"
-	local RoundLength = self.RoundLength
-	self.StartRoundTick = tick()
-
-	while true do
-		local RoundTime = math.max(0, RoundLength - (tick() - self.StartRoundTick))
-		Values.RoundTime.Value = RoundTime
-
-		if RoundTime <= 0 then
-			self:EndMatch()
-			break
-		end
-
-		if RoundTime < 60 then -- half way through
-			self:OpenQueue()
-		end
+	while RoundTime < CONFIG.RoundLength and not winner do
+		-- if RoundTime < 60 then -- half way through
+		-- 	self:OpenQueue()
+		-- end
 
 		-- determine winner stuff
-		local Count, WinningPlayer = self:CountPlayers()
-
-		if WinningPlayer then
-			self:HandleResults(WinningPlayer)
-			self:EndMatch()
+		if self:GetRegisteredPlayersLength() == 1 then
+			winner = next(registeredPlayers)
 		end
 		--
 
-		wait()
+		RoundTime += task.wait()
 	end
+
+	self:EndMatch(winner)
 end
 
-function Main:EndMatch()
-	wait(1)
-	Values.RoundStatus.Value = "Ended"
-	wait(3)
-	Values.RoundStatus.Value = "Intermission"
+function ArenaService:EndMatch(winner: Player?)
+	self = self :: ArenaService
 
-	for Player, heroName in pairs(self.Players) do
-		if Player.Parent == nil then
-			continue
-		end
-		CombatService:ExitPlayerCombat(Player)
-		Net:Fire(Player, "UpdateMatchStatus", false, self.Players)
+	Net:Folder():SetAttribute("GameState", "Ended")
+
+	if winner then
+		self:HandleResults(winner)
 	end
 
-	self:ClearPlayers()
+	task.wait(5)
+
+	for player, heroName in pairs(registeredPlayers) do
+		if player.Parent == nil then
+			continue
+		end
+		CombatService:ExitPlayerCombat(player)
+	end
+	registeredPlayers = {}
 
 	MapService:MoveDoorsAndMap(false)
-	wait(10)
 
 	self:StartIntermission()
 end
 
-function Main:Initialize()
+function ArenaService:Initialize()
+	Net:Folder():SetAttribute("GameState", "NotEnoughPlayers")
+
 	spawn(function()
 		self:StartIntermission()
 	end)
 
-	game.Players.PlayerAdded:Connect(function(Player)
-		wait(3)
-		if self.QueueStatus then
-			Net:Fire(Player, "QueueDisplay", true)
-		end
-	end)
+	local function playerAdded(player: Player)
+		LoadedService.PromiseLoad(player):Then(function()
+			-- Do something here?
+		end)
+	end
 
-	-- remotes
-	Net:On("QueueStatus", function(Player, Status)
-		print("invoked")
-		self.Queue[Player] = if Status then "Fabio" else nil
+	for _, player in pairs(game.Players:GetPlayers()) do
+		playerAdded(player)
+	end
 
-		self:CountQueue()
-	end)
-
-	Net:On("SelectCharacter", function(Player)
-		if self.Players[Player] then
-		end
-	end)
-	--
+	game.Players.PlayerAdded:Connect(playerAdded)
 
 	Players.PlayerRemoving:Connect(function(player)
-		self.Queue[player] = nil
-		self.Players[player] = nil
+		registeredPlayers[player] = nil
 	end)
 end
 
-return Main
+export type ArenaService = typeof(ArenaService)
+
+return ArenaService

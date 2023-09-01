@@ -3,4 +3,4 @@ local ServerStorage = game:GetService("ServerStorage")
 local Loader = require(ReplicatedStorage.Packages.Loader)
 
 local loaded = Loader.LoadChildren(ServerStorage.Modules)
-Loader.SpawnAll(loaded, "Initialize")
+-- Loader.SpawnAll(loaded, "Start")

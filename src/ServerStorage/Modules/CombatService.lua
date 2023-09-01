@@ -217,6 +217,10 @@ function CombatService:GetCombatPlayerForPlayer(player: Player): CombatPlayer.Co
 	end
 end
 
+function CombatService:GetCombatPlayerForCharacter(character: Model): CombatPlayer.CombatPlayer?
+	return CombatPlayerData[character]
+end
+
 function CombatService:InitializeNameTag(character: Model, combatPlayer: CombatPlayer.CombatPlayer, player: Player?)
 	self = self :: CombatService
 
@@ -233,7 +237,7 @@ function CombatService:EnterPlayerCombat(player: Player, heroName: string, newCF
 	self = self :: CombatService
 
 	PlayersInCombat[player] = heroName
-	self:SpawnCharacter(player, newCFrame)
+	return self:SpawnCharacter(player, newCFrame)
 end
 
 function CombatService:ExitPlayerCombat(player: Player)
@@ -279,36 +283,39 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	self = self :: CombatService
 	print("Spawning Character", player, debug.traceback())
 
-	-- TODO: Do spawning
-	player.CharacterAdded:Once(function(char)
-		print(player, "Character was added, processing")
+	return Red.Promise.new(function(resolve, reject)
+		task.delay(5, reject("Character was not spawned after 5 seconds."))
+		player.CharacterAdded:Once(function(char)
+			print(player, "Character was added, processing")
 
-		task.wait() -- Let it get parented to workspace
-		print(player, "Character initialized to workspace")
+			task.wait() -- Let it get parented to workspace
+			print(player, "Character initialized to workspace")
 
-		if PlayersInCombat[player] then
-			self:SetupCombatPlayer(player, PlayersInCombat[player])
-		end
-
-		char:FindFirstChild("Humanoid").Died:Once(function()
-			-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
-			task.wait(1)
 			if PlayersInCombat[player] then
-				self:ExitPlayerCombat(player)
-			else
-				self:SpawnCharacter(player)
+				self:SetupCombatPlayer(player, PlayersInCombat[player])
 			end
+
+			char:FindFirstChild("Humanoid").Died:Once(function()
+				-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
+				task.wait(1)
+				if PlayersInCombat[player] then
+					self:ExitPlayerCombat(player)
+				else
+					self:SpawnCharacter(player)
+				end
+			end)
+
+			if spawnCFrame then
+				char:PivotTo(spawnCFrame)
+			end
+			resolve(char)
 		end)
+		print(player, "Loading char")
 
-		if spawnCFrame then
-			char:PivotTo(spawnCFrame)
-		end
+		local heroName = PlayersInCombat[player] or ""
+
+		self:LoadCharacterWithModel(player, ReplicatedStorage.Assets.CharacterModels:FindFirstChild(heroName))
 	end)
-	print(player, "Loading char")
-
-	local heroName = PlayersInCombat[player] or ""
-
-	self:LoadCharacterWithModel(player, ReplicatedStorage.Assets.CharacterModels:FindFirstChild(heroName))
 end
 
 function CombatService:LoadPlayerGuis(player: Player)
@@ -365,4 +372,5 @@ end
 
 export type CombatService = typeof(CombatService)
 
+CombatService:Initialize()
 return CombatService
