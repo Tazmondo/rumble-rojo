@@ -1,5 +1,5 @@
 -- variables
-local Main = {}
+local MapService = {}
 
 local Arena = workspace.Arena
 local MapFolder = Arena.Map
@@ -36,11 +36,11 @@ end
 local function MoveMap(Parts, Position, Time)
 	for _, Part in pairs(Parts) do
 		if Part:IsA("BasePart") then
-			local Position = Position + Part.Position - Arena.Map.Arena.PrimaryPart.Position
+			local newPosition = Position + Part.Position - Arena.Map.Arena.PrimaryPart.Position
 			local Tween = TweenService:Create(
 				Part,
 				TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-				{ Position = Position }
+				{ Position = newPosition }
 			)
 
 			Tween:Play()
@@ -48,7 +48,7 @@ local function MoveMap(Parts, Position, Time)
 	end
 end
 
-function Main:MoveDoorsAndMap(Open)
+function MapService:MoveDoorsAndMap(Open)
 	local TargetPositions = Open and { One = Part1Open, Two = Part2Open } or { One = Part1Closed, Two = Part2Closed }
 	local TargetMapPos = Open and OpenMapPosition or ClosedMapPosition
 
@@ -59,13 +59,13 @@ function Main:MoveDoorsAndMap(Open)
 	MoveMap(Parts, TargetMapPos, 1.5)
 end
 
-function Main:CloneIntoParent(Folder, Parent)
+function MapService:CloneIntoParent(Folder, Parent)
 	for i, v in pairs(Folder:GetChildren()) do
 		v:Clone().Parent = Parent
 	end
 end
 
-function Main:LoadMap(MapName)
+function MapService:LoadMap(MapName)
 	MapFolder:ClearAllChildren()
 
 	local NewMap = Maps[MapName]
@@ -74,7 +74,7 @@ function Main:LoadMap(MapName)
 	GameStats.Arena.Value = MapName
 end
 
-function Main:GetMapPool()
+function MapService:GetMapPool()
 	local MapPool = {}
 
 	for _, mapFolder in pairs(game.ServerStorage.Maps:GetChildren()) do
@@ -84,7 +84,7 @@ function Main:GetMapPool()
 	return MapPool
 end
 
-function Main:GetMapSpawns(): { CFrame }
+function MapService:GetMapSpawns(): { CFrame }
 	local map = assert(MapFolder:GetChildren()[1], "Tried to get map spawns without map existing")
 	local spawns = assert(map.Spawns, "Loaded map does not have a spawns folder")
 	local output = {}
@@ -95,13 +95,13 @@ function Main:GetMapSpawns(): { CFrame }
 	return output
 end
 
-function Main:LoadRandomMap()
+function MapService:LoadRandomMap()
 	local MapPool = self:GetMapPool()
 	local Number = math.random(1, #MapPool)
 
 	self:LoadMap(MapPool[Number])
 end
 
-function Main:Initialize() end
+function MapService:Initialize() end
 
-return Main
+return MapService
