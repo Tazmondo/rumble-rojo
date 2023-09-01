@@ -8,8 +8,7 @@ local CombatService = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local RemoteCursorService = game:GetService("RemoteCursorService")
-local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 
 local LoadedService = require(script.Parent.LoadedService)
 local DataService = require(script.Parent.DataService)
@@ -284,8 +283,10 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	print("Spawning Character", player, debug.traceback())
 
 	return Red.Promise.new(function(resolve, reject)
-		task.delay(5, reject("Character was not spawned after 5 seconds."))
+		local loadTimeout = task.delay(5, reject, "Character was not spawned after 5 seconds.")
 		player.CharacterAdded:Once(function(char)
+			coroutine.close(loadTimeout)
+
 			print(player, "Character was added, processing")
 
 			task.wait() -- Let it get parented to workspace
@@ -318,9 +319,16 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	end)
 end
 
+-- We must remove the starterguis from startergui so they do not get parented when the player spawns,
+-- because we do this parenting ourselves, players end up with two copies of the gui which breaks scripts.
+local starterGuis = StarterGui:GetChildren()
+for _, gui in pairs(starterGuis) do
+	gui.Parent = script
+end
+
 function CombatService:LoadPlayerGuis(player: Player)
 	-- This function is necessary as startergui is only cloned into playergui when character spawns, but we take control of character spawning.
-	for _, gui in pairs(game:GetService("StarterGui"):GetChildren()) do
+	for _, gui in pairs(starterGuis) do
 		gui:Clone().Parent = player.PlayerGui
 	end
 end
@@ -330,9 +338,9 @@ function CombatService:PlayerAdded(player: Player)
 
 	self:LoadPlayerGuis(player)
 
-	if RunService:IsStudio() then
-		PlayersInCombat[player] = "Fabio"
-	end
+	-- if RunService:IsStudio() then
+	-- 	PlayersInCombat[player] = "Fabio"
+	-- end
 
 	LoadedService.PromiseLoad(player):Then(function(resolve)
 		print("Resolved:", resolve)

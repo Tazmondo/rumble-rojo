@@ -22,7 +22,6 @@ function LoadedService.IsClientLoadedPromise(player: Player)
 	return Promise.new(function(resolve, reject)
 		print("checking client is loaded")
 		while not LoadedService.IsClientLoaded(player) do
-			print("Looping")
 			if player.Parent == nil then
 				reject("Player left before loading.")
 			end

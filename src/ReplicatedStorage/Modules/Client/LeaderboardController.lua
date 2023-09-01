@@ -6,9 +6,9 @@ local Main = {
 }
 
 local Player = game.Players.LocalPlayer
-local ArenaUI = Player:WaitForChild("PlayerGui"):WaitForChild("ArenaUI").Interface
+-- local ArenaUI = Player:WaitForChild("PlayerGui"):WaitForChild("ArenaUI").Interface
 
-local Scoreboard = ArenaUI:WaitForChild("ScoreBoard")
+-- local Scoreboard = ArenaUI:WaitForChild("ScoreBoard")
 
 -- services
 local StarterGui = game:GetService("StarterGui")
@@ -23,18 +23,18 @@ function Main:IsAlive()
 		and (Player.Character:FindFirstChild("Humanoid") and Player.Character.Humanoid.Health > 0)
 end
 
-function Main:ClearScoreboard() -- bruh
-	for i, v in pairs(Scoreboard.List1:GetChildren()) do
-		if v:IsA("Frame") then
-			v:Destroy()
-		end
-	end
-	for i, v in pairs(Scoreboard.List2:GetChildren()) do
-		if v:IsA("Frame") then
-			v:Destroy()
-		end
-	end
-end
+-- function Main:ClearScoreboard() -- bruh
+-- 	for i, v in pairs(Scoreboard.List1:GetChildren()) do
+-- 		if v:IsA("Frame") then
+-- 			v:Destroy()
+-- 		end
+-- 	end
+-- 	for i, v in pairs(Scoreboard.List2:GetChildren()) do
+-- 		if v:IsA("Frame") then
+-- 			v:Destroy()
+-- 		end
+-- 	end
+-- end
 
 function Main:CreateScoreboard(PlayerList)
 	self:ClearScoreboard()

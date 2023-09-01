@@ -1,32 +1,29 @@
+-- I opted for a declarative approach to the UI. There are a lot of elements and dealing with state for each individual one
+-- is too much effort.
+-- There are some exceptions, e.g. for tweening.
+
 -- variables
 local UIController = {
 	MinPlayers = 2,
 }
 
 local Player = game.Players.LocalPlayer
-local Mouse = Player:GetMouse()
 
-local Arena = workspace.Arena
-local GameStats = game.ReplicatedStorage.GameValues.Arena
-local UI = Player:WaitForChild("PlayerGui"):WaitForChild("MainUI")
-local ArenaUI = Player:WaitForChild("PlayerGui"):WaitForChild("ArenaUI").Interface
-
-local Scoreboard = ArenaUI:WaitForChild("ScoreBoard")
+local MainUI = Player:WaitForChild("PlayerGui"):WaitForChild("MainUI") :: ScreenGui
+local ArenaUI = Player:WaitForChild("PlayerGui"):WaitForChild("ArenaUI") :: ScreenGui
+local TopText = ArenaUI.Interface.TopBar.TopText.Text
 
 -- services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Red = require(ReplicatedStorage.Packages.Red)
-local LeaderboardController = require(script.Parent.LeaderboardController)
 local SoundController = require(script.Parent.SoundController)
-
--- load modules
 
 local Net = Red.Client("game")
 
-local inMatch = false
-local inQueue = false
+local ready = false
+local selectedHero = false
+local UIState = ""
 
 -- functions
 function UIController:IsAlive()
@@ -35,210 +32,223 @@ function UIController:IsAlive()
 		and (Player.Character:FindFirstChild("Humanoid") and Player.Character.Humanoid.Health > 0)
 end
 
-function UIController:UpdateStartTime()
-	ArenaUI.Game.Visible = GameStats.RoundStatus.Value == "Starting" and inMatch
-	ArenaUI.Game.Countdown.Visible = GameStats.RoundStatus.Value == "Starting" and inMatch
-	Scoreboard.Time.Timer.Text = GameStats.RoundStatus.Value == "Starting" and "2:00" or "" -- visual beauty
-	ArenaUI.CharacterSelection.Visible = GameStats.RoundStatus.Value == "CharacterSelection" and inQueue
+function UpdateQueueButtons()
+	MainUI.Queue.Visible = true
+	if ready then
+		MainUI.Queue.Ready.Visible = false
+		MainUI.Queue.Exit.Visible = true
+	else
+		MainUI.Queue.Ready.Visible = true
+		MainUI.Queue.Exit.Visible = false
+	end
+	local playerCount = Net:Folder():GetAttribute("QueuedCount") or 0
+	MainUI.Queue.Frame.Title.Text = "Players Ready: " .. playerCount .. "/10"
+end
 
-	if self.LastStartTime ~= GameStats.RoundCountdown.Value then
-		self.LastStartTime = GameStats.RoundCountdown.Value
+function HideAll()
+	ArenaUI.Enabled = false
+	MainUI.Enabled = false
+	ArenaUI.Interface.CharacterSelection.Visible = false
+	ArenaUI.Interface.MatchResults.Visible = false
+	ArenaUI.Interface.TopBar.Visible = false
+	ArenaUI.Interface.Game.Visible = false
 
-		if GameStats.RoundStatus.Value == "Starting" and inMatch then
-			Player.Character.HumanoidRootPart.Anchored = true
+	for _, element in pairs(ArenaUI.Interface.Game:GetChildren()) do
+		if element:IsA("UIListLayout") then
+			continue
+		end
+		element.Visible = false
+	end
+end
 
-			local CountdownText = ArenaUI.Game.Countdown
-			CountdownText.Text = GameStats.RoundCountdown.Value
+function NotEnoughPlayersRender(changed)
+	if changed then
+		ArenaUI.Enabled = false
+		MainUI.Enabled = true
+	end
 
-			if GameStats.RoundCountdown.Value == "0" then -- lazy
-				SoundController:PlaySound("Fight Start")
-				CountdownText.Visible = false
-				ArenaUI.Game.StartFight.Visible = true
-				wait(1)
-				ArenaUI.Game.StartFight.Visible = false
-			end
+	UpdateQueueButtons()
+end
 
-			local OriginalSizeX, OriginalSizeY = 0.134, 0.366
-			local Tween = TweenService:Create(
-				ArenaUI.Game.Countdown,
-				TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-				{ Size = UDim2.new(OriginalSizeX ^ 3, 0, OriginalSizeY ^ 3) }
+function IntermissionRender(changed)
+	if changed then
+		ArenaUI.Enabled = true
+		MainUI.Enabled = true
+
+		ArenaUI.Interface.TopBar.Visible = true
+	end
+
+	UpdateQueueButtons()
+	TopText.Text = Net:Folder():GetAttribute("IntermissionTime")
+end
+
+function CharacterSelectionRender(changed)
+	ArenaUI.Enabled = true
+
+	if ready and not selectedHero then
+		ArenaUI.Interface.CharacterSelection.Visible = true
+	end
+	TopText.Text = "Starting Soon"
+end
+
+local prevCountdown = 0
+function BattleStartingRender(changed)
+	ArenaUI.Enabled = true
+
+	local gameFrame = ArenaUI.Interface.Game
+	gameFrame.Visible = true
+
+	if changed then
+		gameFrame.StartFight.Position = UDim2.fromScale(0.5, 1.5)
+	end
+
+	local countdown = Net:Folder():GetAttribute("RoundCountdown")
+
+	local hitZeroNow = countdown == 0 and countdown ~= prevCountdown
+
+	if countdown > 0 then
+		gameFrame.Countdown.Visible = true
+		gameFrame.Countdown.Text = countdown
+	else
+		gameFrame.Countdown.Visible = false
+		gameFrame.StartFight.Visible = true
+
+		if hitZeroNow then
+			gameFrame.StartFight:TweenPosition(
+				UDim2.fromScale(0.5, 0.5),
+				Enum.EasingDirection.Out,
+				Enum.EasingStyle.Quad,
+				0.4
 			)
-			Tween:Play()
-			Tween.Completed:wait()
+			-- gameFrame.Countdown:Tween
+		end
+	end
+	prevCountdown = countdown
+end
 
-			local Tween = TweenService:Create(
-				ArenaUI.Game.Countdown,
-				TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-				{ Size = UDim2.new(OriginalSizeX, 0, OriginalSizeY) }
-			)
-			Tween:Play()
-			Tween.Completed:wait()
+function BattleRender(changed)
+	-- Combat UI rendering is handled by the combat client
+	ArenaUI.Enabled = true
+
+	ArenaUI.Interface.Game.Visible = true
+end
+
+function BattleEndedRender(changed)
+	ArenaUI.Enabled = true
+
+	local roundOver = ArenaUI.Interface.Game.RoundOver
+	ArenaUI.Interface.Game.Visible = true
+	if changed then
+		roundOver.Visible = true
+		task.delay(1, function()
+			roundOver.Visible = false
+		end)
+	end
+end
+
+function ResetRoundVariables()
+	ready = false
+	selectedHero = false
+	UpdateQueueButtons()
+end
+
+function UIController:RenderAllUI()
+	-- Might appear a weird way of doing it, but means we can get precise control over how the UI renders by just editing the function for the corresponding gamestate.
+	-- Checking if it's changed also allows us to do tweening.
+	debug.profilebegin("UIControllerRender")
+
+	local state = Net:Folder():GetAttribute("GameState")
+
+	local changed = state ~= UIState
+
+	if changed then
+		HideAll()
+	end
+
+	if state == "NotEnoughPlayers" then
+		NotEnoughPlayersRender(changed)
+	elseif state == "Intermission" then
+		IntermissionRender(changed)
+	elseif state == "CharacterSelection" then
+		CharacterSelectionRender(changed)
+	elseif state == "BattleStarting" then
+		BattleStartingRender(changed)
+	elseif state == "Battle" then
+		BattleRender(changed)
+	elseif state == "Ended" then
+		BattleEndedRender(changed)
+
+		if changed then
+			ResetRoundVariables()
 		end
 	end
 
-	if GameStats.RoundStatus.Value == "Game" then
-		ArenaUI.CharacterSelection.Visible = false
+	UIState = state
+	debug.profileend()
+end
 
-		if inMatch then
-			Player.Character.HumanoidRootPart.Anchored = false
-			Scoreboard.Visible = inMatch
+function UIController:ReadyClick()
+	-- Here we render twice, once for instant feedback, and again to correct the state if the server rejected their queue request.
+	self = self :: UIController
 
-			local Seconds = math.ceil(GameStats.RoundTime.Value)
-			local Minutes = math.floor(Seconds / 60)
-			Seconds = Seconds - Minutes * 60
-			local MatchTimer = Minutes .. ":" .. (Seconds >= 10 and Seconds or "0" .. Seconds)
+	ready = true
+	UpdateQueueButtons()
 
-			local Timer = Scoreboard.Time.Timer
-			Timer.Text = MatchTimer
+	local result = Net:Call("Queue", true)
+	ready = result:Await()
 
-			if GameStats.RoundTime.Value <= 10 and not self.TimerColorTween then
-				coroutine.wrap(function()
-					self.TimerColorTween = TweenService:Create(
-						Timer,
-						TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, true),
-						{ TextColor3 = Color3.fromRGB(255, 63, 48) }
-					)
-					self.TimerColorTween:Play()
+	SoundController:PlaySound("Queued")
+	UpdateQueueButtons()
+end
 
-					self.TimerColorTween.Completed:Wait()
-					task.wait(1)
-					self.TimerColorTween = nil
-				end)()
-			elseif GameStats.RoundTime.Value > 10 and self.TimerColorTween then
-				self.TimerColorTween:Cancel()
-				self.TimerColorTween = nil -- these tweens took way longer than they should have. i wanna off myself
+function UIController:ExitClick()
+	self = self :: UIController
 
-				Timer.TextColor3 = Color3.fromRGB(255, 255, 255)
-			end
-		else
-			Scoreboard.Visible = false
-			Arena.Status.Visible = true
-		end
-	elseif GameStats.RoundStatus.Value == "Ended" and inMatch then
-		Player.Character.HumanoidRootPart.Anchored = true
-		ArenaUI.Game.Visible = true
-		ArenaUI.Game.RoundOver.Visible = true
-		wait(3)
-		ArenaUI.Game.RoundOver.Visible = false
-		ArenaUI.Game.Visible = false
-		Player.Character.HumanoidRootPart.Anchored = false
-	elseif GameStats.RoundStatus.Value == "Intermission" then
-		Scoreboard.Visible = true
-		local Time = GameStats.RoundIntermission.Value
+	ready = false
+	UpdateQueueButtons()
 
-		Scoreboard.Time.Timer.Text = Time
-	elseif GameStats.RoundStatus.Value == "CharacterSelection" and inQueue then
-		local Selection = ArenaUI.CharacterSelection
+	-- RemoteFunction returns a value indicating if the queue was successful or not
+	local result = Net:Call("Queue", false)
+	ready = result:Await()
 
-		Scoreboard.Visible = false
-		-- Selection.Visible = GameStats.RoundStatus.Value == "CharacterSelection" --and inQueue
-	end
+	SoundController:PlaySound("Queued")
+	UpdateQueueButtons()
 end
 
 function UIController:Initialize()
-	if self.InMatch ~= true then
-		SoundController:PlaySound("Lobby Music")
-	end
+	self = self :: UIController
 
-	RunService.RenderStepped:Connect(function()
-		UI.Queue.Frame.Title.Text = "Players ready: " .. GameStats.QueueSize.Value .. "/10"
-		Scoreboard.Time.Visible = GameStats.QueueSize.Value >= self.MinPlayers
+	self:RenderAllUI()
+
+	SoundController:PlaySound("Lobby Music")
+
+	RunService.RenderStepped:Connect(function(...)
+		self:RenderAllUI(...)
 	end)
 
-	local Ready = false
-	local Selected = false
-	local SelectedHero = "Fabio"
-
-	UI.Queue.Exit.Visible = false
-
-	UI.Queue.Ready.MouseButton1Down:Connect(function()
-		Ready = true
-		Net:Fire("QueueStatus", Ready)
-
-		SoundController:PlaySound("Queued")
-
-		UI.Queue.Ready.Visible = false
-		UI.Queue.Exit.Visible = true
+	MainUI.Queue.Ready.MouseButton1Down:Connect(function()
+		self:ReadyClick()
 	end)
-	UI.Queue.Exit.MouseButton1Down:Connect(function()
-		Ready = false
-		Net:Fire("QueueStatus", Ready)
-
-		UI.Queue.Ready.Visible = true
-		UI.Queue.Exit.Visible = false
+	MainUI.Queue.Exit.MouseButton1Down:Connect(function()
+		self:ExitClick()
 	end)
 
-	for i, v in pairs(ArenaUI.CharacterSelection.Heros:GetChildren()) do
+	for i, v in pairs(ArenaUI.Interface.CharacterSelection.Heros:GetChildren()) do
 		if v:IsA("ImageLabel") then
 			v.Button.MouseButton1Down:Connect(function()
-				-- print("ok")
 				SoundController:PlaySound("Select Character")
-				Selected = not Selected
-				SelectedHero = v.Name
+				Net:Fire("HeroSelect", v.Name)
+				selectedHero = true
 
-				wait(0.5)
-				ArenaUI.CharacterSelection.Visible = false
+				task.wait(0.1)
+				ArenaUI.Interface.CharacterSelection.Visible = false
 			end)
 		end
 	end
-
-	-- value changes
-	GameStats.RoundStatus.Changed:Connect(function()
-		self:UpdateStartTime()
-	end)
-
-	GameStats.RoundTime.Changed:Connect(function()
-		self:UpdateStartTime()
-	end)
-
-	GameStats.RoundCountdown.Changed:Connect(function(Value)
-		self:UpdateStartTime()
-	end)
-
-	GameStats.RoundIntermission.Changed:Connect(function(Value)
-		self:UpdateStartTime()
-	end)
-
-	GameStats.RoundStatus.Changed:Connect(function()
-		if GameStats.RoundStatus.Value ~= "Intermission" then
-			UI.Queue.Visible = false
-		end
-	end)
-	--
-
-	-- remotes
-	Net:On("QueueDisplay", function(Status)
-		UI.Queue.Ready.Visible = true
-		UI.Queue.Exit.Visible = false
-
-		UI.Queue.Visible = Status
-
-		-- if Status == true then
-		-- 	UI.Queue:TweenPosition(UDim2.new(0.01, 0, 0.83, 0), "In", "Quad", 2.5)
-		-- else
-		-- 	UI.Queue:TweenPosition(UDim2.new(-1, 0, 0.5, 0), "Out", "Quad", 2.5)
-		-- end
-
-		Ready = false
-	end)
-
-	Net:On("UpdateMatchStatus", function(Status, Players)
-		inMatch = Status
-
-		if Status then
-			SoundController:PlaySound("Battle Music")
-			SoundController:StopSound("Lobby Music")
-			ArenaUI.Game.Countdown.Visible = true
-			LeaderboardController:CreateScoreboard(Players)
-		else
-			SoundController:PlaySound("Lobby Music")
-			SoundController:StopSound("Battle Music")
-			ArenaUI.Game.Visible = false
-			-- Scoreboard.Visible = false
-		end
-	end)
-	--
 end
+
+UIController:Initialize()
+
+export type UIController = typeof(UIController)
 
 return UIController

@@ -9,25 +9,43 @@ local CONFIG = {
 	MaxPlayers = 10,
 }
 
+-- don't edit this to affect the game, this is just for studio testing
+local studioconfig = {
+	Intermission = 5, -- 30
+	HeroSelection = 5, -- 15
+	RoundLength = 20, -- 2mimnutes
+
+	MinPlayers = 1,
+	MaxPlayers = 10,
+}
+
 local ArenaService = {}
 
 -- services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Red = require(ReplicatedStorage.Packages.Red)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local CombatService = require(script.Parent.CombatService)
 local DataService = require(script.Parent.DataService)
 local LoadedService = require(script.Parent.LoadedService)
 local MapService = require(script.Parent.MapService)
 
+if RunService:IsStudio() then
+	CONFIG = studioconfig
+end
+
+-- Use Net:Folder() predominantly, as multiple scripts on client need access to information about game state
 local Net = Red.Server("game")
+Net:Folder()
 
-local registeredPlayers = {} :: { [Player]: string | boolean } -- boolean before character select, string afterwards
+local registeredPlayers = {} :: { [Player]: string | boolean | nil } -- boolean before character select, string afterwards
 
-function ArenaService:HandleResults(WinningPlayer) end
+function ArenaService.HandleResults(WinningPlayer) end
 
-function ArenaService:GetRegisteredPlayersLength(): number
+function ArenaService.GetRegisteredPlayersLength(): number
 	local count = 0
 	for player, _ in pairs(registeredPlayers) do
 		if player.Parent == nil then
@@ -39,9 +57,8 @@ function ArenaService:GetRegisteredPlayersLength(): number
 	return count
 end
 
-function ArenaService:StartIntermission()
-	self = self :: ArenaService
-
+function ArenaService.StartIntermission()
+	-- WAITING FOR PLAYERS
 	Net:Folder():SetAttribute("GameState", "NotEnoughPlayers")
 
 	registeredPlayers = {}
@@ -49,32 +66,61 @@ function ArenaService:StartIntermission()
 	Net:Folder():SetAttribute("IntermissionTime", intermissionTime)
 
 	Net:On("Queue", function(player, isJoining)
-		registeredPlayers[player] = isJoining
+		registeredPlayers[player] = if isJoining then true else nil
+		Net:Folder():SetAttribute("QueuedCount", ArenaService.GetRegisteredPlayersLength())
+		return isJoining
 	end)
 
-	while self:GetRegisteredPlayersLength() < CONFIG.MinPlayers do
+	while ArenaService.GetRegisteredPlayersLength() < CONFIG.MinPlayers do
 		task.wait()
 	end
 
+	-- INTERMISSION
 	Net:Folder():SetAttribute("GameState", "Intermission")
-
-	MapService:LoadRandomMap()
-	MapService:MoveDoorsAndMap(true)
 
 	while intermissionTime > 0 do
 		task.wait(1)
 		intermissionTime -= 1
 		Net:Folder():SetAttribute("IntermissionTime", intermissionTime)
+		if ArenaService.GetRegisteredPlayersLength() < CONFIG.MinPlayers then
+			ArenaService.StartIntermission()
+			return
+		end
 	end
 
+	-- CHARACTER SELECTION
 	Net:Folder():SetAttribute("GameState", "CharacterSelection")
-	Net:On("Queue", nil)
+
+	MapService:LoadRandomMap()
+	MapService:MoveDoorsAndMap(true)
+
+	Net:On("Queue", function()
+		return false
+	end)
+
+	local canSelect = true
+
+	Net:On("HeroSelect", function(player, hero)
+		if not registeredPlayers[player] then
+			return
+		end
+		DataService.GetProfileData(player):Then(function(data)
+			if table.find(data.OwnedCharacters, hero) and canSelect then
+				registeredPlayers[player] = hero
+			end
+		end)
+	end)
 
 	task.wait(CONFIG.HeroSelection)
 
-	if self:GetRegisteredPlayersLength() < CONFIG.MinPlayers then
+	-- BATTLE START
+	Net:On("HeroSelect", nil)
+
+	canSelect = false
+
+	if ArenaService.GetRegisteredPlayersLength() < CONFIG.MinPlayers then
 		-- Players have left
-		self:StartIntermission()
+		ArenaService.StartIntermission()
 		return
 	end
 
@@ -87,19 +133,18 @@ function ArenaService:StartIntermission()
 		end
 	end
 
-	self:StartMatch()
+	ArenaService.StartMatch()
+	return
 end
 
-function ArenaService:StartMatch()
-	self = self :: ArenaService
-
-	Net:Folder():SetAttribute("GameState", "Starting")
+function ArenaService.StartMatch()
+	Net:Folder():SetAttribute("GameState", "BattleStarting")
 
 	local roundCountdown = 5
 	Net:Folder():SetAttribute("RoundCountdown", roundCountdown)
 
 	local spawnCount = 1
-	local spawns = MapService:GetMapSpawns()
+	local spawns = TableUtil.Shuffle(MapService:GetMapSpawns())
 
 	-- Handle removing players when they die
 	for player, heroName in pairs(registeredPlayers) do
@@ -110,6 +155,11 @@ function ArenaService:StartMatch()
 			humanoid.Died:Once(function()
 				registeredPlayers[player] = nil
 			end)
+
+			-- Wait for character position to correct if spawn is slightly off vertically
+			task.wait(0.2)
+			local HRP = char:FindFirstChild("HumanoidRootPart") :: BasePart
+			HRP.Anchored = true
 		end)
 		spawnCount += 1
 	end
@@ -120,17 +170,29 @@ function ArenaService:StartMatch()
 		Net:Folder():SetAttribute("RoundCountdown", roundCountdown)
 	end
 
+	-- Allow client FIGHT message to disappear before continuing
+	task.wait(1)
+
+	-- Unfreeze characters
+	for player, hero in pairs(registeredPlayers) do
+		local char = player.Character
+		if char then
+			local HRP = char:FindFirstChild("HumanoidRootPart") :: BasePart
+			HRP.Anchored = false
+		end
+	end
+
 	Net:Folder():SetAttribute("GameState", "Battle")
 	local RoundTime = 0
 	local winner = nil
 
-	while RoundTime < CONFIG.RoundLength and not winner do
+	while RoundTime < CONFIG.RoundLength and not winner and ArenaService.GetRegisteredPlayersLength() > 0 do
 		-- if RoundTime < 60 then -- half way through
 		-- 	self:OpenQueue()
 		-- end
 
 		-- determine winner stuff
-		if self:GetRegisteredPlayersLength() == 1 then
+		if ArenaService.GetRegisteredPlayersLength() == 1 then
 			winner = next(registeredPlayers)
 		end
 		--
@@ -138,16 +200,14 @@ function ArenaService:StartMatch()
 		RoundTime += task.wait()
 	end
 
-	self:EndMatch(winner)
+	ArenaService.EndMatch(winner)
 end
 
-function ArenaService:EndMatch(winner: Player?)
-	self = self :: ArenaService
-
+function ArenaService.EndMatch(winner: Player?)
 	Net:Folder():SetAttribute("GameState", "Ended")
 
 	if winner then
-		self:HandleResults(winner)
+		ArenaService.HandleResults(winner)
 	end
 
 	task.wait(5)
@@ -162,14 +222,15 @@ function ArenaService:EndMatch(winner: Player?)
 
 	MapService:MoveDoorsAndMap(false)
 
-	self:StartIntermission()
+	ArenaService.StartIntermission()
+	return
 end
 
-function ArenaService:Initialize()
+function ArenaService.Initialize()
 	Net:Folder():SetAttribute("GameState", "NotEnoughPlayers")
 
 	spawn(function()
-		self:StartIntermission()
+		ArenaService.StartIntermission()
 	end)
 
 	local function playerAdded(player: Player)
@@ -188,6 +249,8 @@ function ArenaService:Initialize()
 		registeredPlayers[player] = nil
 	end)
 end
+
+ArenaService.Initialize()
 
 export type ArenaService = typeof(ArenaService)
 
