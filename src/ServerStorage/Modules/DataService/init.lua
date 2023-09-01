@@ -26,14 +26,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ProfileService = require(script.ProfileService)
 local Red = require(ReplicatedStorage.Packages.Red)
 local Promise = Red.Promise
+local Net = Red.Server("game")
 
 local ProfileStore = ProfileService.GetProfileStore("PlayerData", ProfileTemplate)
+
+type Profile = ProfileService.Profile<ProfileData>
 
 DataService.Profiles = {} -- [player] = profile
 
 ----- Private Functions -----
-local function HandleSuccessfulProfile(player, profile)
-	-- Potentially add some code here in the future, but for now there is no need.
+local function HandleSuccessfulProfile(player, profile: Profile)
+	Net:Folder(player):SetAttribute("Trophies", profile.Data.Trophies)
 end
 
 local function PlayerAdded(player)

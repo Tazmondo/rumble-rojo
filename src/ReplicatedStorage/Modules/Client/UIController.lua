@@ -70,6 +70,9 @@ end
 function HideAll()
 	ArenaUI.Enabled = false
 	MainUI.Enabled = false
+	MainUI.Queue.Visible = false
+	MainUI.Interface.Inventory.Visible = false
+	MainUI.Interface.MenuBar.Visible = false
 	ArenaUI.Interface.CharacterSelection.Visible = false
 	ArenaUI.Interface.Game.Visible = false
 
@@ -83,12 +86,21 @@ function HideAll()
 	end
 end
 
+function RenderTrophies()
+	MainUI.Enabled = true
+	MainUI.Interface.Inventory.Visible = true
+
+	local trophies = Net:LocalFolder():GetAttribute("Trophies") or 0
+	MainUI.Interface.Inventory.ImageLabel.TrophyCount.Text = if trophies > 0 then "+" .. trophies else trophies
+end
+
 function NotEnoughPlayersRender(changed)
 	if changed then
 		ArenaUI.Enabled = false
 		MainUI.Enabled = true
 	end
 
+	RenderTrophies()
 	UpdateQueueButtons()
 end
 
@@ -100,6 +112,7 @@ function IntermissionRender(changed)
 		ArenaUI.Interface.TopBar.Visible = true
 	end
 
+	RenderTrophies()
 	UpdateQueueButtons()
 	TopText.Visible = true
 	TopText.Text = Net:Folder():GetAttribute("IntermissionTime")
@@ -111,6 +124,7 @@ function CharacterSelectionRender(changed)
 	if ready and not selectedHero then
 		ArenaUI.Interface.CharacterSelection.Visible = true
 	end
+	RenderTrophies()
 	TopText.Visible = true
 	TopText.Text = "Starting Soon"
 end
@@ -149,6 +163,8 @@ function BattleStartingRender(changed)
 			end
 		end
 		prevCountdown = countdown
+	elseif not ready then
+		RenderTrophies()
 	end
 
 	TopText.Visible = true
@@ -173,6 +189,10 @@ function BattleRender(changed)
 		gameFrame.Died.Visible = false
 	end
 
+	if not ready then
+		RenderTrophies()
+	end
+
 	TopText.Visible = true
 	TopText.Text = "Fighters left: " .. Net:Folder():GetAttribute("AliveFighters") or 0
 end
@@ -187,6 +207,10 @@ function BattleEndedRender(changed)
 		task.delay(1, function()
 			roundOver.Visible = false
 		end)
+	end
+
+	if not ready then
+		RenderTrophies()
 	end
 
 	TopText.Visible = true
@@ -313,7 +337,7 @@ end
 function UIController:Initialize()
 	self = self :: UIController
 
-	self:RenderAllUI()
+	-- self:RenderAllUI() Could yield so we don't call here
 
 	SoundController:PlaySound("Lobby Music")
 

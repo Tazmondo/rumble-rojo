@@ -34,7 +34,7 @@ local DataService = require(script.Parent.DataService)
 local LoadedService = require(script.Parent.LoadedService)
 local MapService = require(script.Parent.MapService)
 
-if RunService:IsStudio() and false then
+if RunService:IsStudio() then
 	CONFIG = studioconfig
 end
 
