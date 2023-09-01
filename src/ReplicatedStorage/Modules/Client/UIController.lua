@@ -17,7 +17,6 @@ local TopText = ArenaUI.Interface.TopBar.TopText.Text
 -- services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local TemporaryCageMeshProvider = game:GetService("TemporaryCageMeshProvider")
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Red = require(ReplicatedStorage.Packages.Red)
 local SoundController = require(script.Parent.SoundController)
@@ -316,7 +315,7 @@ function UIController:ReadyClick()
 	local result = Net:Call("Queue", true)
 	ready = result:Await()
 
-	SoundController:PlaySound("Queued")
+	SoundController:PlayGeneralSound("JoinQueue")
 	UpdateQueueButtons()
 end
 
@@ -330,16 +329,14 @@ function UIController:ExitClick()
 	local result = Net:Call("Queue", false)
 	ready = result:Await()
 
-	SoundController:PlaySound("Queued")
+	SoundController:PlayGeneralSound("LeaveQueue")
 	UpdateQueueButtons()
 end
 
 function UIController:Initialize()
 	self = self :: UIController
 
-	-- self:RenderAllUI() Could yield so we don't call here
-
-	SoundController:PlaySound("Lobby Music")
+	task.spawn(self.RenderAllUI, self)
 
 	RunService.RenderStepped:Connect(function(...)
 		self:RenderAllUI(...)
@@ -355,7 +352,7 @@ function UIController:Initialize()
 	for i, v in pairs(ArenaUI.Interface.CharacterSelection.Heros:GetChildren()) do
 		if v:IsA("ImageLabel") then
 			v.Button.MouseButton1Down:Connect(function()
-				SoundController:PlaySound("Select Character")
+				SoundController:PlayGeneralSound("SelectedCharacter")
 				Net:Fire("HeroSelect", v.Name)
 				selectedHero = true
 

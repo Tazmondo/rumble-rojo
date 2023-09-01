@@ -54,4 +54,6 @@ function CombatController:Initialize()
 	Net:On("Attack", AttackRenderer.HandleAttackRender)
 end
 
+CombatController:Initialize()
+
 return CombatController

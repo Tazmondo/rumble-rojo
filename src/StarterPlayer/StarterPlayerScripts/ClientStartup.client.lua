@@ -6,7 +6,6 @@ local Net = Red.Client("LoadedService")
 local Client = ReplicatedStorage.Modules.Client
 
 local loaded = Loader.LoadChildren(Client)
-Loader.SpawnAll(loaded, "Initialize")
 
 print("Finished loading, firing server.")
 Net:Fire("Loaded")

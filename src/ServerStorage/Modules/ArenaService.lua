@@ -75,6 +75,7 @@ function ArenaService.HandleResults(player)
 	end)
 
 	Net:Fire(player, "MatchResults", trophies, battleData)
+	Net:Folder(player):SetAttribute("InMatch", false)
 	registeredPlayers[player] = nil
 end
 
@@ -103,11 +104,15 @@ function ArenaService.StartIntermission()
 	Net:Folder():SetAttribute("IntermissionTime", intermissionTime)
 
 	Net:On("Queue", function(player, isJoining)
-		registeredPlayers[player] = {
-			Kills = 0,
-			Won = false,
-			Died = false,
-		}
+		if isJoining then
+			registeredPlayers[player] = {
+				Kills = 0,
+				Won = false,
+				Died = false,
+			}
+		else
+			registeredPlayers[player] = nil
+		end
 		Net:Folder():SetAttribute("QueuedCount", ArenaService.GetRegisteredPlayersLength())
 		return isJoining
 	end)
@@ -190,6 +195,7 @@ function ArenaService.StartMatch()
 	-- Handle removing players when they die
 	for player, data in pairs(registeredPlayers) do
 		assert(data.Hero, "Game started without a valid hero name.")
+		Net:Folder(player):SetAttribute("InMatch", true)
 		CombatService:EnterPlayerCombat(player, data.Hero, spawns[spawnCount]):Then(function(char: Model)
 			-- Wait for character position to correct if spawn is slightly off vertically
 			task.wait(0.2)

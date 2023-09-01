@@ -1,107 +1,108 @@
--- variables
-local MapService = {}
+-- -- variables
+-- local MapService = {}
 
-local Arena = workspace.Arena
-local MapFolder = Arena.Map
-local Maps = game.ServerStorage.Maps
-local GameStats = game.ReplicatedStorage.GameValues.Arena
+-- local Arena = workspace.Arena
+-- local MapFolder = Arena.Map
+-- local Maps = game.ServerStorage.Maps
+-- local GameStats = game.ReplicatedStorage.GameValues.Arena
 
-local offset = Vector3.new
+-- local offset = Vector3.new
 
--- services
-local TweenService = game:GetService("TweenService")
+-- -- services
+-- local TweenService = game:GetService("TweenService")
 
--- load modules
+-- -- load modules
 
--- transition stuff
-local Part1Closed, Part2Closed = Arena.Doors.One.CFrame, Arena.Doors.Two.CFrame
+-- -- transition stuff
+-- local Part1Closed, Part2Closed = Arena.Doors.One.CFrame, Arena.Doors.Two.CFrame
 
-local Part1Open = CFrame.new(Part1Closed.Position - offset(80.39, 0, 0)) * CFrame.Angles(0, math.rad(-90), 0)
-local Part2Open = CFrame.new(Part2Closed.Position + offset(90.961, 0, 0)) * CFrame.Angles(0, math.rad(-90), 0)
+-- local Part1Open = CFrame.new(Part1Closed.Position - offset(80.39, 0, 0)) * CFrame.Angles(0, math.rad(-90), 0)
+-- local Part2Open = CFrame.new(Part2Closed.Position + offset(90.961, 0, 0)) * CFrame.Angles(0, math.rad(-90), 0)
 
-local ClosedMapPosition = Vector3.new(Arena.Base.Position.X, Arena.Base.Position.Y - 80, Arena.Base.Position.Z)
-local OpenMapPosition = Arena.Base.Position
+-- local ClosedMapPosition = Vector3.new(Arena.Base.Position.X, Arena.Base.Position.Y - 80, Arena.Base.Position.Z)
+-- local OpenMapPosition = Arena.Base.Position
 
--- functions
-local function MoveDoors(Part, Position, Time)
-	local Tween = TweenService:Create(
-		Part,
-		TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ CFrame = Position }
-	)
+-- -- functions
+-- local function MoveDoors(Part, Position, Time)
+-- 	local Tween = TweenService:Create(
+-- 		Part,
+-- 		TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+-- 		{ CFrame = Position }
+-- 	)
 
-	Tween:Play()
-end
+-- 	Tween:Play()
+-- end
 
-local function MoveMap(Parts, Position, Time)
-	for _, Part in pairs(Parts) do
-		if Part:IsA("BasePart") then
-			local newPosition = Position + Part.Position - Arena.Map.Arena:GetPivot().Position
-			local Tween = TweenService:Create(
-				Part,
-				TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-				{ Position = newPosition }
-			)
+-- local function MoveMap(Parts, Position, Time)
+-- 	for _, Part in pairs(Parts) do
+-- 		if Part:IsA("BasePart") then
+-- 			local newPosition = Position + Part.Position - Arena.Map.Arena:GetPivot().Position
+-- 			local Tween = TweenService:Create(
+-- 				Part,
+-- 				TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+-- 				{ Position = newPosition }
+-- 			)
 
-			Tween:Play()
-		end
-	end
-end
+-- 			Tween:Play()
+-- 		end
+-- 	end
+-- end
 
-function MapService:MoveDoorsAndMap(Open)
-	local TargetPositions = Open and { One = Part1Open, Two = Part2Open } or { One = Part1Closed, Two = Part2Closed }
-	local TargetMapPos = Open and OpenMapPosition or ClosedMapPosition
+-- function MapService:MoveDoorsAndMap(Open)
+-- 	local TargetPositions = Open and { One = Part1Open, Two = Part2Open } or { One = Part1Closed, Two = Part2Closed }
+-- 	local TargetMapPos = Open and OpenMapPosition or ClosedMapPosition
 
-	MoveDoors(Arena.Doors.One, TargetPositions.One, 1.3)
-	MoveDoors(Arena.Doors.Two, TargetPositions.Two, 1.3)
+-- 	MoveDoors(Arena.Doors.One, TargetPositions.One, 1.3)
+-- 	MoveDoors(Arena.Doors.Two, TargetPositions.Two, 1.3)
 
-	local Parts = Arena.Map:GetDescendants()
-	MoveMap(Parts, TargetMapPos, 1.5)
-end
+-- 	local Parts = Arena.Map:GetDescendants()
+-- 	MoveMap(Parts, TargetMapPos, 1.5)
+-- end
 
-function MapService:CloneIntoParent(Folder, Parent)
-	for i, v in pairs(Folder:GetChildren()) do
-		v:Clone().Parent = Parent
-	end
-end
+-- function MapService:CloneIntoParent(Folder, Parent)
+-- 	for i, v in pairs(Folder:GetChildren()) do
+-- 		v:Clone().Parent = Parent
+-- 	end
+-- end
 
-function MapService:LoadMap(MapName)
-	MapFolder:ClearAllChildren()
+-- function MapService:LoadMap(MapName)
+-- 	MapFolder:ClearAllChildren()
 
-	local NewMap = Maps[MapName]
-	self:CloneIntoParent(NewMap, MapFolder)
+-- 	local NewMap = Maps[MapName]
+-- 	self:CloneIntoParent(NewMap, MapFolder)
 
-	GameStats.Arena.Value = MapName
-end
+-- 	GameStats.Arena.Value = MapName
+-- end
 
-function MapService:GetMapPool()
-	local MapPool = {}
+-- function MapService:GetMapPool()
+-- 	local MapPool = {}
 
-	for _, mapFolder in pairs(game.ServerStorage.Maps:GetChildren()) do
-		table.insert(MapPool, mapFolder.Name)
-	end
+-- 	for _, mapFolder in pairs(game.ServerStorage.Maps:GetChildren()) do
+-- 		table.insert(MapPool, mapFolder.Name)
+-- 	end
 
-	return MapPool
-end
+-- 	return MapPool
+-- end
 
-function MapService:GetMapSpawns(): { CFrame }
-	local map = assert(MapFolder:GetChildren()[1], "Tried to get map spawns without map existing")
-	local spawns = assert(map.Spawns, "Loaded map does not have a spawns folder")
-	local output = {}
+-- function MapService:GetMapSpawns(): { CFrame }
+-- 	local map = assert(MapFolder:GetChildren()[1], "Tried to get map spawns without map existing")
+-- 	local spawns = assert(map.Spawns, "Loaded map does not have a spawns folder")
+-- 	local output = {}
 
-	for _, part in pairs(spawns:GetChildren()) do
-		table.insert(output, part.CFrame)
-	end
-	return output
-end
+-- 	for _, part in pairs(spawns:GetChildren()) do
+-- 		table.insert(output, part.CFrame)
+-- 	end
+-- 	return output
+-- end
 
-function MapService:LoadRandomMap()
-	local MapPool = self:GetMapPool()
-	local Number = math.random(1, #MapPool)
+-- function MapService:LoadRandomMap()
+-- 	local MapPool = self:GetMapPool()
+-- 	local Number = math.random(1, #MapPool)
 
-	self:LoadMap(MapPool[Number])
-end
+-- 	self:LoadMap(MapPool[Number])
+-- end
 
-function MapService:Initialize() end
+-- function MapService:Initialize() end
 
-return MapService
+-- return MapService
+return {}
