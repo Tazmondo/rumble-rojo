@@ -17,6 +17,7 @@ local ProfileTemplate = {
 		DamageDealt = 0,
 	},
 	Playtime = 0,
+	OwnedCharacters = { "Fabio" },
 }
 
 ----- Loaded Modules -----
