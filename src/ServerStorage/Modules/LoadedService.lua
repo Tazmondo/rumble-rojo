@@ -1,9 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 -- Checks if a player is loaded
 
 local LoadedService = {}
 
+local DataService = require(script.Parent.DataService)
 local Red = require(ReplicatedStorage.Packages.Red)
 local Promise = Red.Promise
 
@@ -14,13 +14,14 @@ Net:On("Loaded", function(player: Player)
 	player:SetAttribute("LoadedService_Loaded", true)
 end)
 
-function LoadedService.IsLoaded(player: Player)
+function LoadedService.IsClientLoaded(player: Player)
 	return player:GetAttribute("LoadedService_Loaded") == true
 end
 
-function LoadedService.PromiseLoad(player: Player)
+function LoadedService.IsClientLoadedPromise(player: Player)
 	return Promise.new(function(resolve, reject)
-		while not LoadedService.IsLoaded(player) do
+		print("checking client is loaded")
+		while not LoadedService.IsClientLoaded(player) do
 			print("Looping")
 			if player.Parent == nil then
 				reject("Player left before loading.")
@@ -32,6 +33,16 @@ function LoadedService.PromiseLoad(player: Player)
 		end
 		resolve(true)
 	end)
+end
+
+function LoadedService.PromiseLoad(player: Player)
+	return DataService.GetProfileData(player)
+		:Then(function()
+			return LoadedService.IsClientLoadedPromise(player)
+		end)
+		:Catch(function(reason)
+			player:Kick("Failed to load: " .. reason)
+		end)
 end
 
 function LoadedService.Initialize() end

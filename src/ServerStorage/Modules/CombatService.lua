@@ -8,6 +8,7 @@ local CombatService = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local RemoteCursorService = game:GetService("RemoteCursorService")
 local RunService = game:GetService("RunService")
 
 local LoadedService = require(script.Parent.LoadedService)
@@ -52,7 +53,7 @@ local function replicateAttack(
 	local behaviour = FastCast.newBehavior()
 	behaviour.MaxDistance = attackData.Range
 	behaviour.RaycastParams = RaycastParams.new()
-	assert(behaviour.RaycastParams)
+	assert(behaviour.RaycastParams, "Appease type checker")
 
 	-- Don't collide with characters, as they move around they could move in front of the server bullet, but not client bullet
 	-- which will mess up hit detection
@@ -187,21 +188,22 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	local died = victimCombatPlayer:GetState() == CombatPlayer.StateEnum.Dead and beforeState ~= afterState
 
 	-- Update Data
-	local killerData = DataService:GetDataTableForPlayer(player)
-	killerData.Stats.DamageDealt += attackData.Data.Damage
-
-	if died then
-		-- TODO: Add experience and level handling
-		killerData.Stats.Kills += 1
-		killerData.Stats.KillStreak += 1 -- This could continue between matches, so it should be set to 0 elsewhere
-		killerData.Stats.BestKillStreak = math.max(killerData.Stats.BestKillStreak, killerData.Stats.KillStreak)
-
-		local victimPlayer = Players:GetPlayerFromCharacter(victimCharacter)
-		if victimPlayer then
-			local victimData = DataService:GetDataTableForPlayer(victimPlayer)
-			victimData.Stats.Deaths += 1
-			victimData.Stats.KillStreak = 0
+	DataService.GetProfileData(player):Then(function(data)
+		data.Stats.DamageDealt += attackData.Data.Damage
+		if died then
+			-- TODO: Add experience and level handling
+			data.Stats.Kills += 1
+			data.Stats.KillStreak += 1 -- This could continue between matches, so it should be set to 0 elsewhere
+			data.Stats.BestKillStreak = math.max(data.Stats.BestKillStreak, data.Stats.KillStreak)
 		end
+	end)
+
+	local victimPlayer = Players:GetPlayerFromCharacter(victimCharacter)
+	if victimPlayer and died then
+		DataService.GetProfileData(victimPlayer):Then(function(data)
+			data.Stats.Deaths += 1
+			data.Stats.KillStreak = 0
+		end)
 	end
 end
 
@@ -325,11 +327,15 @@ function CombatService:PlayerAdded(player: Player)
 		PlayersInCombat[player] = "Fabio"
 	end
 
-	local resolve, reject = LoadedService.PromiseLoad(player):Await()
-	print(resolve, reject)
-	if resolve then
-		self:SpawnCharacter(player)
-	end
+	LoadedService.PromiseLoad(player):Then(function(resolve)
+		print("Resolved:", resolve)
+		if resolve then
+			self:SpawnCharacter(player)
+		end
+	end, function(reject)
+		print(reject)
+		player:Kick("Failed to load: " .. reject)
+	end)
 end
 
 function CombatService:Initialize()
