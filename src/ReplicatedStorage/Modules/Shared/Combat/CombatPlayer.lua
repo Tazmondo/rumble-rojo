@@ -41,6 +41,14 @@ if RunService:IsClient() then
 	LATENCYALLOWANCE = 0
 end
 
+function GetGameState()
+	if RunService:IsServer() then
+		return NetServer:Folder():GetAttribute("GameState")
+	else
+		return NetClient:Folder():GetAttribute("GameState")
+	end
+end
+
 -- Player is optional as NPCs can be combatplayers
 function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	local self = setmetatable({}, CombatPlayer) :: CombatPlayer
@@ -160,7 +168,7 @@ end
 
 function CombatPlayer:AttackingEnabled()
 	self = self :: CombatPlayer
-	return (GameValues.RoundStatus.Value == "Game" or RunService:IsStudio())
+	return (GetGameState() ~= "BattleStarting" or RunService:IsStudio())
 end
 
 function CombatPlayer.CanAttack(self: CombatPlayer)
