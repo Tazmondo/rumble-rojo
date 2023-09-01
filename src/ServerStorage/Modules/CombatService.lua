@@ -43,8 +43,8 @@ local function replicateAttack(
 	attackData: HeroData.AttackData,
 	localAttackDetails
 )
-	local character = player.Character
-	local HRP = character.HumanoidRootPart
+	local character = assert(player.Character, "character does not exist")
+	local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
 	if (HRP.Position - origin.Position).Magnitude > Config.MaximumPlayerPositionDifference then
 		warn(player, "fired from a position too far from their server position")
 		return
@@ -70,7 +70,8 @@ local function replicateAttack(
 			end
 			local cast = fastCast:Fire(pellet.CFrame.Position, pellet.CFrame.LookVector, pellet.speed, behaviour)
 			cast.UserData.Id = pellet.id
-			combatPlayer:RegisterAttack(pellet.id, pellet.CFrame, cast, attackData)
+			cast.UserData.CombatPlayer = combatPlayer
+			combatPlayer:RegisterAttack(pellet.id, pellet.CFrame, pellet.speed, cast, attackData)
 		end
 		Net:FireAll("Attack", player, attackData, origin, attackDetails)
 	end
@@ -107,14 +108,13 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 end
 
 local function handleRayHit(cast, result)
-	cast.UserData.HitPosition = result.Position
+	local combatPlayer = cast.UserData.CombatPlayer :: CombatPlayer.CombatPlayer
+	combatPlayer:HandleAttackHit(cast, result.Position)
 end
 
 local function handleCastTerminate(cast)
-	-- We want to prioritise the RayHit hitposition
-	if not cast.UserData.HitPosition then
-		cast.UserData.HitPosition = cast:GetPosition()
-	end
+	local combatPlayer = cast.UserData.CombatPlayer :: CombatPlayer.CombatPlayer
+	combatPlayer:HandleAttackHit(cast, cast:GetPosition())
 end
 fastCast.RayHit:Connect(handleRayHit)
 fastCast.CastTerminating:Connect(handleCastTerminate)
@@ -158,13 +158,20 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		return
 	end
 
-	local attackPosition = attackData.HitPosition or attackData.Cast:GetPosition()
+	-- need to set the hitposition somewhere else, cant use cast data
+	local attackPosition = attackData.HitPosition
+
+	if not attackPosition then
+		attackPosition = attackData.Cast:GetPosition() :: Vector3
+	end
+	assert(attackPosition, "Could not get a server attack position.")
 	local attackDiff = (attackPosition - localTargetPosition).Magnitude
-	if attackDiff > Config.MaximumAllowedLatencyVariation * attackData.Data.ProjectileSpeed then
+	if attackDiff > Config.MaximumAllowedLatencyVariation * attackData.Speed then
 		warn(
 			player,
 			"Had too large of a difference between bullet positions: ",
 			attackDiff,
+			Config.MaximumAllowedLatencyVariation * attackData.Speed,
 			attackPosition,
 			localTargetPosition
 		)
@@ -181,7 +188,7 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	combatPlayer:DealDamage(attackData.Data.Damage, victimCharacter)
 
 	-- Update Data
-	DataService.GetProfileData(player):Then(function(data)
+	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)
 		data.Stats.DamageDealt += attackData.Data.Damage
 	end)
 
@@ -196,7 +203,7 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		CombatService.KillSignal:Fire({
 			Killer = player,
 			Victim = victimPlayer,
-			Attack = attackData,
+			Attack = attackData.Data,
 		} :: KillData)
 	end
 end
@@ -291,7 +298,8 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 				self:SetupCombatPlayer(player, PlayersInCombat[player])
 			end
 
-			char:FindFirstChild("Humanoid").Died:Once(function()
+			local humanoid = char:FindFirstChild("Humanoid") :: Humanoid
+			assert(humanoid, "Humanoid was not found during character spawning.").Died:Once(function()
 				-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
 				task.wait(3)
 				if PlayersInCombat[player] then
@@ -334,7 +342,7 @@ function CombatService:PlayerAdded(player: Player)
 	self:LoadPlayerGuis(player)
 
 	-- if RunService:IsStudio() then
-	-- 	PlayersInCombat[player] = "Fabio"
+	-- PlayersInCombat[player] = "Fabio"
 	-- end
 
 	LoadedService.PromiseLoad(player):Then(function(resolve)
