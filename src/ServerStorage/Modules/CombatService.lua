@@ -243,7 +243,7 @@ function CombatService:ExitPlayerCombat(player: Player)
 	self = self :: CombatService
 
 	PlayersInCombat[player] = nil
-	if player.Character then
+	if player.Character and CombatPlayerData[player.Character] then
 		CombatPlayerData[player.Character]:Destroy()
 		CombatPlayerData[player.Character] = nil
 	end
@@ -298,7 +298,7 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 
 			char:FindFirstChild("Humanoid").Died:Once(function()
 				-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
-				task.wait(1)
+				task.wait(3)
 				if PlayersInCombat[player] then
 					self:ExitPlayerCombat(player)
 				else
