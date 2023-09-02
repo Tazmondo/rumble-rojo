@@ -13,7 +13,7 @@ local CONFIG = {
 local studioconfig = {
 	Intermission = 5, -- 30
 	HeroSelection = 5, -- 15
-	RoundLength = 20, -- 2mimnutes
+	RoundLength = 60, -- 2mimnutes
 
 	MinPlayers = 1,
 	MaxPlayers = 10,
@@ -28,7 +28,6 @@ local RunService = game:GetService("RunService")
 
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Red = require(ReplicatedStorage.Packages.Red)
-local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local CombatService = require(script.Parent.CombatService)
 local DataService = require(script.Parent.DataService)
 local LoadedService = require(script.Parent.LoadedService)
@@ -75,6 +74,7 @@ function ArenaService.HandleResults(player)
 	end)
 
 	Net:Fire(player, "MatchResults", trophies, battleData)
+	print("Fired matchresults")
 	Net:Folder(player):SetAttribute("InMatch", false)
 	registeredPlayers[player] = nil
 end

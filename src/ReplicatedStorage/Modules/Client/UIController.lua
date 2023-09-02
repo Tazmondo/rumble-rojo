@@ -145,6 +145,9 @@ function BattleStartingRender(changed)
 		local hitZeroNow = countdown == 0 and countdown ~= prevCountdown
 
 		if countdown > 0 then
+			if countdown == 4 then
+				SoundController:PlayGeneralSound("Countdown")
+			end
 			gameFrame.Countdown.Visible = true
 			gameFrame.Countdown.Text = countdown
 		else
@@ -172,12 +175,14 @@ function BattleStartingRender(changed)
 end
 
 local died = false
+local diedHandled = false
 function BattleRender(changed)
 	-- Combat UI rendering is handled by the combat client
 	ArenaUI.Enabled = true
 
 	if changed then
 		died = false
+		diedHandled = false
 	end
 
 	local gameFrame = ArenaUI.Interface.Game
@@ -185,6 +190,12 @@ function BattleRender(changed)
 
 	if died then
 		gameFrame.Died.Visible = true
+		if not diedHandled then
+			diedHandled = true
+			task.delay(3, function()
+				died = false
+			end)
+		end
 	else
 		gameFrame.Died.Visible = false
 	end

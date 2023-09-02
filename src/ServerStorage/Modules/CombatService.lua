@@ -72,7 +72,7 @@ local function replicateAttack(
 			end
 			local cast = fastCast:Fire(pellet.CFrame.Position, pellet.CFrame.LookVector, pellet.speed, behaviour)
 			cast.UserData.Id = pellet.id
-			cast.UserData.CombatPlayer = combatPlayer
+			cast.UserData.Character = character -- Don't set it to combatplayer to avoid cyclic dependency
 			combatPlayer:RegisterAttack(pellet.id, pellet.CFrame, pellet.speed, cast, attackData)
 		end
 		Net:FireAll("Attack", player, attackData, origin, attackDetails)
@@ -114,12 +114,12 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 end
 
 local function handleRayHit(cast, result)
-	local combatPlayer = cast.UserData.CombatPlayer :: CombatPlayer.CombatPlayer
+	local combatPlayer = CombatPlayerData[cast.UserData.Character]
 	combatPlayer:HandleAttackHit(cast, result.Position)
 end
 
 local function handleCastTerminate(cast)
-	local combatPlayer = cast.UserData.CombatPlayer :: CombatPlayer.CombatPlayer
+	local combatPlayer = CombatPlayerData[cast.UserData.Character]
 	combatPlayer:HandleAttackHit(cast, cast:GetPosition())
 end
 fastCast.RayHit:Connect(handleRayHit)
