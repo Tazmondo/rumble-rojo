@@ -1,108 +1,151 @@
--- -- variables
--- local MapService = {}
+local FriendService = game:GetService("FriendService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Red = require(ReplicatedStorage.Packages.Red)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
--- local Arena = workspace.Arena
--- local MapFolder = Arena.Map
--- local Maps = game.ServerStorage.Maps
--- local GameStats = game.ReplicatedStorage.GameValues.Arena
+local MapService = {}
 
--- local offset = Vector3.new
+local Net = Red.Server("Map", { "SetDoors", "MoveMap" })
 
--- -- services
--- local TweenService = game:GetService("TweenService")
+local arena = workspace.Arena
+local activeMapFolder = arena.Map
+local mapFolder = game.ServerStorage.Maps
+local doors: Model = arena.Doors
 
--- -- load modules
+local DOORTRANSITIONTIME = 2
+local MAPTRANSITIONTIME = 2
 
--- -- transition stuff
--- local Part1Closed, Part2Closed = Arena.Doors.One.CFrame, Arena.Doors.Two.CFrame
+local doorOne: Model = doors:FindFirstChild("One") :: Model
+local doorTwo: Model = doors:FindFirstChild("Two") :: Model
 
--- local Part1Open = CFrame.new(Part1Closed.Position - offset(80.39, 0, 0)) * CFrame.Angles(0, math.rad(-90), 0)
--- local Part2Open = CFrame.new(Part2Closed.Position + offset(90.961, 0, 0)) * CFrame.Angles(0, math.rad(-90), 0)
+local closedOne = doorOne:GetPivot()
+local closedTwo = doorTwo:GetPivot()
 
--- local ClosedMapPosition = Vector3.new(Arena.Base.Position.X, Arena.Base.Position.Y - 80, Arena.Base.Position.Z)
--- local OpenMapPosition = Arena.Base.Position
+local openOne = closedOne * CFrame.Angles(math.rad(-90), 0, 0)
+local openTwo = closedTwo * CFrame.Angles(math.rad(-90), 0, 0)
 
--- -- functions
--- local function MoveDoors(Part, Position, Time)
--- 	local Tween = TweenService:Create(
--- 		Part,
--- 		TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
--- 		{ CFrame = Position }
--- 	)
+-- Here we position the map slightly above the door centre
+local activeMapCFrame = doors:GetPivot() * CFrame.new(0, 2 + doors:GetExtentsSize().Y / 2, 0)
+local inactiveMapCFrame = activeMapCFrame * CFrame.new(0, -90, 0)
 
--- 	Tween:Play()
--- end
+local loadedFolder = nil
+local map = nil
 
--- local function MoveMap(Parts, Position, Time)
--- 	for _, Part in pairs(Parts) do
--- 		if Part:IsA("BasePart") then
--- 			local newPosition = Position + Part.Position - Arena.Map.Arena:GetPivot().Position
--- 			local Tween = TweenService:Create(
--- 				Part,
--- 				TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
--- 				{ Position = newPosition }
--- 			)
+-- functions
+local function OpenDoors()
+	return Red.Promise.new(function(resolve)
+		Net:FireAll("SetDoors", { openOne, openTwo }, DOORTRANSITIONTIME)
+		task.wait(DOORTRANSITIONTIME + 0.25)
+		doorOne:PivotTo(openOne)
+		doorTwo:PivotTo(openTwo)
+		resolve()
+	end)
+end
 
--- 			Tween:Play()
--- 		end
--- 	end
--- end
+local function CloseDoors()
+	return Red.Promise.new(function(resolve)
+		Net:FireAll("SetDoors", { closedOne, closedTwo }, DOORTRANSITIONTIME)
+		task.wait(DOORTRANSITIONTIME + 0.25)
+		doorOne:PivotTo(closedOne)
+		doorTwo:PivotTo(closedTwo)
+		resolve()
+	end)
+end
 
--- function MapService:MoveDoorsAndMap(Open)
--- 	local TargetPositions = Open and { One = Part1Open, Two = Part2Open } or { One = Part1Closed, Two = Part2Closed }
--- 	local TargetMapPos = Open and OpenMapPosition or ClosedMapPosition
+local function GetRandomMap(): Model
+	local maps = mapFolder:GetChildren()
+	local validMaps = {}
+	for _, map in pairs(maps) do
+		if not map:FindFirstChild("Arena") then
+			continue
+		end
+		local spawnCount = #map.Arena.Spawns:GetChildren()
+		if spawnCount >= 10 then
+			table.insert(validMaps, map)
+		else
+			warn("MAP HAS INVALID SPAWN COUNT", spawnCount, map.Name)
+		end
+	end
 
--- 	MoveDoors(Arena.Doors.One, TargetPositions.One, 1.3)
--- 	MoveDoors(Arena.Doors.Two, TargetPositions.Two, 1.3)
+	return validMaps[math.random(1, #validMaps)].Arena
+end
 
--- 	local Parts = Arena.Map:GetDescendants()
--- 	MoveMap(Parts, TargetMapPos, 1.5)
--- end
+local function MoveMapUp()
+	return Red.Promise.new(function(resolve)
+		Net:FireAll("MoveMap", map, activeMapCFrame, MAPTRANSITIONTIME)
+		task.wait(MAPTRANSITIONTIME + 0.25)
+		map:PivotTo(activeMapCFrame)
+		resolve()
+	end)
+end
 
--- function MapService:CloneIntoParent(Folder, Parent)
--- 	for i, v in pairs(Folder:GetChildren()) do
--- 		v:Clone().Parent = Parent
--- 	end
--- end
+function MoveMapDown()
+	return Red.Promise.new(function(resolve)
+		Net:FireAll("MoveMap", map, inactiveMapCFrame, MAPTRANSITIONTIME)
+		task.wait(MAPTRANSITIONTIME + 0.25)
+		map:PivotTo(inactiveMapCFrame)
+		resolve()
+	end)
+end
 
--- function MapService:LoadMap(MapName)
--- 	MapFolder:ClearAllChildren()
+local function LoadMap(storedMap: Model)
+	map = storedMap
+	loadedFolder = map.Parent
 
--- 	local NewMap = Maps[MapName]
--- 	self:CloneIntoParent(NewMap, MapFolder)
+	map.Parent = activeMapFolder
+	map:PivotTo(inactiveMapCFrame)
+end
 
--- 	GameStats.Arena.Value = MapName
--- end
+local function UnloadMap()
+	map.Parent = loadedFolder
+	loadedFolder = nil
+	map = nil
+end
 
--- function MapService:GetMapPool()
--- 	local MapPool = {}
+function MapService:LoadNextMap()
+	if map then
+		warn("Forcefully unloading the map! This shouldn't really happen.", debug.traceback())
+		UnloadMap()
+	end
+	LoadMap(GetRandomMap())
+	return OpenDoors():Then(MoveMapUp)
+end
 
--- 	for _, mapFolder in pairs(game.ServerStorage.Maps:GetChildren()) do
--- 		table.insert(MapPool, mapFolder.Name)
--- 	end
+function MapService:IsLoaded()
+	return map ~= nil
+end
 
--- 	return MapPool
--- end
+function MapService:GetMapSpawns()
+	return TableUtil.Shuffle(TableUtil.Map(map.Spawns:GetChildren(), function(spawn)
+		return spawn.CFrame
+	end))
+end
 
--- function MapService:GetMapSpawns(): { CFrame }
--- 	local map = assert(MapFolder:GetChildren()[1], "Tried to get map spawns without map existing")
--- 	local spawns = assert(map.Spawns, "Loaded map does not have a spawns folder")
--- 	local output = {}
+function MapService:UnloadCurrentMap()
+	if not map then
+		warn("Tried to unload map when map did not exist.", debug.traceback())
+		return
+	end
+	return MoveMapDown():Then(CloseDoors):Then(UnloadMap)
+end
 
--- 	for _, part in pairs(spawns:GetChildren()) do
--- 		table.insert(output, part.CFrame)
--- 	end
--- 	return output
--- end
+function MapService:Initialize()
+	-- task.spawn(function()
+	-- 	while true do
+	-- 		LoadMap(GetRandomMap())
+	-- 		OpenDoors():Await()
+	-- 		task.wait(1)
+	-- 		MoveMapUp():Await()
+	-- 		task.wait(1)
+	-- 		MoveMapDown():Await()
+	-- 		task.wait(1)
+	-- 		CloseDoors():Await()
+	-- 		task.wait(1)
+	-- 		UnloadMap()
+	-- 	end
+	-- end)
+end
 
--- function MapService:LoadRandomMap()
--- 	local MapPool = self:GetMapPool()
--- 	local Number = math.random(1, #MapPool)
+MapService:Initialize()
 
--- 	self:LoadMap(MapPool[Number])
--- end
-
--- function MapService:Initialize() end
-
--- return MapService
-return {}
+return MapService

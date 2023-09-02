@@ -137,8 +137,10 @@ function ArenaService.StartIntermission()
 	-- CHARACTER SELECTION
 	Net:Folder():SetAttribute("GameState", "CharacterSelection")
 
-	MapService:LoadRandomMap()
-	MapService:MoveDoorsAndMap(true)
+	-- Since intermission can restart, we don't need to always reload the map.
+	if not MapService:IsLoaded() then
+		MapService:LoadNextMap()
+	end
 
 	Net:On("Queue", function()
 		return false
@@ -190,7 +192,7 @@ function ArenaService.StartMatch()
 	Net:Folder():SetAttribute("RoundCountdown", roundCountdown)
 
 	local spawnCount = 1
-	local spawns = TableUtil.Shuffle(MapService:GetMapSpawns())
+	local spawns = MapService:GetMapSpawns()
 
 	-- Handle removing players when they die
 	for player, data in pairs(registeredPlayers) do
@@ -268,7 +270,7 @@ function ArenaService.EndMatch(winner: Player?)
 
 	registeredPlayers = {}
 
-	MapService:MoveDoorsAndMap(false)
+	MapService:UnloadCurrentMap()
 
 	ArenaService.StartIntermission()
 	return

@@ -18,9 +18,12 @@ local playingSounds: { [Sound]: Sound } = {}
 local ambience: Sound? = nil
 
 function SoundController:SetAmbience(sound: Sound?)
+	print("Setting ambience to", sound)
 	if sound then
 		if ambience and ambience.SoundId == sound.SoundId then
 			return
+		elseif ambience then
+			ambience:Destroy()
 		end
 
 		ambience = sound:Clone()

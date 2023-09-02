@@ -262,6 +262,8 @@ function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
 	end
 
 	ResultsUI.Results.Actions.Proceed.Activated:Wait()
+	SoundController:PlayGeneralSound("ButtonClick")
+
 	ResultsUI.Enabled = false
 	showingMatchResults = false
 
