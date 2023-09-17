@@ -29,6 +29,7 @@ CombatPlayer.__index = CombatPlayer
 
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
+local VFX = require(script.Parent.VFX)
 
 CombatPlayer.StateEnum = {
 	Idle = 0,
@@ -72,6 +73,7 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	self.requiredSuperCharge = self.heroData.Super.Charge
 	self.superCharge = 0
 
+	self.character = assert(humanoid.Parent) :: Model
 	self.humanoid = humanoid
 	self.humanoidData = { humanoid.MaxHealth, humanoid.WalkSpeed, humanoid.DisplayDistanceType } :: { any }
 
@@ -152,8 +154,13 @@ function CombatPlayer.ScheduleReload(self: CombatPlayer)
 end
 
 function CombatPlayer.Regen(self: CombatPlayer)
+	if self.state == self.StateEnum.Dead then
+		return
+	end
+
 	local regenAmount = self.maxHealth * Config.RegenAmount
 	self:Heal(regenAmount)
+	VFX.Regen(self.character)
 
 	if self.health < self.maxHealth then
 		self:ScheduleRegen(Config.RegenCooldown)
