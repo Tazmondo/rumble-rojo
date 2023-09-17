@@ -30,8 +30,6 @@ CombatPlayer.__index = CombatPlayer
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
 
-local GameValues = ReplicatedStorage.GameValues.Arena
-
 CombatPlayer.StateEnum = {
 	Idle = 0,
 	Attacking = 1,
@@ -97,8 +95,9 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	self.DamageDealtSignal = Signal.new()
 	self.TookDamageSignal = Signal.new()
 
-	self.scheduledChange = {} -- We use a table so if it updates we can detect and cancel the change
+	self.scheduledChange = nil :: {}? -- We use a table so if it updates we can detect and cancel the change
 	self.scheduledReloads = 0
+	self.scheduledRegen = nil :: {}?
 
 	if RunService:IsClient() then
 		NetClient:On(SYNCEVENT, function(func, ...)
@@ -152,6 +151,34 @@ function CombatPlayer.ScheduleReload(self: CombatPlayer)
 	end
 end
 
+function CombatPlayer.Regen(self: CombatPlayer)
+	local regenAmount = self.maxHealth * Config.RegenAmount
+	self:Heal(regenAmount)
+
+	if self.health < self.maxHealth then
+		self:ScheduleRegen(Config.RegenCooldown)
+	end
+end
+
+function CombatPlayer.ScheduleRegen(self: CombatPlayer, delay)
+	-- We don't want to regenerate on client as it will conflict with server regeneration
+	if RunService:IsClient() then
+		return
+	end
+
+	local regenCheck = {}
+	self.scheduledRegen = regenCheck
+
+	task.delay(delay, function()
+		-- Makes sure it hasn't been overriden by another scheduled change
+		if self.scheduledRegen == regenCheck then
+			self.scheduledRegen = nil
+
+			self:Regen()
+		end
+	end)
+end
+
 function CombatPlayer.ChangeState(self: CombatPlayer, newState: number)
 	self.state = newState
 	self.scheduledChange = {}
@@ -164,6 +191,8 @@ function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, new
 	task.delay(delay, function()
 		-- Makes sure it hasn't been overriden by another scheduled state change
 		if self.scheduledChange == stateChange then
+			self.scheduledChange = nil
+
 			self.state = newState
 		else
 			print("state change was overriden!")
@@ -225,15 +254,27 @@ function CombatPlayer.HandleAttackHit(self: CombatPlayer, cast, position)
 end
 
 function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
-	self.health = math.max(0, self.health - amount)
+	self.health = math.clamp(self.health - amount, 0, self.maxHealth)
 	self.humanoid.Health = self.health
 	self:Sync("TakeDamage", amount)
 	self.TookDamageSignal:Fire(amount)
+
+	self:ScheduleRegen(Config.InitialRegenTime)
 
 	if self.health <= 0 then
 		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 		self:ChangeState(self.StateEnum.Dead)
 	end
+end
+
+function CombatPlayer.Heal(self: CombatPlayer, amount: number)
+	if self.state == self.StateEnum.Dead then
+		return
+	end
+
+	self.health = math.clamp(self.health + amount, 0, self.maxHealth)
+	self.humanoid.Health = self.health
+	self:Sync("Heal", amount)
 end
 
 function CombatPlayer.CanTakeDamage(self: CombatPlayer)
@@ -244,6 +285,8 @@ end
 function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
 	self.maxHealth = newMaxHealth
 	self.health = math.clamp(self.health, 0, newMaxHealth)
+
+	self:ScheduleRegen(Config.InitialRegenTime)
 
 	self:Sync("SetMaxHealth", newMaxHealth)
 end
@@ -275,6 +318,8 @@ function CombatPlayer.DealDamage(self: CombatPlayer, damage: number, targetChara
 	self.damageDealt += damage
 	self:Sync("DealDamage", damage, targetCharacter)
 	self.DamageDealtSignal:Fire(damage, targetCharacter)
+
+	self:ScheduleRegen(Config.InitialRegenTime)
 end
 
 -- aim is an attacktype enum

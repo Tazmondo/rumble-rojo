@@ -20,6 +20,15 @@ local Config = {
 
 	-- Key to use super
 	SuperKey = Enum.KeyCode.E,
+
+	-- How long before health regen begins after taking or dealing damage
+	InitialRegenTime = 5,
+
+	-- How long between each heal once regeneration has begun
+	RegenCooldown = 1.5,
+
+	-- Regeneration amount as a multiplier of maximum health
+	RegenAmount = 0.2,
 }
 
 return Config
