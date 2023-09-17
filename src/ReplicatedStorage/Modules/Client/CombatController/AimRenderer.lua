@@ -87,7 +87,12 @@ function AimRenderer.StartRendering(self: AimRenderer)
 			self.aimPart.Size = Vector3.new(horizontalDistance, 0, depth)
 		end
 
-		local tint = if self.validFunction() then Color3.new(1, 1, 1) else Color3.new(1, 0, 0)
+		local valid = self.validFunction()
+		local super = self.attackData.AbilityType == Enums.AbilityType.Super
+		local tint = if valid and super
+			then Color3.new(0.92, 0.72, 0)
+			elseif valid then Color3.new(1, 1, 1)
+			else Color3.new(1, 0, 0)
 		self:SetTint(tint)
 
 		self.aimPart.CFrame = CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.direction)
