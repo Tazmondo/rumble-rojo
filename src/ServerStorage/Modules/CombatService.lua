@@ -81,11 +81,12 @@ end
 
 local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
 	if not player.Character then
-		return
+		warn(player, "Tried to attack without a character!")
+		return 0
 	end
 	local combatPlayer = CombatPlayerData[player.Character]
 	if not combatPlayer or not combatPlayer:CanAttack() then
-		return
+		return combatPlayer.attackId
 	end
 	local attackData = combatPlayer.heroData.Attack :: HeroData.AttackData
 
@@ -94,15 +95,18 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
 	SoundService:PlayAttack(player, attackData.Name, player.Character)
 
 	combatPlayer:Attack()
+
+	return combatPlayer.attackId
 end
 
 local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 	if not player.Character then
-		return
+		warn(player, "Tried to super without a character!")
+		return 0
 	end
 	local combatPlayer = CombatPlayerData[player.Character]
 	if not combatPlayer or not combatPlayer:CanSuperAttack() then
-		return
+		return combatPlayer.attackId
 	end
 	local superData = combatPlayer.heroData.Super :: HeroData.SuperData
 
@@ -111,6 +115,8 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 	SoundService:PlayAttack(player, superData.Name, player.Character)
 
 	combatPlayer:SuperAttack()
+
+	return combatPlayer.attackId
 end
 
 function handleAim(player: Player, aim: string)

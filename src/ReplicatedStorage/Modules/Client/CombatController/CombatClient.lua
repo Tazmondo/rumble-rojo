@@ -390,7 +390,12 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray)
 		AttackRenderer.GetRendererForAttack(self.player, self.combatPlayer.heroData.Attack, origin, attackDetails)
 
 	renderFunction(self.FastCast)
-	Net:Fire("Attack", origin, attackDetails)
+
+	-- If attack doesn't go through on server then reset attack id to prevent desync
+	local serverId = Net:Call("Attack", origin, attackDetails):Await()
+	if serverId then
+		self.combatPlayer.attackId = serverId
+	end
 end
 
 function CombatClient.SuperAttack(self: CombatClient, trajectory: Ray)
@@ -410,7 +415,10 @@ function CombatClient.SuperAttack(self: CombatClient, trajectory: Ray)
 		AttackRenderer.GetRendererForAttack(self.player, self.combatPlayer.heroData.Super, origin, attackDetails)
 
 	renderFunction(self.FastCast)
-	Net:Fire("Super", origin, attackDetails)
+	local serverId = Net:Call("Super", origin, attackDetails):Await()
+	if serverId then
+		self.combatPlayer.attackId = serverId
+	end
 end
 
 export type CombatClient = typeof(CombatClient.new(...))
