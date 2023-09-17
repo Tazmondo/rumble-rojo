@@ -13,6 +13,7 @@ local combatFolder = ReplicatedStorage.Modules.Shared.Combat
 
 local SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local AimRenderer = require(script.Parent.AimRenderer)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
 local AttackRenderer = require(script.Parent.AttackRenderer)
@@ -263,6 +264,8 @@ function CombatClient.HandleMouseDown(self: CombatClient)
 		self.humanoid.AutoRotate = false
 		self.aimRenderer:Update(self.currentMouseDirection)
 		self.aimRenderer:Enable()
+		self.combatPlayer:SetAiming(Enums.AbilityType.Attack)
+		Net:Fire("Aim", Enums.AbilityType.Attack)
 	end
 end
 
@@ -279,6 +282,8 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 		task.wait()
 	end
 	self.aimRenderer:Disable()
+	self.combatPlayer:SetAiming(nil)
+	Net:Fire("Aim", nil)
 	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection))
 	while not self.completedRotation do
 		task.wait()
@@ -298,6 +303,8 @@ function CombatClient.HandleSuperDown(self: CombatClient)
 		self.humanoid.AutoRotate = false
 		self.superAimRenderer:Update(self.currentMouseDirection)
 		self.superAimRenderer:Enable()
+		self.combatPlayer:SetAiming(Enums.AbilityType.Super)
+		Net:Fire("Aim", Enums.AbilityType.Super)
 	end
 end
 
@@ -314,6 +321,8 @@ function CombatClient.HandleSuperUp(self: CombatClient)
 		task.wait()
 	end
 	self.superAimRenderer:Disable()
+	self.combatPlayer:SetAiming(nil)
+	Net:Fire("Aim", nil)
 	self:SuperAttack(Ray.new(self.HRP.Position, self.lastAimDirection))
 	while not self.completedRotation do
 		task.wait()

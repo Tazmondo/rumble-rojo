@@ -90,6 +90,8 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	self.attacks = {} :: { [number]: Attack }
 	self.player = player
 
+	self.aiming = nil :: string?
+
 	self.damageDealt = 0
 
 	self.DamageDealtSignal = Signal.new()
@@ -273,6 +275,11 @@ function CombatPlayer.DealDamage(self: CombatPlayer, damage: number, targetChara
 	self.damageDealt += damage
 	self:Sync("DealDamage", damage, targetCharacter)
 	self.DamageDealtSignal:Fire(damage, targetCharacter)
+end
+
+-- aim is an attacktype enum
+function CombatPlayer.SetAiming(self: CombatPlayer, aim: string)
+	self.aiming = aim
 end
 
 function CombatPlayer.Destroy(self: CombatPlayer)

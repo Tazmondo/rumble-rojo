@@ -113,6 +113,17 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 	combatPlayer:SuperAttack()
 end
 
+function handleAim(player: Player, aim: string)
+	if not player.Character then
+		return
+	end
+	local combatPlayer = CombatPlayerData[player.Character]
+	if not combatPlayer then
+		return
+	end
+	combatPlayer:SetAiming(aim)
+end
+
 local function handleRayHit(cast, result)
 	local combatPlayer = CombatPlayerData[cast.UserData.Character]
 	combatPlayer:HandleAttackHit(cast, result.Position)
@@ -271,10 +282,10 @@ function CombatService:SetupCombatPlayer(player: Player, heroName: string)
 	local combatPlayer = CombatPlayer.new(heroName, humanoid, player)
 	CombatPlayerData[char] = combatPlayer
 
+	self:InitializeNameTag(char, combatPlayer, player)
+
 	print("Asking client to initialize combat player")
 	Net:Fire(player, "CombatPlayerInitialize", heroName)
-
-	self:InitializeNameTag(char, combatPlayer, player)
 end
 
 function CombatService:LoadCharacterWithModel(player: Player, characterModel: Model?)
@@ -382,6 +393,7 @@ function CombatService:Initialize()
 	Net:On("Attack", handleAttack)
 	Net:On("Super", handleSuper)
 	Net:On("Hit", handleClientHit)
+	Net:On("Aim", handleAim)
 
 	for _, v in pairs(workspace:GetChildren()) do
 		if v.Name == "Rig" then

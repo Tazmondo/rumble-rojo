@@ -1,12 +1,20 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local CombatPlayer = require(script.Parent.CombatPlayer)
+local Enums = require(script.Parent.Enums)
 local NameTag = {}
 
-local nameTagTemplate = game:GetService("ReplicatedStorage").Assets.NameTag
+local nameTagTemplate = ReplicatedStorage.Assets.NameTag
+local haloTemplate: Part = ReplicatedStorage.Assets.VFX.General.Halo
+
+local SPINSPEED = 1.5 -- Seconds for full rotation
 
 function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer, hide: Player?)
 	local nameTag = nameTagTemplate:Clone()
+	local halo = haloTemplate:Clone()
 	assert(character.Parent, "Character has not been parented to workspace yet!")
+	local HRP = assert(character:FindFirstChild("HumanoidRootPart"), "Character did not have a humanoidrootpart")
+	local humanoid = assert(character:FindFirstChild("Humanoid"), "Character did not have a humanoid")
 
 	if hide then
 		nameTag.PlayerToHideFrom = hide
@@ -16,8 +24,14 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 
 	task.spawn(function()
 		nameTag.Parent = character:WaitForChild("Head")
+		halo.Parent = workspace
+		if RunService:IsServer() then
+			halo.Name = character.Name .. "ServerHalo"
+		end
 
 		while character.Parent ~= nil and nameTag.Parent ~= nil do
+			local dt = task.wait()
+
 			for i = 1, 3 do
 				local AmmoBar = nameTag.AmmoBar:FindFirstChild("Ammo" .. i)
 
@@ -43,8 +57,34 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 			local colour2 = Color3.fromHSV(healthRatio * 88 / 255, 197 / 255, 158 / 255)
 			nameTag.HealthBar.HealthBar.UIGradient.Color = ColorSequence.new(colour1, colour2)
 
-			task.wait()
+			if RunService:IsClient() then
+				local serverHalo = workspace:FindFirstChild(character.Name .. "ServerHalo")
+				if serverHalo then
+					serverHalo:Destroy()
+				end
+			end
+
+			local superAvailable = combatPlayer:CanSuperAttack()
+			local aiming = combatPlayer.aiming
+			if not superAvailable then
+				halo.Decal.Transparency = 1
+			else
+				halo.Decal.Transparency = 0
+				if aiming == Enums.AbilityType.Super then
+					halo.Decal.Color3 = Color3.fromHex("#ebb800")
+				else
+					halo.Decal.Color3 = Color3.fromHex("#619cf5")
+				end
+			end
+
+			halo.CFrame = CFrame.new(HRP.Position)
+				* CFrame.new(0, -humanoid.HipHeight - HRP.Size.Y / 2 + 0.2, 0)
+				* halo.CFrame.Rotation
+				* CFrame.Angles(0, math.pi * 2 * dt / SPINSPEED, 0)
 		end
+
+		-- Since it's not parented to the character
+		halo:Destroy()
 	end)
 	return nameTag
 end
