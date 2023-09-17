@@ -33,7 +33,10 @@ function CombatCamera.new()
 
 	self.camera = workspace.CurrentCamera
 
-	self.cameraOffset = CFrame.Angles(0, math.rad(-90), 0) * (Vector3.new(0, 20, -10) * 1.5)
+	self.normalFOV = 70
+	self.cameraOffset = CFrame.Angles(0, math.rad(-90), 0) * (Vector3.new(0, 200, -205))
+	self.cameraFOV = 12
+
 	self.savedCFrame = CFrame.new()
 	self.accelTween = AccelTween.new(60)
 
@@ -151,6 +154,7 @@ function CombatCamera.Enable(self: CombatCamera)
 		return
 	end
 
+	self.camera.FieldOfView = self.cameraFOV
 	self:Transition(true)
 	self.enabled = true
 end
@@ -160,6 +164,7 @@ function CombatCamera.Disable(self: CombatCamera)
 		return
 	end
 
+	self.camera.FieldOfView = self.normalFOV
 	self:Transition(false)
 	self.enabled = false
 end
@@ -189,6 +194,7 @@ function CombatCamera.Destroy(self: CombatCamera)
 	self.camera.CameraType = Enum.CameraType.Custom
 
 	self.janitor:Destroy()
+	self.camera.FieldOfView = self.normalFOV
 
 	if prevCamera == self then
 		prevCamera = nil

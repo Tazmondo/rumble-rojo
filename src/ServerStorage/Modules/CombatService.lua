@@ -352,9 +352,9 @@ function CombatService:PlayerAdded(player: Player)
 
 	self:LoadPlayerGuis(player)
 
-	-- if RunService:IsStudio() then
-	-- 	PlayersInCombat[player] = "Fabio"
-	-- end
+	if RunService:IsStudio() then
+		PlayersInCombat[player] = "Fabio"
+	end
 
 	LoadedService.PromiseLoad(player):Then(function(resolve)
 		print("Resolved:", resolve)
