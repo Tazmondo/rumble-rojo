@@ -3,7 +3,7 @@
 local CONFIG = {
 	Intermission = 20, -- 30
 	HeroSelection = 10, -- 15
-	RoundLength = 120, -- 2mimnutes
+	RoundLength = 400,
 
 	MinPlayers = 2,
 	MaxPlayers = 10,
