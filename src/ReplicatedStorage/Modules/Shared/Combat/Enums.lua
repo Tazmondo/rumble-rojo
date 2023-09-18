@@ -8,11 +8,6 @@ Enums.MovementSpeed = {
 	Slow = 8,
 }
 
-Enums.AttackType = {
-	Shot = "Shot", -- Fire one bullet at target
-	Shotgun = "Shotgun", -- Fire many bullets in a cone
-}
-
 Enums.AttackRange = {
 	Short = 32,
 	Medium = 48,
@@ -28,6 +23,12 @@ Enums.Modifiers = {
 	Knockback = "Knockback",
 	BreakBarrier = "BreakBarrier",
 }
+
+Enums.AttackType = {
+	Shot = "Shot", -- Fire one bullet at target
+	Shotgun = "Shotgun", -- Fire many bullets in a cone
+}
+export type AttackType = "Shot" | "Shotgun"
 
 Enums.AbilityType = {
 	Attack = "Attack",

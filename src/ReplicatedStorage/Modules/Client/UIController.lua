@@ -284,7 +284,6 @@ function ResetRoundVariables()
 end
 
 function UIController:RenderAllUI()
-	print(ready)
 	-- Might appear a weird way of doing it, but means we can get precise control over how the UI renders by just editing the function for the corresponding gamestate.
 	-- Checking if it's changed also allows us to do tweening.
 	debug.profilebegin("UIControllerRender")

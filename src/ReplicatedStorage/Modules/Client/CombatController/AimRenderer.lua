@@ -14,14 +14,13 @@ local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
-local AttackType = Enums.AttackType
 
-local aimPartTemplates = {
-	[AttackType.Shotgun] = GeneralVFX.AimCone,
+local aimPartTemplates: { [Enums.AttackType]: Instance } = {
+	Shotgun = GeneralVFX.AimCone,
 }
 
 function AimRenderer.new(
-	attackData: HeroData.AttackData,
+	attackData: HeroData.AttackData | HeroData.SuperData,
 	character: Model,
 	combatPlayer: CombatPlayer.CombatPlayer,
 	validFunction: () -> boolean
@@ -79,9 +78,11 @@ function AimRenderer.StartRendering(self: AimRenderer)
 			return
 		end
 
-		if self.type == AttackType.Shotgun then
-			local angle = self.attackData.Angle + Config.ShotgunRandomSpread * 2
-			local depth = self.attackData.Range
+		if self.data.AttackType == "Shotgun" then
+			local data = self.attackData :: HeroData.AttackData & HeroData.ShotgunData
+
+			local angle = data.Angle + Config.ShotgunRandomSpread * 2
+			local depth = data.Range
 			local horizontalDistance = 2 * depth * math.sin(math.rad(angle / 2)) -- horizontal distance of a sector
 
 			self.aimPart.Size = Vector3.new(horizontalDistance, 0, depth)

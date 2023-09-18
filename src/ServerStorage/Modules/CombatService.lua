@@ -61,7 +61,7 @@ local function replicateAttack(
 	behaviour.RaycastParams.FilterDescendantsInstances = getAllCombatPlayerCharacters()
 	behaviour.RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
-	if attackData.AttackType == Enums.AttackType.Shotgun then
+	if attackData.AttackType == "Shotgun" then
 		local attackDetails = AttackLogic.MakeAttack(combatPlayer, origin, attackData, localAttackDetails.seed)
 		localAttackDetails = localAttackDetails :: typeof(attackDetails)
 
@@ -167,8 +167,8 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		return
 	end
 
-	local attackRay = Ray.new(attackData.FiredCFrame.Position, attackData.FiredCFrame.LookVector)
-	local rayDiff = attackRay.Unit:Distance(localTargetPosition)
+	local serverAttackRay = Ray.new(attackData.FiredCFrame.Position, attackData.FiredCFrame.LookVector)
+	local rayDiff = serverAttackRay.Unit:Distance(localTargetPosition)
 
 	-- Accounts for NaN case
 	if rayDiff ~= rayDiff then

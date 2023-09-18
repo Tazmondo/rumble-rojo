@@ -1,46 +1,138 @@
 --!strict
 -- Defines hero abilities and attacks
+-- We need to typecast the string literals due to a bug in luau :(
 local Enums = require(script.Parent.Enums)
 
-local HeroData = {
+export type HeroData = {
+	Health: number,
+	MovementSpeed: number,
+	Role: string,
+	Attack: AttackData,
+	Super: SuperData,
+}
+type BaseAttack = {
+	AbilityType: "Attack",
+	Name: string,
+	Damage: number,
+	Range: number,
+	Ammo: number,
+	AmmoRegen: number,
+	ReloadSpeed: number,
+
+	AttackType: Enums.AttackType,
+}
+type BaseSuper = {
+	AbilityType: "Super",
+	Name: string,
+	Charge: number,
+	Damage: number,
+	Range: number,
+	Modifiers: { [number]: string },
+
+	AttackType: Enums.AttackType,
+}
+export type ShotgunData = {
+	AttackType: "Shotgun",
+	Angle: number,
+	ShotCount: number,
+	ProjectileSpeed: number,
+}
+
+export type ShotData = {
+	AttackType: "Shot",
+	ProjectileSpeed: number,
+}
+
+export type ArcedData = {
+	AttackType: "Arced",
+	ProjectileSpeed: number,
+	TimeToDetonate: number, -- Can be zero for instant explosion, but allows for a grenade like effect
+	Height: number,
+	Radius: number,
+}
+
+export type AttackType = ShotgunData | ShotData | ArcedData
+
+export type AttackData = BaseAttack & AttackType
+export type SuperData = BaseSuper & AttackType
+
+local HeroData: { [string]: HeroData } = {
 	Fabio = {
 		Health = 3600,
 		MovementSpeed = Enums.MovementSpeed.Normal,
 		Role = "Fighter",
 		Attack = {
-			AbilityType = Enums.AbilityType.Attack,
+			AbilityType = "Attack" :: "Attack",
 			Name = "Buckshot",
 			Damage = 200,
 			Ammo = 3,
 			AmmoRegen = 2,
 			Range = Enums.AttackRange.Short,
-			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			ReloadSpeed = 0.5,
 
-			AttackType = Enums.AttackType.Shotgun,
+			AttackType = "Shotgun" :: "Shotgun",
 			ShotCount = 10,
 			Angle = 20,
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 		},
 		Super = {
-			AbilityType = Enums.AbilityType.Super,
+			AbilityType = "Super" :: "Super",
 			Name = "Super Shell",
 			Charge = 7,
 			Damage = 330,
 			Range = Enums.AttackRange.Short,
-			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
 
-			AttackType = Enums.AttackType.Shotgun,
+			AttackType = "Shotgun" :: "Shotgun",
 			ShotCount = 15,
 			Angle = 15,
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+		},
+	},
+	Taz = {
+		Health = 4000,
+		MovementSpeed = Enums.MovementSpeed.Fast,
+		Role = "Fighter",
+		Attack = {
+			AbilityType = "Attack" :: "Attack",
+			Name = "Fist Shot",
+			Damage = 750,
+			Ammo = 4,
+			AmmoRegen = 1.5,
+			Range = Enums.AttackRange.Short,
+			ReloadSpeed = 0.5,
+
+			AttackType = "Shot" :: "Shot",
+			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+		},
+		Super = {
+			-- Uncomment when starting work on arcing
+
+			-- AbilityType = "Super" :: "Super",
+			-- Name = "Bear Grenade",
+			-- Charge = 4,
+			-- Damage = 1500,
+			-- Range = Enums.AttackRange.MediumLarge,
+			-- Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
+
+			-- AttackType = "Arced" :: "Arced",
+			-- ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			-- Height = Enums.ArcHeight.Low,
+			-- TimeToDetonate = 0.5,
+			-- Radius = Enums.Radius.Small,
+			AbilityType = "Super" :: "Super",
+			Name = "Super Shell",
+			Charge = 7,
+			Damage = 330,
+			Range = Enums.AttackRange.Short,
+			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
+
+			AttackType = "Shotgun" :: "Shotgun",
+			ShotCount = 15,
+			Angle = 15,
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 		},
 	},
 }
-
--- TODO: Function which validates the above table contains all the correct data
-
-export type HeroData = typeof(HeroData)
-export type AttackData = typeof(HeroData.Fabio.Attack)
-export type SuperData = typeof(HeroData.Fabio.Super)
 
 return HeroData
