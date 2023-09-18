@@ -29,8 +29,11 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 			halo.Name = character.Name .. "ServerHalo"
 		end
 
-		while character.Parent ~= nil and nameTag.Parent ~= nil do
+		while true do
 			local dt = task.wait()
+			if character.Parent == nil or nameTag.Parent == nil then
+				break
+			end
 
 			for i = 1, 3 do
 				local AmmoBar = nameTag.AmmoBar:FindFirstChild("Ammo" .. i)
