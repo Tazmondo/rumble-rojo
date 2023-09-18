@@ -1,4 +1,3 @@
-local FriendService = game:GetService("FriendService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Red = require(ReplicatedStorage.Packages.Red)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
