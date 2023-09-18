@@ -41,7 +41,9 @@ end
 local Net = Red.Server("game", { "PlayerDied", "MatchResults" })
 Net:Folder()
 
-local registeredPlayers: { [Player]: Types.PlayerBattleStats } = {} -- boolean before character select, string afterwards
+local playerQueueStatus: { [Player]: boolean } = {}
+
+local registeredPlayers: { [Player]: Types.PlayerBattleStats } = {} -- boolean before character select, playerstats afterwards
 
 function ArenaService.HandleResults(player)
 	print("Handling results for", player)
@@ -81,15 +83,29 @@ end
 
 function ArenaService.GetRegisteredPlayersLength(): number
 	local count = 0
-	for player, _ in pairs(registeredPlayers) do
+	for player, value in pairs(registeredPlayers) do
 		if player.Parent == nil then
 			registeredPlayers[player] = nil
-		else
+			continue
+		end
+		count += 1
+	end
+
+	Net:Folder():SetAttribute("AliveFighters", count)
+	return count
+end
+
+function ArenaService.GetQueuedPlayersLength(): number
+	local count = 0
+	for player, value in pairs(playerQueueStatus) do
+		if player.Parent == nil then
+			playerQueueStatus[player] = nil
+		elseif value then
 			count += 1
 		end
 	end
 
-	Net:Folder():SetAttribute("AliveFighters", count)
+	Net:Folder():SetAttribute("QueuedCount", count)
 	return count
 end
 
@@ -103,21 +119,7 @@ function ArenaService.StartIntermission()
 	local intermissionTime = CONFIG.Intermission
 	Net:Folder():SetAttribute("IntermissionTime", intermissionTime)
 
-	Net:On("Queue", function(player, isJoining)
-		if isJoining then
-			registeredPlayers[player] = {
-				Kills = 0,
-				Won = false,
-				Died = false,
-			}
-		else
-			registeredPlayers[player] = nil
-		end
-		Net:Folder():SetAttribute("QueuedCount", ArenaService.GetRegisteredPlayersLength())
-		return isJoining
-	end)
-
-	while ArenaService.GetRegisteredPlayersLength() < CONFIG.MinPlayers do
+	while ArenaService.GetQueuedPlayersLength() < CONFIG.MinPlayers do
 		task.wait()
 	end
 
@@ -128,7 +130,7 @@ function ArenaService.StartIntermission()
 		task.wait(1)
 		intermissionTime -= 1
 		Net:Folder():SetAttribute("IntermissionTime", intermissionTime)
-		if ArenaService.GetRegisteredPlayersLength() < CONFIG.MinPlayers then
+		if ArenaService.GetQueuedPlayersLength() < CONFIG.MinPlayers then
 			ArenaService.StartIntermission()
 			return
 		end
@@ -142,11 +144,20 @@ function ArenaService.StartIntermission()
 		MapService:LoadNextMap()
 	end
 
-	Net:On("Queue", function()
-		return false
-	end)
-
 	local canSelect = true
+
+	registeredPlayers = {}
+	for player, queued in pairs(playerQueueStatus) do
+		if queued then
+			registeredPlayers[player] = {
+				Kills = 0,
+				Won = false,
+				Died = false,
+			}
+		end
+	end
+
+	Net:Folder():SetAttribute("QueuedCount", ArenaService.GetQueuedPlayersLength())
 
 	Net:On("HeroSelect", function(player, hero)
 		if not registeredPlayers[player] then
@@ -284,6 +295,8 @@ function ArenaService.Initialize()
 	end)
 
 	local function playerAdded(player: Player)
+		playerQueueStatus[player] = false
+
 		LoadedService.PromiseLoad(player):Then(function()
 			-- Do something here?
 		end)
@@ -312,6 +325,12 @@ function ArenaService.Initialize()
 			Net:Fire(data.Victim, "PlayerDied")
 			ArenaService.HandleResults(data.Victim)
 		end
+	end)
+
+	Net:On("Queue", function(player, isJoining)
+		playerQueueStatus[player] = isJoining
+		Net:Folder():SetAttribute("QueuedCount", ArenaService.GetQueuedPlayersLength())
+		return isJoining
 	end)
 end
 

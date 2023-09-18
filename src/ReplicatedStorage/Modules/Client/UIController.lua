@@ -3,9 +3,7 @@
 -- There are some exceptions, e.g. for tweening.
 
 -- variables
-local UIController = {
-	MinPlayers = 2,
-}
+local UIController = {}
 
 local Player = game.Players.LocalPlayer
 
@@ -26,7 +24,6 @@ local Net = Red.Client("game")
 local ready = false
 local selectedHero = false
 local UIState = ""
-local showingMatchResults = false
 
 function PositionCameraToModel(viewportFrame: ViewportFrame, camera: Camera, model: Model)
 	local fovDeg = camera.FieldOfView
@@ -233,7 +230,6 @@ function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
 	if data.Won then
 		SoundController:PlayGeneralSound("Victory")
 	end
-	showingMatchResults = true
 	ResultsUI.Enabled = true
 
 	local characterName = data.Hero
@@ -276,18 +272,19 @@ function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
 	SoundController:PlayGeneralSound("ButtonClick")
 
 	ResultsUI.Enabled = false
-	showingMatchResults = false
 
 	return
 end
 
 function ResetRoundVariables()
-	ready = false
+	-- We do not set ready to false because your ready status carries between rounds
+	-- ready = false
 	selectedHero = false
 	UpdateQueueButtons()
 end
 
 function UIController:RenderAllUI()
+	print(ready)
 	-- Might appear a weird way of doing it, but means we can get precise control over how the UI renders by just editing the function for the corresponding gamestate.
 	-- Checking if it's changed also allows us to do tweening.
 	debug.profilebegin("UIControllerRender")
