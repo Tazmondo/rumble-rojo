@@ -17,6 +17,7 @@ local Janitor = require(ReplicatedStorage.Packages.Janitor)
 
 local aimPartTemplates: { [Enums.AttackType]: Instance } = {
 	Shotgun = GeneralVFX.AimCone,
+	Shot = GeneralVFX.AimRectangle,
 }
 
 function AimRenderer.new(
@@ -25,6 +26,7 @@ function AimRenderer.new(
 	combatPlayer: CombatPlayer.CombatPlayer,
 	validFunction: () -> boolean
 )
+	print("aimrendering", attackData.AttackType)
 	local self = setmetatable({}, AimRenderer) :: AimRenderer
 	self.janitor = Janitor.new()
 
@@ -78,15 +80,23 @@ function AimRenderer.StartRendering(self: AimRenderer)
 			return
 		end
 
-		if self.data.AttackType == "Shotgun" then
+		local depth
+		local width
+
+		if self.attackData.AttackType == "Shotgun" then
 			local data = self.attackData :: HeroData.AttackData & HeroData.ShotgunData
 
 			local angle = data.Angle + Config.ShotgunRandomSpread * 2
-			local depth = data.Range
-			local horizontalDistance = 2 * depth * math.sin(math.rad(angle / 2)) -- horizontal distance of a sector
+			depth = data.Range
+			width = 2 * depth * math.sin(math.rad(angle / 2)) -- horizontal distance of a sector
+		elseif self.attackData.AttackType == "Shot" then
+			local data = self.attackData :: HeroData.AttackData & HeroData.ShotData
 
-			self.aimPart.Size = Vector3.new(horizontalDistance, 0, depth)
+			width = 5
+			depth = data.Range
 		end
+
+		self.aimPart.Size = Vector3.new(width, 0, depth)
 
 		local valid = self.validFunction()
 		local super = self.attackData.AbilityType == Enums.AbilityType.Super

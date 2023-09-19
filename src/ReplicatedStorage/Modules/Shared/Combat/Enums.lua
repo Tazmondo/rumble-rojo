@@ -17,6 +17,19 @@ Enums.AttackRange = {
 Enums.ProjectileSpeed = {
 	Medium = 40,
 	MediumFast = 50,
+	Fast = 60,
+}
+
+Enums.ArcHeight = {
+	Low = 5,
+	Medium = 10,
+	High = 15,
+}
+
+Enums.Radius = {
+	Small = 3,
+	Medium = 6,
+	Large = 12,
 }
 
 Enums.Modifiers = {
@@ -27,8 +40,9 @@ Enums.Modifiers = {
 Enums.AttackType = {
 	Shot = "Shot", -- Fire one bullet at target
 	Shotgun = "Shotgun", -- Fire many bullets in a cone
+	Arced = "Arced", -- Fires overhead in an arc
 }
-export type AttackType = "Shot" | "Shotgun"
+export type AttackType = "Shot" | "Shotgun" | "Arced"
 
 Enums.AbilityType = {
 	Attack = "Attack",

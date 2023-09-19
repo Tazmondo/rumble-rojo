@@ -76,6 +76,19 @@ local function replicateAttack(
 			combatPlayer:RegisterAttack(pellet.id, pellet.CFrame, pellet.speed, cast, attackData)
 		end
 		Net:FireAll("Attack", player, attackData, origin, attackDetails)
+	elseif attackData.AttackType == "Shot" then
+		local attackDetails = AttackLogic.MakeAttack(combatPlayer, origin, attackData)
+		localAttackDetails = localAttackDetails :: typeof(attackDetails)
+
+		local cast = fastCast:Fire(
+			attackDetails.origin.Position,
+			attackDetails.origin.LookVector,
+			attackData.ProjectileSpeed,
+			behaviour
+		)
+		cast.UserData.Id = attackDetails.id
+		cast.UserData.Character = character -- Don't set it to combatplayer to avoid cyclic dependency
+		Net:FireAll("Attack", player, attackData, origin, attackDetails)
 	end
 end
 
@@ -369,9 +382,9 @@ function CombatService:PlayerAdded(player: Player)
 
 	self:LoadPlayerGuis(player)
 
-	-- if RunService:IsStudio() then
-	-- 	PlayersInCombat[player] = "Fabio"
-	-- end
+	if RunService:IsStudio() then
+		PlayersInCombat[player] = "Taz"
+	end
 
 	LoadedService.PromiseLoad(player):Then(function(resolve)
 		print("Resolved:", resolve)

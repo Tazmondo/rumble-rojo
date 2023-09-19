@@ -2,13 +2,16 @@
 
 local CombatPlayer = require(script.Parent.CombatPlayer)
 local Config = require(script.Parent.Config)
-local Enums = require(script.Parent.Enums)
 local HeroData = require(script.Parent.HeroData)
 
 local AttackLogic = {}
 
 function AttackLogic.MakeAttack(combatPlayer: CombatPlayer.CombatPlayer, origin: CFrame, attackData, seed: number?): any
 	attackData = attackData :: HeroData.AttackData
+
+	local idFunction = function()
+		return combatPlayer:GetNextAttackId()
+	end
 
 	if attackData.AttackType == "Shotgun" then
 		return AttackLogic.Shotgun(
@@ -17,13 +20,17 @@ function AttackLogic.MakeAttack(combatPlayer: CombatPlayer.CombatPlayer, origin:
 			attackData.ProjectileSpeed,
 			origin,
 			seed,
-			function()
-				return combatPlayer:GetNextAttackId()
-			end
+			idFunction
 		)
+	elseif attackData.AttackType == "Shot" then
+		return AttackLogic.Shot(origin, idFunction)
 	else
 		error("Invalid shot type provided")
 	end
+end
+
+function AttackLogic.Shot(origin: CFrame, idFunction)
+	return { origin = origin, id = idFunction() }
 end
 
 function AttackLogic.Shotgun(
