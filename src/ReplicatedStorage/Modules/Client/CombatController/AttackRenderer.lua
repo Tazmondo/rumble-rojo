@@ -5,6 +5,7 @@ local AttackRenderer = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local FastCast = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux)
@@ -71,25 +72,24 @@ function AttackRenderer.GetRendererForAttack(
 	player: Player,
 	attackData: HeroData.AttackData,
 	origin: CFrame,
-	attackDetails
+	attackDetails: AttackLogic.AttackDetails
 )
 	assert(attackDetails, "Called attack renderer without providing attack details")
 	local behaviour = AttackRenderer.GetCastBehaviour(attackData, player.Character)
 
 	return function(caster: FastCastTypes.Caster)
 		if attackData.AttackType == Enums.AttackType.Shotgun then
-			for index, pellet in pairs(attackDetails.pellets) do
+			local details = attackDetails :: AttackLogic.ShotgunDetails
+
+			for index, pellet in pairs(details.pellets) do
 				caster:Fire(pellet.CFrame.Position, pellet.CFrame.LookVector, pellet.speed, behaviour).UserData.Id =
 					pellet.id
 			end
 		elseif attackData.AttackType == "Shot" then
-			caster:Fire(
-				attackDetails.origin.Position,
-				attackDetails.origin.LookVector,
-				attackData.ProjectileSpeed,
-				behaviour
-			).UserData.Id =
-				attackDetails.id
+			local details = attackDetails :: AttackLogic.ShotDetails
+
+			caster:Fire(details.origin.Position, details.origin.LookVector, attackData.ProjectileSpeed, behaviour).UserData.Id =
+				details.id
 		end
 	end
 end
@@ -101,7 +101,7 @@ function AttackRenderer.HandleAttackRender(
 	player: Player,
 	attackData: HeroData.AttackData,
 	origin: CFrame,
-	attackDetails
+	attackDetails: AttackLogic.AttackDetails
 )
 	-- Don't want to render our own attacks twice
 	-- This must be a separate function from local attack rendering, since we don't want a RayHit callback with other clients attacks

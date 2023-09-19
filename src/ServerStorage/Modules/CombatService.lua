@@ -1,3 +1,4 @@
+--!nolint LocalShadow
 -- Initializes and handles the of the server-side combat system
 -- Shouldn't be very long, as combat data is mostly decided by scripts in client
 -- This just validates that they haven't been tampered with before replicating them to other clients
@@ -43,7 +44,7 @@ local function replicateAttack(
 	origin: CFrame,
 	combatPlayer: CombatPlayer.CombatPlayer,
 	attackData: HeroData.AttackData,
-	localAttackDetails
+	localAttackDetails: AttackLogic.AttackDetails
 )
 	local character = assert(player.Character, "character does not exist")
 	local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
@@ -62,8 +63,10 @@ local function replicateAttack(
 	behaviour.RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	if attackData.AttackType == "Shotgun" then
-		local attackDetails = AttackLogic.MakeAttack(combatPlayer, origin, attackData, localAttackDetails.seed)
-		localAttackDetails = localAttackDetails :: typeof(attackDetails)
+		local localAttackDetails = localAttackDetails :: AttackLogic.ShotgunDetails
+
+		local attackDetails =
+			AttackLogic.MakeAttack(combatPlayer, origin, attackData, localAttackDetails.seed) :: AttackLogic.ShotgunDetails
 
 		for index, pellet in pairs(attackDetails.pellets) do
 			if pellet.id ~= localAttackDetails.pellets[index].id then
@@ -77,8 +80,14 @@ local function replicateAttack(
 		end
 		Net:FireAll("Attack", player, attackData, origin, attackDetails)
 	elseif attackData.AttackType == "Shot" then
-		local attackDetails = AttackLogic.MakeAttack(combatPlayer, origin, attackData)
-		localAttackDetails = localAttackDetails :: typeof(attackDetails)
+		local localAttackDetails = localAttackDetails :: AttackLogic.ShotDetails
+
+		local attackDetails = AttackLogic.MakeAttack(combatPlayer, origin, attackData) :: AttackLogic.ShotDetails
+
+		if localAttackDetails.id ~= attackDetails.id then
+			warn(player, "mismatched attack ids, could be cheating.")
+			return
+		end
 
 		local cast = fastCast:Fire(
 			attackDetails.origin.Position,

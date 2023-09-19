@@ -6,7 +6,14 @@ local HeroData = require(script.Parent.HeroData)
 
 local AttackLogic = {}
 
-function AttackLogic.MakeAttack(combatPlayer: CombatPlayer.CombatPlayer, origin: CFrame, attackData, seed: number?): any
+type IdFunction = () -> number
+
+function AttackLogic.MakeAttack(
+	combatPlayer: CombatPlayer.CombatPlayer,
+	origin: CFrame,
+	attackData,
+	seed: number?
+): AttackDetails
 	attackData = attackData :: HeroData.AttackData
 
 	local idFunction = function()
@@ -29,9 +36,14 @@ function AttackLogic.MakeAttack(combatPlayer: CombatPlayer.CombatPlayer, origin:
 	end
 end
 
-function AttackLogic.Shot(origin: CFrame, idFunction)
-	return { origin = origin, id = idFunction() }
+function AttackLogic.Shot(origin: CFrame, idFunction: IdFunction?)
+	return { origin = origin, id = if idFunction then idFunction() else 1 }
 end
+
+export type ShotDetails = {
+	origin: CFrame,
+	id: number,
+}
 
 function AttackLogic.Shotgun(
 	angleSpread: number,
@@ -39,8 +51,8 @@ function AttackLogic.Shotgun(
 	basePelletSpeed: number,
 	origin: CFrame,
 	seed: number?,
-	idFunction: (() -> number)?
-)
+	idFunction: IdFunction?
+): ShotgunDetails
 	seed = seed or os.clock()
 	local random = Random.new(seed)
 	local pellets = {}
@@ -68,5 +80,16 @@ function AttackLogic.Shotgun(
 		pellets = pellets,
 	}
 end
+
+export type ShotgunDetails = {
+	seed: number,
+	pellets: {
+		CFrame: CFrame,
+		id: number,
+		speed: number,
+	},
+}
+
+export type AttackDetails = ShotDetails | ShotgunDetails
 
 return AttackLogic
