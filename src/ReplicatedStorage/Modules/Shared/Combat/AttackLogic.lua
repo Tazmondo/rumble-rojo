@@ -1,3 +1,5 @@
+--!strict
+--!nolint LocalShadow
 -- Used by server and client to generate data deterministically for attacks (using seeding)
 
 local CombatPlayer = require(script.Parent.CombatPlayer)
@@ -16,11 +18,13 @@ function AttackLogic.MakeAttack(
 ): AttackDetails
 	attackData = attackData :: HeroData.AttackData
 
-	local idFunction = function()
+	local idFunction: any = function()
 		return combatPlayer:GetNextAttackId()
 	end
 
 	if attackData.AttackType == "Shotgun" then
+		local attackData = attackData :: HeroData.ShotgunData & any
+
 		return AttackLogic.Shotgun(
 			attackData.Angle,
 			attackData.ShotCount,
@@ -53,7 +57,7 @@ function AttackLogic.Shotgun(
 	seed: number?,
 	idFunction: IdFunction?
 ): ShotgunDetails
-	seed = seed or os.clock()
+	local seed = seed or os.clock()
 	local random = Random.new(seed)
 	local pellets = {}
 
@@ -83,11 +87,11 @@ end
 
 export type ShotgunDetails = {
 	seed: number,
-	pellets: {
+	pellets: { [number]: {
 		CFrame: CFrame,
 		id: number,
 		speed: number,
-	},
+	} },
 }
 
 export type AttackDetails = ShotDetails | ShotgunDetails
