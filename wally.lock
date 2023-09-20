@@ -25,7 +25,12 @@ dependencies = []
 [[package]]
 name = "tazmondo/rumble-rojo"
 version = "0.1.0"
-dependencies = [["Janitor", "howmanysmall/janitor@1.15.6"], ["Loader", "sleitnick/loader@2.0.0"], ["Red", "uncontained0/red@1.2.2"], ["TableUtil", "sleitnick/table-util@1.2.0"]]
+dependencies = [["Janitor", "howmanysmall/janitor@1.15.6"], ["Loader", "sleitnick/loader@2.0.0"], ["RaycastHitbox", "ulferno/raycasthitbox@4.0.1"], ["Red", "uncontained0/red@1.2.2"], ["TableUtil", "sleitnick/table-util@1.2.0"]]
+
+[[package]]
+name = "ulferno/raycasthitbox"
+version = "4.0.1"
+dependencies = []
 
 [[package]]
 name = "uncontained0/red"
