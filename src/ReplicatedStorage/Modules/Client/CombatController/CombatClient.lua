@@ -284,7 +284,7 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 	self.aimRenderer:Disable()
 	self.combatPlayer:SetAiming(nil)
 	Net:Fire("Aim", nil)
-	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection))
+	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection), false)
 	while not self.completedRotation do
 		task.wait()
 	end
@@ -323,7 +323,7 @@ function CombatClient.HandleSuperUp(self: CombatClient)
 	self.superAimRenderer:Disable()
 	self.combatPlayer:SetAiming(nil)
 	Net:Fire("Aim", nil)
-	self:SuperAttack(Ray.new(self.HRP.Position, self.lastAimDirection))
+	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection), true)
 	while not self.completedRotation do
 		task.wait()
 	end
@@ -373,49 +373,42 @@ function CombatClient.GetInputs(self: CombatClient)
 	-- end)
 end
 
-function CombatClient.Attack(self: CombatClient, trajectory: Ray)
-	if not self.combatPlayer:CanAttack() then
-		print("Tried to attack but can't.", self.combatPlayer.ammo)
-		return
+function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean)
+	local attackData
+	if not super then
+		if not self.combatPlayer:CanAttack() then
+			print("Tried to attack but can't.", self.combatPlayer.ammo)
+			return
+		end
+		self.combatPlayer:Attack()
+		SoundController:PlayAttackSound(self.combatPlayer.heroData.Attack.Name)
+		attackData = self.combatPlayer.heroData.Attack
+	else
+		if not self.combatPlayer:CanSuperAttack() then
+			print("Tried to super attack but can't.", self.combatPlayer.superCharge)
+			return
+		end
+		self.combatPlayer:SuperAttack()
+		SoundController:PlayAttackSound(self.combatPlayer.heroData.Super.Name)
+		attackData = self.combatPlayer.heroData.Super
 	end
-	self.combatPlayer:Attack()
-	SoundController:PlayAttackSound(self.combatPlayer.heroData.Attack.Name)
 
 	trajectory = trajectory.Unit
 	local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
 
-	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, self.combatPlayer.heroData.Attack)
+	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, attackData)
 
-	local renderFunction =
-		AttackRenderer.GetRendererForAttack(self.player, self.combatPlayer.heroData.Attack, origin, attackDetails)
+	local renderFunction = AttackRenderer.GetRendererForAttack(self.player, attackData, origin, attackDetails)
 
 	renderFunction(self.FastCast)
 
 	-- If attack doesn't go through on server then reset attack id to prevent desync
-	local serverId = Net:Call("Attack", origin, attackDetails):Await()
-	if serverId then
-		self.combatPlayer.attackId = serverId
+	local serverId
+	if not super then
+		serverId = Net:Call("Attack", origin, attackDetails):Await()
+	else
+		serverId = Net:Call("Super", origin, attackDetails):Await()
 	end
-end
-
-function CombatClient.SuperAttack(self: CombatClient, trajectory: Ray)
-	if not self.combatPlayer:CanSuperAttack() then
-		print("Tried to super attack but can't.", self.combatPlayer.superCharge)
-		return
-	end
-	self.combatPlayer:SuperAttack()
-	SoundController:PlayAttackSound(self.combatPlayer.heroData.Super.Name)
-
-	trajectory = trajectory.Unit
-	local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
-
-	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, self.combatPlayer.heroData.Super)
-
-	local renderFunction =
-		AttackRenderer.GetRendererForAttack(self.player, self.combatPlayer.heroData.Super, origin, attackDetails)
-
-	renderFunction(self.FastCast)
-	local serverId = Net:Call("Super", origin, attackDetails):Await()
 	if serverId then
 		self.combatPlayer.attackId = serverId
 	end
