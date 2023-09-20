@@ -51,7 +51,7 @@ end)
 function CombatController:Initialize()
 	print("Initializing combat controller")
 	Net:On("CombatPlayerInitialize", InitializeCombatClient)
-	Net:On("Attack", AttackRenderer.HandleAttackRender)
+	Net:On("Attack", AttackRenderer.RenderOtherClientAttack)
 end
 
 CombatController:Initialize()

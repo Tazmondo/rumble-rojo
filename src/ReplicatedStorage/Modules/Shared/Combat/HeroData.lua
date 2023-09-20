@@ -56,6 +56,8 @@ export type AttackType = ShotgunData | ShotData | ArcedData
 export type AttackData = BaseAttack & AttackType
 export type SuperData = BaseSuper & AttackType
 
+export type AbilityData = AttackData | SuperData
+
 local HeroData: { [string]: HeroData } = {
 	Fabio = {
 		Health = 3600,
@@ -97,7 +99,7 @@ local HeroData: { [string]: HeroData } = {
 			AbilityType = "Attack" :: "Attack",
 			Name = "Fist Shot",
 			Damage = 750,
-			Ammo = 4,
+			Ammo = 3,
 			AmmoRegen = 1.5,
 			Range = Enums.AttackRange.Short,
 			ReloadSpeed = 0.5,

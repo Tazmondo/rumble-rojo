@@ -3,101 +3,129 @@
 -- This will be more fleshed out when we have more attacks
 local AttackRenderer = {}
 
+local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
-local FastCast = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux)
-local FastCastTypes = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux.TypeDefinitions)
+local RaycastHitbox = require(ReplicatedStorage.Packages.RaycastHitbox)
 
 local localPlayer = game:GetService("Players").LocalPlayer
 
-function AttackRenderer.GenerateLengthChangedFunction(attackData: HeroData.AttackData)
-	-- TODO: Implement VFX
-	return function(
-		activeCast,
-		lastPoint: Vector3,
-		rayDir: Vector3,
-		displacement: number,
-		velocity: Vector3,
-		bullet: BasePart?
-	)
-		if bullet == nil then
-			warn("LengthChanged without a bullet", debug.traceback())
-			return
-		end
-		local projectilePoint = lastPoint + rayDir * displacement
-		bullet.CFrame = CFrame.lookAt(projectilePoint, projectilePoint + rayDir)
-	end
-end
+local attackVFXFolder = ReplicatedStorage.Assets.VFX.Attack
 
-function AttackRenderer.GetCastBehaviour(attackData: HeroData.AttackData, excludeCharacter: Model?)
-	local RaycastParams = RaycastParams.new()
-	RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
+local partFolder = Instance.new("Folder", workspace)
+partFolder.Name = "Part Folder"
+
+-- function AttackRenderer.GenerateLengthChangedFunction(attackData: HeroData.AttackData)
+-- 	-- TODO: Implement VFX
+-- 	return function(
+-- 		activeCast,
+-- 		lastPoint: Vector3,
+-- 		rayDir: Vector3,
+-- 		displacement: number,
+-- 		velocity: Vector3,
+-- 		bullet: BasePart?
+-- 	)
+-- 		if bullet == nil then
+-- 			warn("LengthChanged without a bullet", debug.traceback())
+-- 			return
+-- 		end
+-- 		local projectilePoint = lastPoint + rayDir * displacement
+-- 		bullet.CFrame = CFrame.lookAt(projectilePoint, projectilePoint + rayDir)
+-- 	end
+-- end
+
+function AttackRenderer.InitializeHitboxParams(raycastHitbox, excludeCharacter: Model?): nil
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	if excludeCharacter then
-		RaycastParams.FilterDescendantsInstances = { excludeCharacter }
+		raycastParams.FilterDescendantsInstances = { excludeCharacter }
 	end
-	RaycastParams.RespectCanCollide = true
+	raycastParams.RespectCanCollide = true
 
-	local projectileFolder = workspace:FindFirstChild("ProjectileFolder")
-	if not projectileFolder then
-		projectileFolder = Instance.new("Folder")
-		projectileFolder.Name = "ProjectileFolder"
-		projectileFolder.Parent = workspace
-	end
+	raycastHitbox.RaycastParams = raycastParams
+	raycastHitbox.Visualizer = RunService:IsStudio()
+	raycastHitbox.DebugLog = RunService:IsStudio()
 
-	local FastCastBehaviour = FastCast.newBehavior()
-	FastCastBehaviour.RaycastParams = RaycastParams
-	FastCastBehaviour.CosmeticBulletTemplate = ReplicatedStorage.Assets.VFX.Attack[attackData.Name]
-	FastCastBehaviour.CosmeticBulletContainer = projectileFolder
-	FastCastBehaviour.MaxDistance = attackData.Range
+	-- PartMode, trigger OnHit when any part is hit, not just humanoids. We need this so we can delete projectiles when they hit walls.
+	raycastHitbox.DetectionMode = RaycastHitbox.DetectionMode.PartMode
 
-	return FastCastBehaviour
+	return
 end
 
-local function RayHit(activeCast: FastCastTypes.ActiveCast, result: RaycastResult, velocity: Vector3, bullet: BasePart)
-	task.wait()
-	bullet:Destroy()
-end
+-- local function RayHit(activeCast: FastCastTypes.ActiveCast, result: RaycastResult, velocity: Vector3, bullet: BasePart)
+-- 	task.wait()
+-- 	bullet:Destroy()
+-- end
 
-local function CastTerminating(activeCast: FastCastTypes.ActiveCast)
-	local bullet = activeCast.RayInfo.CosmeticBulletObject
-	if bullet then
-		bullet:Destroy()
-	end
-end
+-- local function CastTerminating(activeCast: FastCastTypes.ActiveCast)
+-- 	local bullet = activeCast.RayInfo.CosmeticBulletObject
+-- 	if bullet then
+-- 		bullet:Destroy()
+-- 	end
+-- end
 
-function AttackRenderer.GetRendererForAttack(
+function CreateAttackProjectile(
 	player: Player,
-	attackData: HeroData.AttackData,
+	attackData: HeroData.AbilityData,
 	origin: CFrame,
-	attackDetails: AttackLogic.AttackDetails
+	speed: number,
+	id: number,
+	onHit: HitFunction?
+)
+	local pelletPart = attackVFXFolder[attackData.Name]:Clone()
+	pelletPart.CFrame = origin
+	pelletPart.Parent = partFolder
+
+	local attachment = Instance.new("Attachment", pelletPart)
+	local linearVelocity = Instance.new("LinearVelocity", pelletPart)
+	linearVelocity.MaxForce = math.huge
+	linearVelocity.Attachment0 = attachment
+	linearVelocity.VectorVelocity = origin.LookVector * speed
+
+	pelletPart.Anchored = false
+
+	local projectileTime = attackData.Range / speed
+	Debris:AddItem(pelletPart, projectileTime)
+
+	local hitbox = RaycastHitbox.new(pelletPart)
+	AttackRenderer.InitializeHitboxParams(hitbox, player.Character)
+	hitbox:HitStart()
+
+	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult)
+		pelletPart:Destroy()
+		if onHit then
+			onHit(hitPart, result.Position, id)
+		end
+	end)
+end
+
+function AttackRenderer.RenderAttack(
+	player: Player,
+	attackData: HeroData.AbilityData,
+	origin: CFrame,
+	attackDetails: AttackLogic.AttackDetails,
+	onHit: HitFunction?
 )
 	assert(attackDetails, "Called attack renderer without providing attack details")
-	local behaviour = AttackRenderer.GetCastBehaviour(attackData, player.Character)
 
-	return function(caster: FastCastTypes.Caster)
-		if attackData.AttackType == Enums.AttackType.Shotgun then
-			local details = attackDetails :: AttackLogic.ShotgunDetails
+	if attackData.AttackType == Enums.AttackType.Shotgun then
+		local details = attackDetails :: AttackLogic.ShotgunDetails
 
-			for index, pellet in pairs(details.pellets) do
-				caster:Fire(pellet.CFrame.Position, pellet.CFrame.LookVector, pellet.speed, behaviour).UserData.Id =
-					pellet.id
-			end
-		elseif attackData.AttackType == "Shot" then
-			local details = attackDetails :: AttackLogic.ShotDetails
-
-			caster:Fire(details.origin.Position, details.origin.LookVector, attackData.ProjectileSpeed, behaviour).UserData.Id =
-				details.id
+		for index, pellet in pairs(details.pellets) do
+			CreateAttackProjectile(player, attackData, pellet.CFrame, pellet.speed, pellet.id, onHit)
 		end
+	elseif attackData.AttackType == "Shot" then
+		local details = attackDetails :: AttackLogic.ShotDetails
+
+		CreateAttackProjectile(player, attackData, origin, attackData.ProjectileSpeed, details.id, onHit)
 	end
 end
 
--- So each attack only has one fastcaster, reducing lag.
-local cachedCasts: { [string]: FastCastTypes.Caster } = {}
-
-function AttackRenderer.HandleAttackRender(
+function AttackRenderer.RenderOtherClientAttack(
 	player: Player,
 	attackData: HeroData.AttackData,
 	origin: CFrame,
@@ -108,20 +136,12 @@ function AttackRenderer.HandleAttackRender(
 	if player == localPlayer then
 		return
 	end
-	local attackName = attackData.Name
-	local cachedCaster = cachedCasts[attackName]
-	if not cachedCaster then
-		cachedCaster = FastCast.new()
-		cachedCasts[attackName] = cachedCaster
-		assert(cachedCaster, "Appease type checker")
 
-		cachedCaster.LengthChanged:Connect(AttackRenderer.GenerateLengthChangedFunction(attackData))
-		cachedCaster.RayHit:Connect(RayHit)
-		cachedCaster.CastTerminating:Connect(CastTerminating)
-	end
-
-	AttackRenderer.GetRendererForAttack(player, attackData, origin, attackDetails)(cachedCaster)
+	AttackRenderer.RenderAttack(player, attackData, origin, attackDetails)
 end
+
+-- HitPart, Position, Id
+export type HitFunction = (Instance, Vector3, number) -> any
 
 export type AttackRenderer = typeof(AttackRenderer)
 

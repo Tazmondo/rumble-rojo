@@ -23,7 +23,6 @@ local Janitor = require(ReplicatedStorage.Packages.Janitor)
 local Red = require(ReplicatedStorage.Packages.Red)
 
 local AttackLogic = require(combatFolder.AttackLogic)
-local FastCast = require(combatFolder.FastCastRedux)
 local CombatPlayer = require(combatFolder.CombatPlayer)
 
 local Net = Red.Client("game")
@@ -108,18 +107,6 @@ function CombatClient.new(heroName: string)
 
 	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer, self.character))
 
-	self.FastCast = FastCast.new()
-
-	self.FastCast.LengthChanged:Connect(AttackRenderer.GenerateLengthChangedFunction(self.combatPlayer.heroData.Attack))
-
-	self.FastCast.RayHit:Connect(function(...)
-		self:RayHit(...)
-	end)
-
-	self.FastCast.CastTerminating:Connect(function(...)
-		self:CastTerminating(...)
-	end)
-
 	self.nameTag = NameTag.Init(self.character, self.combatPlayer)
 
 	Net:On("CombatKill", function()
@@ -154,23 +141,14 @@ function CombatClient.Destroy(self: CombatClient)
 	self.destroyed = true
 end
 
-function CombatClient.RayHit(self: CombatClient, activeCast, result: RaycastResult, velocity: Vector3, bullet: BasePart)
-	-- This is called on the same frame as RayHit, but we don't want the bullet to get instantly destroyed, as it looks weird
-	local instance, position = result.Instance, result.Position
-
+function CombatClient.RayHit(self: CombatClient, instance: Instance, position: Vector3, id: number)
 	local character = CombatPlayer.GetAncestorWhichIsACombatPlayer(instance)
 	if character then
-		Net:Fire("Hit", instance, position, activeCast.UserData.Id)
+		Net:Fire("Hit", instance, position, id)
 	end
 end
 
-function CombatClient.CastTerminating(self: CombatClient, activeCast)
-	local bullet = activeCast.RayInfo.CosmeticBulletObject
-	if bullet then
-		bullet:Destroy()
-	end
-end
-
+-- Returns point of intersection between a ray and a plane
 local function RayPlaneIntersection(origin, normal, rayOrigin, unitRayDirection)
 	local rpoint = rayOrigin - origin
 	local dot = unitRayDirection:Dot(normal)
@@ -398,9 +376,9 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 
 	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, attackData)
 
-	local renderFunction = AttackRenderer.GetRendererForAttack(self.player, attackData, origin, attackDetails)
-
-	renderFunction(self.FastCast)
+	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, function(...)
+		self:RayHit(...)
+	end)
 
 	-- If attack doesn't go through on server then reset attack id to prevent desync
 	local serverId
