@@ -83,7 +83,6 @@ function CreateAttackProjectile(
 	origin: CFrame,
 	speed: number,
 	id: number,
-	hasGravity: boolean,
 	onHit: HitFunction?
 )
 	local pelletPart: BasePart = attackVFXFolder[attackData.Name]:Clone()
@@ -93,21 +92,15 @@ function CreateAttackProjectile(
 	pelletPart.Anchored = false
 	pelletPart.Parent = partFolder
 
-	if not hasGravity then
-		local attachment = Instance.new("Attachment", pelletPart)
-		local linearVelocity = Instance.new("LinearVelocity", pelletPart)
-		linearVelocity.MaxForce = math.huge
-		linearVelocity.Attachment0 = attachment
-		linearVelocity.VectorVelocity = velocityVector
-	else
-		print(velocityVector)
-		pelletPart.AssemblyLinearVelocity = velocityVector
-	end
+	local attachment = Instance.new("Attachment", pelletPart)
+	local linearVelocity = Instance.new("LinearVelocity", pelletPart)
+	linearVelocity.MaxForce = math.huge
+	linearVelocity.Attachment0 = attachment
+	linearVelocity.VectorVelocity = velocityVector
 
 	TriggerAllDescendantParticleEmitters(pelletPart)
 
-	-- If gravity is on, it will hit the ground eventually anyway
-	local projectileTime = if not hasGravity then attackData.Range / speed else 60
+	local projectileTime = attackData.Range / speed
 	Debris:AddItem(pelletPart, projectileTime)
 
 	local hitbox = RaycastHitbox.new(pelletPart)
@@ -119,6 +112,50 @@ function CreateAttackProjectile(
 		if onHit then
 			onHit(hitPart, result.Position, id)
 		end
+	end)
+end
+
+function CreateArcedAttack(
+	player: Player,
+	attackData: HeroData.AbilityData,
+	origin: CFrame,
+	speed: number,
+	id: number,
+	target: Vector3,
+	onHit: HitFunction?
+)
+	local pelletPart: BasePart = attackVFXFolder[attackData.Name]:Clone()
+	pelletPart.CFrame = origin
+	pelletPart.Parent = workspace
+
+	TriggerAllDescendantParticleEmitters(pelletPart)
+
+	local projectileTime = attackData.Range / speed
+
+	local height = 10
+	local timeTravelled = 0
+	local movementTick = RunService.PreSimulation:Connect(function(dt: number)
+		timeTravelled += dt
+		local progress = timeTravelled / projectileTime
+		pelletPart.CFrame = origin:Lerp(CFrame.new(target), progress)
+			+ Vector3.new(0, height * math.sin(progress * math.rad(180)))
+	end)
+
+	local hitbox = RaycastHitbox.new(pelletPart)
+	InitializeHitboxParams(hitbox, player.Character)
+	hitbox:HitStart()
+
+	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult)
+		pelletPart:Destroy()
+		movementTick:Disconnect()
+		if onHit then
+			onHit(hitPart, result.Position, id)
+		end
+	end)
+
+	task.delay(projectileTime * 1.1, function()
+		pelletPart:Destroy()
+		movementTick:Disconnect()
 	end)
 end
 
@@ -135,16 +172,16 @@ function AttackRenderer.RenderAttack(
 		local details = attackDetails :: AttackLogic.ShotgunDetails
 
 		for index, pellet in pairs(details.pellets) do
-			CreateAttackProjectile(player, attackData, pellet.CFrame, pellet.speed, pellet.id, false, onHit)
+			CreateAttackProjectile(player, attackData, pellet.CFrame, pellet.speed, pellet.id, onHit)
 		end
 	elseif attackData.AttackType == "Shot" then
 		local details = attackDetails :: AttackLogic.ShotDetails
 
-		CreateAttackProjectile(player, attackData, details.origin, attackData.ProjectileSpeed, details.id, false, onHit)
+		CreateAttackProjectile(player, attackData, details.origin, attackData.ProjectileSpeed, details.id, onHit)
 	elseif attackData.AttackType == "Arced" then
 		local details = attackDetails :: AttackLogic.ArcDetails
 
-		CreateAttackProjectile(player, attackData, details.origin, attackData.ProjectileSpeed, details.id, true, onHit)
+		CreateArcedAttack(player, attackData, origin, attackData.ProjectileSpeed, details.id, details.target, onHit)
 	end
 end
 

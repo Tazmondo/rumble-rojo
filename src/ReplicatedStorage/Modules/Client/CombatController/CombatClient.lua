@@ -81,7 +81,7 @@ function CombatClient.new(heroName: string): CombatClient
 	self.humanoid = self.character.Humanoid :: Humanoid
 	self.HRP = self.humanoid.RootPart
 	self.lastMousePosition = Vector3.new()
-	self.target = nil :: Vector3?
+	self.targetRelative = nil :: Vector3?
 	self.currentMouseDirection = nil :: Vector3?
 	self.lastAimDirection = nil :: Vector3?
 	self.attackButtonDown = false
@@ -105,6 +105,11 @@ function CombatClient.new(heroName: string): CombatClient
 		self.janitor:Add(AimRenderer.new(self.combatPlayer.heroData.Super, self.character, self.combatPlayer, function()
 			return self.combatPlayer:CanSuperAttack()
 		end))
+
+	self.janitor:Add(RunService.RenderStepped:Connect(function()
+		self.aimRenderer:Update(self.currentMouseDirection, self:GetRealTarget())
+		self.superAimRenderer:Update(self.currentMouseDirection, self:GetRealTarget())
+	end))
 
 	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer, self.character))
 
@@ -194,6 +199,15 @@ function CombatClient.NormaliseClickTarget(self: CombatClient): Ray
 	-- return ray
 end
 
+function CombatClient.GetRealTarget(self: CombatClient): Vector3
+	if self.targetRelative then
+		local worldTarget = CFrame.new(self.HRP.Position):PointToWorldSpace(self.targetRelative)
+		return worldTarget
+	else
+		return self.HRP.Position
+	end
+end
+
 function CombatClient.HandleMove(self: CombatClient, input: InputObject)
 	local screenPosition = input.Position
 	self.lastMousePosition = screenPosition
@@ -202,14 +216,10 @@ function CombatClient.HandleMove(self: CombatClient, input: InputObject)
 	self.currentMouseDirection = clickRay.Unit.Direction
 
 	-- Set target to ground level
-	self.target = clickRay.Origin + clickRay.Direction - Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
 
-	if self.attackButtonDown or not self.preRotateAttack then
-		self.aimRenderer:Update(self.currentMouseDirection, self.target)
-	end
-	if self.superButtonDown or not self.preRotateAttack then
-		self.superAimRenderer:Update(self.currentMouseDirection, self.target)
-	end
+	self.targetRelative = CFrame.new(self.HRP.Position):PointToObjectSpace(
+		clickRay.Origin + clickRay.Direction - Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
+	)
 end
 
 function CombatClient.SetupCharacterRotation(self: CombatClient)
@@ -246,7 +256,6 @@ function CombatClient.HandleMouseDown(self: CombatClient)
 	if not self.attemptingAttack and not self.attackButtonDown and not self.superButtonDown then
 		self.attackButtonDown = true
 		self.humanoid.AutoRotate = false
-		self.aimRenderer:Update(self.currentMouseDirection, self.target)
 		self.aimRenderer:Enable()
 		self.combatPlayer:SetAiming(Enums.AbilityType.Attack)
 		Net:Fire("Aim", Enums.AbilityType.Attack)
@@ -285,7 +294,6 @@ function CombatClient.HandleSuperDown(self: CombatClient)
 	then
 		self.superButtonDown = true
 		self.humanoid.AutoRotate = false
-		self.superAimRenderer:Update(self.currentMouseDirection, self.target)
 		self.superAimRenderer:Enable()
 		self.combatPlayer:SetAiming(Enums.AbilityType.Super)
 		Net:Fire("Aim", Enums.AbilityType.Super)
@@ -359,7 +367,7 @@ end
 
 function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean)
 	local attackData
-	local target = self.target
+	local target = self:GetRealTarget()
 
 	if not super then
 		if not self.combatPlayer:CanAttack() then

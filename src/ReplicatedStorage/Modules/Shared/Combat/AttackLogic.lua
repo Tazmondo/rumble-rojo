@@ -40,7 +40,7 @@ function AttackLogic.MakeAttack(
 		assert(target, "Tried to fire arced attack without a target!")
 		local attackData = attackData :: HeroData.ArcedData & HeroData.AbilityData
 
-		return AttackLogic.Arced(origin, idFunction(), attackData.ProjectileSpeed, (target - origin.Position).Magnitude)
+		return AttackLogic.Arced(origin, idFunction(), target)
 	else
 		error("Invalid shot type provided " .. attackData.AttackType)
 	end
@@ -102,28 +102,18 @@ export type ShotgunDetails = {
 
 -- constant: distance, velocity, initial height, gravity
 -- to calculate: fire angle
-function AttackLogic.Arced(origin: CFrame, id: number, velocity: number, distance: number): ArcDetails
-	local gravity = workspace.Gravity
-	print("hoooooooooo")
-	-- print(distance * gravity / (velocity * velocity))
-	local lowAngle = math.asin(distance * gravity / (velocity * velocity)) / 2
-	local highAngle = math.rad(90) - lowAngle
-
-	local _, rotY, _ = origin:ToEulerAnglesYXZ()
-	local fireCFrame = CFrame.new(origin.Position) * CFrame.fromEulerAnglesYXZ(highAngle, rotY, 0)
-	print("lookvector", fireCFrame.LookVector)
-
-	print(math.deg(lowAngle), math.deg(highAngle))
-
+function AttackLogic.Arced(origin: CFrame, id: number, target: Vector3): ArcDetails
 	return {
-		origin = fireCFrame,
-		id = id,
+		origin = origin,
+		id = id or 1,
+		target = target,
 	}
 end
 
 export type ArcDetails = {
 	origin: CFrame,
 	id: number,
+	target: Vector3,
 }
 
 export type AttackDetails = ShotDetails | ShotgunDetails
