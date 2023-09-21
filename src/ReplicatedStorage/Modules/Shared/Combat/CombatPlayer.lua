@@ -326,7 +326,9 @@ function CombatPlayer.DealDamage(self: CombatPlayer, damage: number, targetChara
 	self:Sync("DealDamage", damage, targetCharacter)
 	self.DamageDealtSignal:Fire(damage, targetCharacter)
 
-	self:ScheduleRegen(Config.InitialRegenTime)
+	if self.health < self.maxHealth then
+		self:ScheduleRegen(Config.InitialRegenTime)
+	end
 end
 
 -- aim is an attacktype enum
@@ -352,6 +354,6 @@ export type Attack = {
 	Data: HeroData.AttackData | HeroData.SuperData,
 	HitPosition: Vector3?,
 }
-export type CombatPlayer = typeof(CombatPlayer.new(...))
+export type CombatPlayer = typeof(CombatPlayer.new(...)) & typeof(CombatPlayer)
 
 return CombatPlayer

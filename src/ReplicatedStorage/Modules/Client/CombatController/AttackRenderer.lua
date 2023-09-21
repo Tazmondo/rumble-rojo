@@ -5,11 +5,9 @@ local AttackRenderer = {}
 
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
-local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local RaycastHitbox = require(ReplicatedStorage.Packages.RaycastHitbox)
 
 local localPlayer = game:GetService("Players").LocalPlayer
@@ -47,8 +45,9 @@ function AttackRenderer.InitializeHitboxParams(raycastHitbox, excludeCharacter: 
 	raycastParams.RespectCanCollide = true
 
 	raycastHitbox.RaycastParams = raycastParams
-	raycastHitbox.Visualizer = RunService:IsStudio()
-	raycastHitbox.DebugLog = RunService:IsStudio()
+	-- raycastHitbox.Visualizer = RunService:IsStudio()
+	raycastHitbox.Visualizer = false
+	-- raycastHitbox.DebugLog = RunService:IsStudio()
 
 	-- PartMode, trigger OnHit when any part is hit, not just humanoids. We need this so we can delete projectiles when they hit walls.
 	raycastHitbox.DetectionMode = RaycastHitbox.DetectionMode.PartMode
@@ -112,7 +111,7 @@ function AttackRenderer.RenderAttack(
 )
 	assert(attackDetails, "Called attack renderer without providing attack details")
 
-	if attackData.AttackType == Enums.AttackType.Shotgun then
+	if attackData.AttackType == "Shotgun" then
 		local details = attackDetails :: AttackLogic.ShotgunDetails
 
 		for index, pellet in pairs(details.pellets) do

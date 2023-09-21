@@ -70,7 +70,7 @@ function AttackLogic.Shotgun(
 
 		local id = if idFunction then idFunction() else 1
 
-		local speed = basePelletSpeed + random:NextNumber(-5, 5)
+		local speed = math.max(1, basePelletSpeed + random:NextNumber(-5, 5))
 
 		pellets[pellet] = {
 			CFrame = rotatedCFrame,
