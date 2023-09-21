@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
+local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local RaycastHitbox = require(ReplicatedStorage.Packages.RaycastHitbox)
 
@@ -17,6 +18,9 @@ local attackVFXFolder = ReplicatedStorage.Assets.VFX.Attack
 
 local partFolder = Instance.new("Folder", workspace)
 partFolder.Name = "Part Folder"
+
+local arenaFolder = assert(workspace:FindFirstChild("Arena"), "Could not find arena folder")
+local cylinderTemplate = assert(ReplicatedStorage.Assets.Cylinder, "Could not find cylinder hitbox part!") :: BasePart
 
 -- function AttackRenderer.GenerateLengthChangedFunction(attackData: HeroData.AttackData)
 -- 	-- TODO: Implement VFX
@@ -37,14 +41,29 @@ partFolder.Name = "Part Folder"
 -- 	end
 -- end
 
-function InitializeHitboxParams(raycastHitbox, excludeCharacter: Model?): nil
+function GetRaycastParams(excludeCharacter: Model?)
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	if excludeCharacter then
 		raycastParams.FilterDescendantsInstances = { excludeCharacter }
 	end
 	raycastParams.RespectCanCollide = true
+	return raycastParams
+end
 
+function RaycastOnlyMap()
+	local raycastParams = RaycastParams.new()
+	raycastParams.RespectCanCollide = true
+
+	-- raycastParams.FilterType = Enum.RaycastFilterType.Include
+	-- raycastParams.FilterDescendantsInstances = { arenaFolder }
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	raycastParams.FilterDescendantsInstances = CombatPlayer.GetAllCombatPlayerCharacters() :: any
+
+	return raycastParams
+end
+
+function InitializeHitboxParams(raycastHitbox, raycastParams: RaycastParams): nil
 	raycastHitbox.RaycastParams = raycastParams
 	raycastHitbox.Visualizer = RunService:IsStudio()
 	-- raycastHitbox.Visualizer = false
@@ -104,7 +123,7 @@ function CreateAttackProjectile(
 	Debris:AddItem(pelletPart, projectileTime)
 
 	local hitbox = RaycastHitbox.new(pelletPart)
-	InitializeHitboxParams(hitbox, player.Character)
+	InitializeHitboxParams(hitbox, GetRaycastParams(player.Character))
 	hitbox:HitStart()
 
 	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult)
@@ -115,14 +134,38 @@ function CreateAttackProjectile(
 	end)
 end
 
+function GetPartsInExplosion(radius: number, position: Vector3)
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Include
+	overlapParams.FilterDescendantsInstances = CombatPlayer.GetAllCombatPlayerCharacters() :: any
+
+	print(CombatPlayer.GetAllCombatPlayerCharacters())
+
+	overlapParams.MaxParts = 1000
+
+	local cylinder = cylinderTemplate:Clone()
+	cylinder.Size = Vector3.new(10, radius * 2, radius * 2)
+	cylinder.Position = position
+	cylinder.Transparency = 0.7
+	cylinder.Color = Color3.new(1.000000, 0.000000, 0.000000)
+	cylinder.Parent = workspace
+
+	local intersectingParts = workspace:GetPartsInPart(cylinder, overlapParams)
+
+	-- cylinder:Destroy()
+	Debris:AddItem(cylinder, 1)
+
+	return intersectingParts
+end
+
 function CreateArcedAttack(
 	player: Player,
-	attackData: HeroData.AbilityData,
+	attackData: HeroData.AbilityData & HeroData.ArcedData,
 	origin: CFrame,
 	speed: number,
 	id: number,
 	target: Vector3,
-	onHit: HitFunction?
+	onHit: MultiHit?
 )
 	local pelletPart: BasePart = attackVFXFolder[attackData.Name]:Clone()
 	pelletPart.CFrame = origin
@@ -137,20 +180,37 @@ function CreateArcedAttack(
 	local movementTick = RunService.PreSimulation:Connect(function(dt: number)
 		timeTravelled += dt
 		local progress = timeTravelled / projectileTime
+
+		-- Move projectile to end point, and have it imitate the sin curve
 		pelletPart.CFrame = origin:Lerp(CFrame.new(target), progress)
 			+ Vector3.new(0, height * math.sin(progress * math.rad(180)))
 	end)
 
 	local hitbox = RaycastHitbox.new(pelletPart)
-	InitializeHitboxParams(hitbox, player.Character)
+	InitializeHitboxParams(hitbox, RaycastOnlyMap())
 	hitbox:HitStart()
 
 	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult)
+		if onHit then
+			local explosionParts = GetPartsInExplosion(attackData.Radius, result.Position)
+			local hitCharacters = {}
+			local hitRegisters = {}
+			for _, part in ipairs(explosionParts) do
+				local character = CombatPlayer.GetAncestorWhichIsACombatPlayer(part)
+				if character and not hitCharacters[character] then
+					print("hit", character)
+					hitCharacters[character] = true
+
+					table.insert(hitRegisters, {
+						instance = part :: Instance,
+						position = result.Position,
+					})
+				end
+			end
+			onHit(hitRegisters, id)
+		end
 		pelletPart:Destroy()
 		movementTick:Disconnect()
-		if onHit then
-			onHit(hitPart, result.Position, id)
-		end
 	end)
 
 	task.delay(projectileTime * 1.1, function()
@@ -164,7 +224,7 @@ function AttackRenderer.RenderAttack(
 	attackData: HeroData.AbilityData,
 	origin: CFrame,
 	attackDetails: AttackLogic.AttackDetails,
-	onHit: HitFunction?
+	onHit: HitFunction? | MultiHit?
 )
 	assert(attackDetails, "Called attack renderer without providing attack details")
 
@@ -172,16 +232,31 @@ function AttackRenderer.RenderAttack(
 		local details = attackDetails :: AttackLogic.ShotgunDetails
 
 		for index, pellet in pairs(details.pellets) do
-			CreateAttackProjectile(player, attackData, pellet.CFrame, pellet.speed, pellet.id, onHit)
+			CreateAttackProjectile(player, attackData, pellet.CFrame, pellet.speed, pellet.id, onHit :: HitFunction?)
 		end
 	elseif attackData.AttackType == "Shot" then
 		local details = attackDetails :: AttackLogic.ShotDetails
 
-		CreateAttackProjectile(player, attackData, details.origin, attackData.ProjectileSpeed, details.id, onHit)
+		CreateAttackProjectile(
+			player,
+			attackData,
+			details.origin,
+			attackData.ProjectileSpeed,
+			details.id,
+			onHit :: HitFunction?
+		)
 	elseif attackData.AttackType == "Arced" then
 		local details = attackDetails :: AttackLogic.ArcDetails
 
-		CreateArcedAttack(player, attackData, origin, attackData.ProjectileSpeed, details.id, details.target, onHit)
+		CreateArcedAttack(
+			player,
+			attackData :: HeroData.AbilityData & HeroData.ArcedData,
+			origin,
+			attackData.ProjectileSpeed,
+			details.id,
+			details.target,
+			onHit :: MultiHit?
+		)
 	end
 end
 
@@ -202,6 +277,12 @@ end
 
 -- HitPart, Position, Id
 export type HitFunction = (Instance, Vector3, number) -> any
+export type MultiHit = ({
+	{
+		instance: Instance,
+		position: Vector3,
+	}
+}, number) -> any
 
 export type AttackRenderer = typeof(AttackRenderer)
 

@@ -116,6 +116,15 @@ function CombatPlayer.GetAncestorWhichIsACombatPlayer(instance: Instance)
 	return nil
 end
 
+function CombatPlayer.GetAllCombatPlayerCharacters(): { Model }
+	local out = {}
+	local humanoids = CollectionService:GetTagged(Config.CombatPlayerTag)
+	for _, humanoid in pairs(humanoids) do
+		table.insert(out, humanoid.Parent)
+	end
+	return out
+end
+
 function CombatPlayer.Sync(self: CombatPlayer, funcName, ...)
 	if RunService:IsServer() and self.player then
 		NetServer:Fire(self.player, SYNCEVENT, funcName, ...)
