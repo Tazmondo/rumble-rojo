@@ -12,6 +12,8 @@ Enums.AttackRange = {
 	Short = 32,
 	Medium = 48,
 	MediumLarge = 64,
+	Large = 80,
+	Huge = 96,
 }
 
 Enums.ProjectileSpeed = {

@@ -51,7 +51,7 @@ end
 
 -- Player is optional as NPCs can be combatplayers
 function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?): CombatPlayer
-	local self = setmetatable({}, CombatPlayer) :: CombatPlayer
+	local self = setmetatable({}, CombatPlayer)
 
 	if not player then
 		LATENCYALLOWANCE = 0

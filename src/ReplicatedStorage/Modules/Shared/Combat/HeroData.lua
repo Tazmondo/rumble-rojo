@@ -97,7 +97,7 @@ local HeroData: { [string]: HeroData } = {
 		Role = "Fighter",
 		Attack = {
 			AbilityType = "Attack" :: "Attack",
-			Name = "Fist Shot",
+			Name = "Energy Ball",
 			Damage = 750,
 			Ammo = 3,
 			AmmoRegen = 1.5,
@@ -105,34 +105,23 @@ local HeroData: { [string]: HeroData } = {
 			ReloadSpeed = 0.5,
 
 			AttackType = "Shot" :: "Shot",
-			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 		},
 		Super = {
 			-- Uncomment when starting work on arcing
 
-			-- AbilityType = "Super" :: "Super",
-			-- Name = "Bear Grenade",
-			-- Charge = 4,
-			-- Damage = 1500,
-			-- Range = Enums.AttackRange.MediumLarge,
-			-- Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
-
-			-- AttackType = "Arced" :: "Arced",
-			-- ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
-			-- Height = Enums.ArcHeight.Low,
-			-- TimeToDetonate = 0.5,
-			-- Radius = Enums.Radius.Small,
 			AbilityType = "Super" :: "Super",
-			Name = "Super Shell",
-			Charge = 7,
-			Damage = 330,
-			Range = Enums.AttackRange.Short,
+			Name = "Plasma Grenade",
+			Charge = 0,
+			Damage = 1500,
+			Range = Enums.AttackRange.MediumLarge,
 			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
 
-			AttackType = "Shotgun" :: "Shotgun",
-			ShotCount = 15,
-			Angle = 15,
-			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			AttackType = "Arced" :: "Arced",
+			ProjectileSpeed = 100,
+			Height = Enums.ArcHeight.Low,
+			TimeToDetonate = 0.5,
+			Radius = Enums.Radius.Small,
 		},
 	},
 }

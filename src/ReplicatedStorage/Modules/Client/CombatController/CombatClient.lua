@@ -70,8 +70,8 @@ end
 -- 	end
 -- end
 
-function CombatClient.new(heroName: string)
-	local self = setmetatable({}, CombatClient) :: CombatClient
+function CombatClient.new(heroName: string): CombatClient
+	local self = setmetatable({}, CombatClient)
 	self.janitor = Janitor.new()
 
 	self.player = Players.LocalPlayer
@@ -81,6 +81,7 @@ function CombatClient.new(heroName: string)
 	self.humanoid = self.character.Humanoid :: Humanoid
 	self.HRP = self.humanoid.RootPart
 	self.lastMousePosition = Vector3.new()
+	self.target = nil :: Vector3?
 	self.currentMouseDirection = nil :: Vector3?
 	self.lastAimDirection = nil :: Vector3?
 	self.attackButtonDown = false
@@ -166,7 +167,7 @@ function CombatClient.NormaliseClickTarget(self: CombatClient): Ray
 	local rayPlaneIntersection =
 		RayPlaneIntersection(self.HRP.Position, Vector3.new(0, 1, 0), ray.Origin, ray.Direction)
 
-	return Ray.new(self.HRP.Position, rayPlaneIntersection - self.HRP.Position).Unit
+	return Ray.new(self.HRP.Position, rayPlaneIntersection - self.HRP.Position)
 
 	-- We do not need this code anymore as maps are flat
 
@@ -196,13 +197,18 @@ end
 function CombatClient.HandleMove(self: CombatClient, input: InputObject)
 	local screenPosition = input.Position
 	self.lastMousePosition = screenPosition
-	self.currentMouseDirection = self:NormaliseClickTarget().Direction
+
+	local clickRay: Ray = self:NormaliseClickTarget()
+	self.currentMouseDirection = clickRay.Unit.Direction
+
+	-- Set target to ground level
+	self.target = clickRay.Origin + clickRay.Direction - Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
 
 	if self.attackButtonDown or not self.preRotateAttack then
-		self.aimRenderer:Update(self.currentMouseDirection)
+		self.aimRenderer:Update(self.currentMouseDirection, self.target)
 	end
 	if self.superButtonDown or not self.preRotateAttack then
-		self.superAimRenderer:Update(self.currentMouseDirection)
+		self.superAimRenderer:Update(self.currentMouseDirection, self.target)
 	end
 end
 
@@ -240,7 +246,7 @@ function CombatClient.HandleMouseDown(self: CombatClient)
 	if not self.attemptingAttack and not self.attackButtonDown and not self.superButtonDown then
 		self.attackButtonDown = true
 		self.humanoid.AutoRotate = false
-		self.aimRenderer:Update(self.currentMouseDirection)
+		self.aimRenderer:Update(self.currentMouseDirection, self.target)
 		self.aimRenderer:Enable()
 		self.combatPlayer:SetAiming(Enums.AbilityType.Attack)
 		Net:Fire("Aim", Enums.AbilityType.Attack)
@@ -279,7 +285,7 @@ function CombatClient.HandleSuperDown(self: CombatClient)
 	then
 		self.superButtonDown = true
 		self.humanoid.AutoRotate = false
-		self.superAimRenderer:Update(self.currentMouseDirection)
+		self.superAimRenderer:Update(self.currentMouseDirection, self.target)
 		self.superAimRenderer:Enable()
 		self.combatPlayer:SetAiming(Enums.AbilityType.Super)
 		Net:Fire("Aim", Enums.AbilityType.Super)
@@ -353,6 +359,8 @@ end
 
 function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean)
 	local attackData
+	local target = self.target
+
 	if not super then
 		if not self.combatPlayer:CanAttack() then
 			print("Tried to attack but can't.", self.combatPlayer.ammo)
@@ -371,10 +379,17 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 		attackData = self.combatPlayer.heroData.Super
 	end
 
+	-- Constrain target to range of attack
+	if attackData.Radius then
+		local HRPToTarget = target - self.HRP.Position
+		target = self.HRP.Position
+			+ HRPToTarget.Unit * math.min(attackData.Range - attackData.Radius * 2, HRPToTarget.Magnitude)
+	end
+
 	trajectory = trajectory.Unit
 	local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
 
-	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, attackData)
+	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, attackData, target)
 
 	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, function(...)
 		self:RayHit(...)
@@ -392,6 +407,6 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 	end
 end
 
-export type CombatClient = typeof(CombatClient.new(...))
+export type CombatClient = typeof(CombatClient.new(...)) & typeof(CombatClient)
 
 return CombatClient

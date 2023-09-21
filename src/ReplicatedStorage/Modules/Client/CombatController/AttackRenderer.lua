@@ -83,24 +83,31 @@ function CreateAttackProjectile(
 	origin: CFrame,
 	speed: number,
 	id: number,
+	hasGravity: boolean,
 	onHit: HitFunction?
 )
-	local pelletPart = attackVFXFolder[attackData.Name]:Clone()
+	local pelletPart: BasePart = attackVFXFolder[attackData.Name]:Clone()
 	pelletPart.CFrame = origin
 
-	local attachment = Instance.new("Attachment", pelletPart)
-	local linearVelocity = Instance.new("LinearVelocity", pelletPart)
-	linearVelocity.MaxForce = math.huge
-	linearVelocity.Attachment0 = attachment
-	linearVelocity.VectorVelocity = origin.LookVector * speed
-
+	local velocityVector = origin.LookVector * speed
 	pelletPart.Anchored = false
-
 	pelletPart.Parent = partFolder
+
+	if not hasGravity then
+		local attachment = Instance.new("Attachment", pelletPart)
+		local linearVelocity = Instance.new("LinearVelocity", pelletPart)
+		linearVelocity.MaxForce = math.huge
+		linearVelocity.Attachment0 = attachment
+		linearVelocity.VectorVelocity = velocityVector
+	else
+		print(velocityVector)
+		pelletPart.AssemblyLinearVelocity = velocityVector
+	end
 
 	TriggerAllDescendantParticleEmitters(pelletPart)
 
-	local projectileTime = attackData.Range / speed
+	-- If gravity is on, it will hit the ground eventually anyway
+	local projectileTime = if not hasGravity then attackData.Range / speed else 60
 	Debris:AddItem(pelletPart, projectileTime)
 
 	local hitbox = RaycastHitbox.new(pelletPart)
@@ -128,12 +135,16 @@ function AttackRenderer.RenderAttack(
 		local details = attackDetails :: AttackLogic.ShotgunDetails
 
 		for index, pellet in pairs(details.pellets) do
-			CreateAttackProjectile(player, attackData, pellet.CFrame, pellet.speed, pellet.id, onHit)
+			CreateAttackProjectile(player, attackData, pellet.CFrame, pellet.speed, pellet.id, false, onHit)
 		end
 	elseif attackData.AttackType == "Shot" then
 		local details = attackDetails :: AttackLogic.ShotDetails
 
-		CreateAttackProjectile(player, attackData, origin, attackData.ProjectileSpeed, details.id, onHit)
+		CreateAttackProjectile(player, attackData, details.origin, attackData.ProjectileSpeed, details.id, false, onHit)
+	elseif attackData.AttackType == "Arced" then
+		local details = attackDetails :: AttackLogic.ArcDetails
+
+		CreateAttackProjectile(player, attackData, details.origin, attackData.ProjectileSpeed, details.id, true, onHit)
 	end
 end
 

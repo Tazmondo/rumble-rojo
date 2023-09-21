@@ -56,7 +56,7 @@ local function replicateAttack(
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotgunDetails
 
 		local attackDetails =
-			AttackLogic.MakeAttack(combatPlayer, origin, attackData, localAttackDetails.seed) :: AttackLogic.ShotgunDetails
+			AttackLogic.MakeAttack(combatPlayer, origin, attackData, nil, localAttackDetails.seed) :: AttackLogic.ShotgunDetails
 
 		for index, pellet in pairs(attackDetails.pellets) do
 			if pellet.id ~= localAttackDetails.pellets[index].id then
