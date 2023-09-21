@@ -5,6 +5,7 @@ local AttackRenderer = {}
 
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
@@ -36,7 +37,7 @@ partFolder.Name = "Part Folder"
 -- 	end
 -- end
 
-function AttackRenderer.InitializeHitboxParams(raycastHitbox, excludeCharacter: Model?): nil
+function InitializeHitboxParams(raycastHitbox, excludeCharacter: Model?): nil
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	if excludeCharacter then
@@ -45,8 +46,8 @@ function AttackRenderer.InitializeHitboxParams(raycastHitbox, excludeCharacter: 
 	raycastParams.RespectCanCollide = true
 
 	raycastHitbox.RaycastParams = raycastParams
-	-- raycastHitbox.Visualizer = RunService:IsStudio()
-	raycastHitbox.Visualizer = false
+	raycastHitbox.Visualizer = RunService:IsStudio()
+	-- raycastHitbox.Visualizer = false
 	-- raycastHitbox.DebugLog = RunService:IsStudio()
 
 	-- PartMode, trigger OnHit when any part is hit, not just humanoids. We need this so we can delete projectiles when they hit walls.
@@ -67,6 +68,15 @@ end
 -- 	end
 -- end
 
+function TriggerAllDescendantParticleEmitters(instance: Instance)
+	for i, v in pairs(instance:GetDescendants()) do
+		if v:IsA("ParticleEmitter") then
+			v:Emit(1)
+			v.Enabled = true
+		end
+	end
+end
+
 function CreateAttackProjectile(
 	player: Player,
 	attackData: HeroData.AbilityData,
@@ -77,7 +87,6 @@ function CreateAttackProjectile(
 )
 	local pelletPart = attackVFXFolder[attackData.Name]:Clone()
 	pelletPart.CFrame = origin
-	pelletPart.Parent = partFolder
 
 	local attachment = Instance.new("Attachment", pelletPart)
 	local linearVelocity = Instance.new("LinearVelocity", pelletPart)
@@ -87,11 +96,15 @@ function CreateAttackProjectile(
 
 	pelletPart.Anchored = false
 
+	pelletPart.Parent = partFolder
+
+	TriggerAllDescendantParticleEmitters(pelletPart)
+
 	local projectileTime = attackData.Range / speed
 	Debris:AddItem(pelletPart, projectileTime)
 
 	local hitbox = RaycastHitbox.new(pelletPart)
-	AttackRenderer.InitializeHitboxParams(hitbox, player.Character)
+	InitializeHitboxParams(hitbox, player.Character)
 	hitbox:HitStart()
 
 	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult)
