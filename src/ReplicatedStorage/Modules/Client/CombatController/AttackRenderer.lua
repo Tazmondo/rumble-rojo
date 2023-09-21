@@ -75,18 +75,6 @@ function InitializeHitboxParams(raycastHitbox, raycastParams: RaycastParams): ni
 	return
 end
 
--- local function RayHit(activeCast: FastCastTypes.ActiveCast, result: RaycastResult, velocity: Vector3, bullet: BasePart)
--- 	task.wait()
--- 	bullet:Destroy()
--- end
-
--- local function CastTerminating(activeCast: FastCastTypes.ActiveCast)
--- 	local bullet = activeCast.RayInfo.CosmeticBulletObject
--- 	if bullet then
--- 		bullet:Destroy()
--- 	end
--- end
-
 function TriggerAllDescendantParticleEmitters(instance: Instance)
 	for i, v in pairs(instance:GetDescendants()) do
 		if v:IsA("ParticleEmitter") then
