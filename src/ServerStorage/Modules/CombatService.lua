@@ -1,3 +1,4 @@
+--!strict
 --!nolint LocalShadow
 -- Initializes and handles the of the server-side combat system
 -- Shouldn't be very long, as combat data is mostly decided by scripts in client
@@ -19,7 +20,6 @@ local SoundService = require(script.Parent.SoundService)
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
-local FastCast = require(ReplicatedStorage.Modules.Shared.Combat.FastCastRedux)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
@@ -29,7 +29,6 @@ local Net = Red.Server("game", { "CombatPlayerInitialize", "CombatKill", "Player
 -- Only for players currently fighting.
 local CombatPlayerData: { [Model]: CombatPlayer.CombatPlayer } = {}
 local PlayersInCombat: { [Player]: string } = {}
-local fastCast = FastCast.new()
 
 local function getAllCombatPlayerCharacters()
 	local out = {}
@@ -43,7 +42,7 @@ local function replicateAttack(
 	player: Player,
 	origin: CFrame,
 	combatPlayer: CombatPlayer.CombatPlayer,
-	attackData: HeroData.AttackData,
+	attackData: HeroData.AbilityData,
 	localAttackDetails: AttackLogic.AttackDetails
 )
 	local character = assert(player.Character, "character does not exist")
@@ -52,15 +51,6 @@ local function replicateAttack(
 		warn(player, "fired from a position too far from their server position")
 		return
 	end
-	local behaviour = FastCast.newBehavior()
-	behaviour.MaxDistance = attackData.Range
-	behaviour.RaycastParams = RaycastParams.new()
-	assert(behaviour.RaycastParams, "Appease type checker")
-
-	-- Don't collide with characters, as they move around they could move in front of the server bullet, but not client bullet
-	-- which will mess up hit detection
-	behaviour.RaycastParams.FilterDescendantsInstances = getAllCombatPlayerCharacters()
-	behaviour.RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	if attackData.AttackType == "Shotgun" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotgunDetails
@@ -73,11 +63,9 @@ local function replicateAttack(
 				warn(player, "mismatched attack ids, could be cheating.")
 				return
 			end
-			local cast = fastCast:Fire(pellet.CFrame.Position, pellet.CFrame.LookVector, pellet.speed, behaviour)
-			cast.UserData.Id = pellet.id
-			cast.UserData.Character = character -- Don't set it to combatplayer to avoid cyclic dependency
-			combatPlayer:RegisterAttack(pellet.id, pellet.CFrame, pellet.speed, cast, attackData)
+			combatPlayer:RegisterBullet(pellet.id, pellet.CFrame, pellet.speed, attackData)
 		end
+
 		Net:FireAll("Attack", player, attackData, origin, attackDetails)
 	elseif attackData.AttackType == "Shot" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotDetails
@@ -89,27 +77,31 @@ local function replicateAttack(
 			return
 		end
 
-		local cast = fastCast:Fire(
-			attackDetails.origin.Position,
-			attackDetails.origin.LookVector,
+		combatPlayer:RegisterBullet(
+			localAttackDetails.id,
+			localAttackDetails.origin,
 			attackData.ProjectileSpeed,
-			behaviour
+			attackData
 		)
-		cast.UserData.Id = attackDetails.id
-		cast.UserData.Character = character -- Don't set it to combatplayer to avoid cyclic dependency
+
 		Net:FireAll("Attack", player, attackData, origin, attackDetails)
 	end
 end
 
-local function handleAttack(player: Player, origin: CFrame, localAttackDetails)
+local function handleAttack(player: Player, origin: CFrame, localAttackDetails): number
 	if not player.Character then
 		warn(player, "Tried to attack without a character!")
 		return 0
 	end
 	local combatPlayer = CombatPlayerData[player.Character]
 	if not combatPlayer or not combatPlayer:CanAttack() then
+		return 0
+	end
+
+	if not combatPlayer:CanAttack() then
 		return combatPlayer.attackId
 	end
+
 	local attackData = combatPlayer.heroData.Attack :: HeroData.AttackData
 
 	replicateAttack(player, origin, combatPlayer, attackData, localAttackDetails)
@@ -126,8 +118,13 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 		warn(player, "Tried to super without a character!")
 		return 0
 	end
+
 	local combatPlayer = CombatPlayerData[player.Character]
 	if not combatPlayer or not combatPlayer:CanSuperAttack() then
+		return 0
+	end
+
+	if not combatPlayer:CanSuperAttack() then
 		return combatPlayer.attackId
 	end
 	local superData = combatPlayer.heroData.Super :: HeroData.SuperData
@@ -152,18 +149,6 @@ function handleAim(player: Player, aim: string)
 	combatPlayer:SetAiming(aim)
 end
 
-local function handleRayHit(cast, result)
-	local combatPlayer = CombatPlayerData[cast.UserData.Character]
-	combatPlayer:HandleAttackHit(cast, result.Position)
-end
-
-local function handleCastTerminate(cast)
-	local combatPlayer = CombatPlayerData[cast.UserData.Character]
-	combatPlayer:HandleAttackHit(cast, cast:GetPosition())
-end
-fastCast.RayHit:Connect(handleRayHit)
-fastCast.CastTerminating:Connect(handleCastTerminate)
-
 local function handleClientHit(player: Player, target: BasePart, localTargetPosition: Vector3, attackId: number)
 	if not player.Character or not target or not localTargetPosition or not attackId then
 		return
@@ -182,6 +167,7 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	if not victimCharacter then
 		return
 	end
+
 	local victimCombatPlayer = CombatPlayerData[victimCharacter]
 
 	if (target.Position - localTargetPosition).Magnitude > Config.MaximumPlayerPositionDifference then
@@ -203,25 +189,29 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		return
 	end
 
-	-- need to set the hitposition somewhere else, cant use cast data
-	local attackPosition = attackData.HitPosition
+	-- UNCOMMENT THIS WHEN WE RUN SERVER-SIDE ATTACK SIMULATIONS AGAIN
+	-- I removed this as it was sort of unnecessary and may have caused server lag
+	-- will get back to it when i have more time and can properly benchmark it
 
-	if not attackPosition then
-		attackPosition = attackData.Cast:GetPosition() :: Vector3
-	end
-	assert(attackPosition, "Could not get a server attack position.")
-	local attackDiff = (attackPosition - localTargetPosition).Magnitude
-	if attackDiff > Config.MaximumAllowedLatencyVariation * attackData.Speed then
-		warn(
-			player,
-			"Had too large of a difference between bullet positions: ",
-			attackDiff,
-			Config.MaximumAllowedLatencyVariation * attackData.Speed,
-			attackPosition,
-			localTargetPosition
-		)
-		return
-	end
+	-- need to set the hitposition somewhere else, cant use cast data
+	-- local attackPosition = attackData.HitPosition
+
+	-- if not attackPosition then
+	-- 	attackPosition = attackData.Cast:GetPosition() :: Vector3
+	-- end
+	-- assert(attackPosition, "Could not get a server attack position.")
+	-- local attackDiff = (attackPosition - localTargetPosition).Magnitude
+	-- if attackDiff > Config.MaximumAllowedLatencyVariation * attackData.Speed then
+	-- 	warn(
+	-- 		player,
+	-- 		"Had too large of a difference between bullet positions: ",
+	-- 		attackDiff,
+	-- 		Config.MaximumAllowedLatencyVariation * attackData.Speed,
+	-- 		attackPosition,
+	-- 		localTargetPosition
+	-- 	)
+	-- 	return
+	-- end
 
 	if not victimCombatPlayer:CanTakeDamage() then
 		return
@@ -237,11 +227,12 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		data.Stats.DamageDealt += attackData.Data.Damage
 	end)
 
-	local beforeState = victimCombatPlayer:GetState()
+	-- Must be cast to any to prevent "generic subtype escaping scope" error whatever that means
+	local beforeState = victimCombatPlayer:GetState() :: any
 	victimCombatPlayer:TakeDamage(attackData.Data.Damage) -- Will update state to dead if this kills
-	local afterState = victimCombatPlayer:GetState()
+	local afterState = victimCombatPlayer:GetState() :: any
 
-	local died = victimCombatPlayer:GetState() == CombatPlayer.StateEnum.Dead and beforeState ~= afterState
+	local died = victimCombatPlayer:GetState() == "Dead" and beforeState ~= afterState
 
 	local victimPlayer = Players:GetPlayerFromCharacter(victimCharacter)
 	if died then
@@ -307,7 +298,7 @@ function CombatService:SetupCombatPlayer(player: Player, heroName: string)
 	local char = assert(player.Character, "no character")
 	local humanoid = assert(char:FindFirstChildOfClass("Humanoid"), "no humanoid")
 
-	local combatPlayer = CombatPlayer.new(heroName, humanoid, player)
+	local combatPlayer = CombatPlayer.new(heroName, humanoid, player) :: CombatPlayer.CombatPlayer
 	CombatPlayerData[char] = combatPlayer
 
 	self:InitializeNameTag(char, combatPlayer, player)
@@ -392,7 +383,7 @@ function CombatService:PlayerAdded(player: Player)
 	self:LoadPlayerGuis(player)
 
 	if RunService:IsStudio() then
-		PlayersInCombat[player] = "Fabio"
+		PlayersInCombat[player] = "Taz"
 	end
 
 	LoadedService.PromiseLoad(player):Then(function(resolve)
@@ -425,7 +416,7 @@ function CombatService:Initialize()
 
 	for _, v in pairs(workspace:GetChildren()) do
 		if v.Name == "Rig" then
-			local combatPlayer = CombatPlayer.new("Fabio", v.Humanoid)
+			local combatPlayer = CombatPlayer.new("Fabio", v.Humanoid) :: CombatPlayer.CombatPlayer
 			CombatPlayerData[v] = combatPlayer
 			self:InitializeNameTag(v, combatPlayer)
 		end

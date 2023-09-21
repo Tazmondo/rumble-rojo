@@ -16,7 +16,7 @@ function AttackLogic.MakeAttack(
 	attackData,
 	seed: number?
 ): AttackDetails
-	attackData = attackData :: HeroData.AttackData
+	attackData = attackData :: HeroData.AbilityData
 
 	local idFunction: any = function()
 		return combatPlayer:GetNextAttackId()

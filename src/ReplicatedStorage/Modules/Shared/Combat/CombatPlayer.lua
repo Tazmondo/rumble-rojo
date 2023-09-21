@@ -31,11 +31,7 @@ local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
 local VFX = require(script.Parent.VFX)
 
-CombatPlayer.StateEnum = {
-	Idle = 0,
-	Attacking = 1,
-	Dead = 2,
-}
+export type State = "Idle" | "Dead"
 
 -- On the server, when processing certain things we want to allow for some latency, so laggy players don't have a bad experience
 -- But too much will give leeway for exploiters
@@ -54,7 +50,7 @@ function GetGameState()
 end
 
 -- Player is optional as NPCs can be combatplayers
-function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
+function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?): CombatPlayer
 	local self = setmetatable({}, CombatPlayer) :: CombatPlayer
 
 	if not player then
@@ -84,7 +80,7 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 	self.humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 
-	self.state = self.StateEnum.Idle
+	self.state = "Idle" :: State
 	self.lastAttackTime = 0 -- os.clock based
 	self.attackId = 1
 	self.attacks = {} :: { [number]: Attack }
@@ -107,7 +103,7 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 		end)
 	end
 
-	return self
+	return self :: CombatPlayer
 end
 
 function CombatPlayer.GetAncestorWhichIsACombatPlayer(instance: Instance)
@@ -154,7 +150,7 @@ function CombatPlayer.ScheduleReload(self: CombatPlayer)
 end
 
 function CombatPlayer.Regen(self: CombatPlayer)
-	if self.state == self.StateEnum.Dead then
+	if self.state == "Dead" then
 		return
 	end
 
@@ -186,12 +182,12 @@ function CombatPlayer.ScheduleRegen(self: CombatPlayer, delay)
 	end)
 end
 
-function CombatPlayer.ChangeState(self: CombatPlayer, newState: number)
+function CombatPlayer.ChangeState(self: CombatPlayer, newState: State)
 	self.state = newState
 	self.scheduledChange = {}
 end
 
-function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, newState: number)
+function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, newState: State)
 	local stateChange = { newState }
 	self.scheduledChange = stateChange
 
@@ -218,7 +214,7 @@ function CombatPlayer:AttackingEnabled()
 end
 
 function CombatPlayer.CanAttack(self: CombatPlayer)
-	local canAttack = self.state == self.StateEnum.Idle
+	local canAttack = self.state == "Idle"
 		and os.clock() - self.lastAttackTime >= self.reloadSpeed
 		and self.ammo > 0
 		and self:AttackingEnabled()
@@ -238,13 +234,18 @@ function CombatPlayer.Attack(self: CombatPlayer)
 end
 
 -- Different from attack since attacks with multiple bullets will "attack" once but call this for each bullet fired
-function CombatPlayer.RegisterAttack(self: CombatPlayer, attackId, attackCF, attackSpeed, cast, attackData)
+function CombatPlayer.RegisterBullet(
+	self: CombatPlayer,
+	attackId: number,
+	attackCF: CFrame,
+	attackSpeed: number,
+	attackData: HeroData.AbilityData
+)
 	self.attacks[attackId] = {
 		AttackId = attackId,
 		FiredTime = os.clock(),
 		FiredCFrame = attackCF,
 		Speed = attackSpeed,
-		Cast = cast,
 		Data = attackData,
 		HitPosition = nil,
 	}
@@ -253,12 +254,12 @@ function CombatPlayer.RegisterAttack(self: CombatPlayer, attackId, attackCF, att
 	end)
 end
 
-function CombatPlayer.HandleAttackHit(self: CombatPlayer, cast, position)
-	local id = cast.UserData.Id
-	if self.attacks[id] and not self.attacks[id].HitPosition then
-		self.attacks[id].HitPosition = position
-	end
-end
+-- function CombatPlayer.HandleAttackHit(self: CombatPlayer, cast, position)
+-- 	local id = cast.UserData.Id
+-- 	if self.attacks[id] and not self.attacks[id].HitPosition then
+-- 		self.attacks[id].HitPosition = position
+-- 	end
+-- end
 
 function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 	self.health = math.clamp(self.health - amount, 0, self.maxHealth)
@@ -270,12 +271,12 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 
 	if self.health <= 0 then
 		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
-		self:ChangeState(self.StateEnum.Dead)
+		self:ChangeState("Dead")
 	end
 end
 
 function CombatPlayer.Heal(self: CombatPlayer, amount: number)
-	if self.state == self.StateEnum.Dead then
+	if self.state == "Dead" then
 		return
 	end
 
@@ -286,7 +287,7 @@ end
 
 function CombatPlayer.CanTakeDamage(self: CombatPlayer)
 	-- TODO: return false if has a barrier or shield or something
-	return self.state ~= self.StateEnum.Dead
+	return self.state ~= "Dead"
 end
 
 function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
@@ -311,7 +312,7 @@ function CombatPlayer.ChargeSuper(self: CombatPlayer, amount: number)
 end
 
 function CombatPlayer.CanSuperAttack(self: CombatPlayer)
-	local canAttack = self.state == self.StateEnum.Idle
+	local canAttack = self.state == "Idle"
 		and self:AttackingEnabled() -- Make sure round is in-progress
 		and self.superCharge >= self.requiredSuperCharge
 	return canAttack
@@ -349,10 +350,9 @@ export type Attack = {
 	AttackId: number,
 	FiredTime: number,
 	FiredCFrame: CFrame,
-	Cast: any,
 	Speed: number,
-	Data: HeroData.AttackData | HeroData.SuperData,
-	HitPosition: Vector3?,
+	Data: HeroData.AbilityData,
+	-- HitPosition: Vector3?,
 }
 export type CombatPlayer = typeof(CombatPlayer.new(...)) & typeof(CombatPlayer)
 
