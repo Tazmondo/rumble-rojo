@@ -27,6 +27,11 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 		halo.Parent = workspace
 		if RunService:IsServer() then
 			halo.Name = character.Name .. "ServerHalo"
+
+			-- Hide ammo bar from other players, only yours is visible
+			nameTag.AmmoBar.Visible = false
+		else
+			nameTag.AmmoBar.Visible = true
 		end
 
 		while true do
@@ -36,10 +41,10 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 			end
 
 			for i = 1, 3 do
-				local AmmoBar = nameTag.AmmoBar:FindFirstChild("Ammo" .. i)
+				local individualAmmoBar = nameTag.AmmoBar:FindFirstChild("Ammo" .. i)
 
-				if AmmoBar then
-					AmmoBar.Visible = i <= combatPlayer.ammo
+				if individualAmmoBar then
+					individualAmmoBar.Visible = i <= combatPlayer.ammo
 				end
 			end
 			nameTag.HealthNumber.Text = combatPlayer.health
