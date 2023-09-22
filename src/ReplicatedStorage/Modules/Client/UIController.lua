@@ -87,7 +87,7 @@ function RenderTrophies()
 	MainUI.Interface.Inventory.Visible = true
 
 	local trophies = Net:LocalFolder():GetAttribute("Trophies") or 0
-	MainUI.Interface.Inventory.ImageLabel.TrophyCount.Text = if trophies > 0 then "+" .. trophies else trophies
+	MainUI.Interface.Inventory.Trophies.TrophyCount.Text = if trophies > 0 then "+" .. trophies else trophies
 end
 
 function NotEnoughPlayersRender(changed)
