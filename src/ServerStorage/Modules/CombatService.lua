@@ -434,8 +434,14 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	print("Spawning Character", player, debug.traceback())
 
 	return Red.Promise.new(function(resolve, reject)
-		local loadTimeout = task.delay(5, reject, "Character was not spawned after 5 seconds.")
-		player.CharacterAdded:Once(function(char)
+		local connection
+		local loadTimeout = task.delay(5, function(...)
+			connection:Disconnect()
+			warn("Character wasn't spawned after 5 seconds")
+			reject("Character wasn't spawned after 5 seconds")
+		end)
+
+		connection = player.CharacterAdded:Once(function(char)
 			coroutine.close(loadTimeout)
 
 			print(player, "Character was added, processing")
@@ -490,9 +496,9 @@ function CombatService:PlayerAdded(player: Player)
 
 	self:LoadPlayerGuis(player)
 
-	if RunService:IsStudio() then
-		PlayersInCombat[player] = "Taz"
-	end
+	-- if RunService:IsStudio() then
+	-- 	PlayersInCombat[player] = "Taz"
+	-- end
 
 	LoadedService.PromiseLoad(player):Then(function(resolve)
 		print("Resolved:", resolve)
