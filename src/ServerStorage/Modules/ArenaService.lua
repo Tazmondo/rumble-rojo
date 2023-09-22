@@ -136,60 +136,19 @@ function ArenaService.StartIntermission()
 		end
 	end
 
-	-- CHARACTER SELECTION
-	Net:Folder():SetAttribute("GameState", "CharacterSelection")
-
 	-- Since intermission can restart, we don't need to always reload the map.
 	if not MapService:IsLoaded() then
 		MapService:LoadNextMap()
 	end
 
-	local canSelect = true
-
-	registeredPlayers = {}
-	for player, queued in pairs(playerQueueStatus) do
-		if queued then
-			registeredPlayers[player] = {
-				Kills = 0,
-				Won = false,
-				Died = false,
-			}
-		end
-	end
-
 	Net:Folder():SetAttribute("QueuedCount", ArenaService.GetQueuedPlayersLength())
 
-	Net:On("HeroSelect", function(player, hero)
-		if not registeredPlayers[player] then
-			return
-		end
-		DataService.GetProfileData(player):Then(function(data)
-			if table.find(data.OwnedCharacters, hero) and canSelect then
-				registeredPlayers[player].Hero = hero
-			end
-		end)
-	end)
-
-	task.wait(CONFIG.HeroSelection)
-
 	-- BATTLE START
-	Net:On("HeroSelect", nil)
-
-	canSelect = false
 
 	if ArenaService.GetRegisteredPlayersLength() < CONFIG.MinPlayers then
 		-- Players have left
 		ArenaService.StartIntermission()
 		return
-	end
-
-	-- Select a random owned character if they did not pick a character
-	for player, heroName in pairs(registeredPlayers) do
-		if typeof(heroName) ~= "string" and player.Parent ~= nil then
-			-- We can await here as player is definitely still ingame
-			local ownedCharacters = DataService.GetProfileData(player):Await().OwnedCharacters
-			registeredPlayers[player].Hero = ownedCharacters[math.random(1, #ownedCharacters)]
-		end
 	end
 
 	ArenaService.StartMatch()
@@ -205,13 +164,26 @@ function ArenaService.StartMatch()
 	local spawnCount = 1
 	local spawns = MapService:GetMapSpawns()
 
-	-- Handle removing players when they die
-	for player, data in pairs(registeredPlayers) do
-		assert(data.Hero, "Game started without a valid hero name.")
+	registeredPlayers = {}
+	for player, queued in pairs(playerQueueStatus) do
+		if player.Parent == nil or not queued then
+			continue
+		end
+		local playerData = DataService.GetProfileData(player):Await()
+		local data = {
+			Kills = 0,
+			Won = false,
+			Died = false,
+			Hero = playerData.SelectedCharacter,
+		}
+		registeredPlayers[player] = data
+
+		data.Hero = playerData.SelectedCharacter
+		assert(data.Hero, "Player did not have a selected character.")
 		Net:Folder(player):SetAttribute("InMatch", true)
 		CombatService:EnterPlayerCombat(player, data.Hero, spawns[spawnCount]):Then(function(char: Model)
 			-- Wait for character position to correct if spawn is slightly off vertically
-			task.wait(0.2)
+			-- task.wait(0) -- UPDATE: use moveto in spawn function so dont need to do this anymore
 			local HRP = char:FindFirstChild("HumanoidRootPart") :: BasePart
 			HRP.Anchored = true
 		end)

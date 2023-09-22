@@ -465,7 +465,8 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 			end)
 
 			if spawnCFrame then
-				char:PivotTo(spawnCFrame)
+				-- Use moveto so characters never spawn in the ground
+				char:MoveTo(spawnCFrame.Position)
 			end
 			resolve(char)
 		end)
@@ -496,9 +497,9 @@ function CombatService:PlayerAdded(player: Player)
 
 	self:LoadPlayerGuis(player)
 
-	-- if RunService:IsStudio() then
-	-- 	PlayersInCombat[player] = "Taz"
-	-- end
+	if RunService:IsStudio() then
+		PlayersInCombat[player] = "Taz"
+	end
 
 	LoadedService.PromiseLoad(player):Then(function(resolve)
 		print("Resolved:", resolve)

@@ -1,6 +1,6 @@
 export type PlayerBattleStats = {
 	Kills: number,
-	Hero: string?,
+	Hero: string,
 	Won: boolean,
 	Died: boolean,
 }

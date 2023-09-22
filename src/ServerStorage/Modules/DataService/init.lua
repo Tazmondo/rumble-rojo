@@ -1,9 +1,17 @@
+--!strict
 local DataService = {}
+
+local FreeCharacters = {
+	Fabio = true,
+	Taz = true,
+}
 
 local ProfileTemplate = {
 	Trophies = 0,
 	Playtime = 0,
-	OwnedCharacters = { "Fabio" },
+	OwnedCharacters = {},
+	SelectedCharacter = "Fabio",
+	Version = 1, -- version is for data migration purposes in future
 	Stats = {
 		Kills = 0,
 		KillStreak = 0,
@@ -26,20 +34,23 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ProfileService = require(script.ProfileService)
 local Red = require(ReplicatedStorage.Packages.Red)
 local Promise = Red.Promise
-local Net = Red.Server("game")
+local Signal = Red.Signal
+local Net = Red.Server("game", { "HeroSelect" })
 
-local ProfileStore = ProfileService.GetProfileStore("PlayerData", ProfileTemplate)
+local ProfileStore =
+	assert(ProfileService.GetProfileStore("PlayerData", ProfileTemplate), "Failed to load profile store")
 
 type Profile = ProfileService.Profile<ProfileData>
 
-DataService.Profiles = {} -- [player] = profile
+DataService.Profiles = {} :: { [Player]: Profile }
 
------ Private Functions -----
+DataService.HeroSelectSignal = Signal.new()
+
 local function HandleSuccessfulProfile(player, profile: Profile)
 	Net:Folder(player):SetAttribute("Trophies", profile.Data.Trophies)
 end
 
-local function PlayerAdded(player)
+local function PlayerAdded(player: Player)
 	local profile = ProfileStore:LoadProfileAsync("Player_" .. player.UserId)
 	if profile ~= nil then
 		profile:AddUserId(player.UserId) -- GDPR compliance
@@ -63,8 +74,6 @@ local function PlayerAdded(player)
 		player:Kick("Sorry, your data couldn't be loaded! Please try again later.")
 	end
 end
-
------ Initialize -----
 
 function DataService.GetProfileData(player: Player)
 	return Promise.new(function(resolve, reject)
@@ -92,6 +101,15 @@ Players.PlayerRemoving:Connect(function(player)
 	if profile ~= nil then
 		profile:Release()
 	end
+end)
+
+Net:On("HeroSelect", function(player: Player, hero: string)
+	DataService.GetProfileData(player):Then(function(data: ProfileData)
+		if data.OwnedCharacters[hero] or FreeCharacters[hero] then
+			data.SelectedCharacter = hero
+			DataService.HeroSelectSignal:Fire(player, hero)
+		end
+	end)
 end)
 
 return DataService
