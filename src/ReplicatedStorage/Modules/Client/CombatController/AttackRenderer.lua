@@ -134,8 +134,8 @@ function GetPartsInExplosion(radius: number, position: Vector3)
 	local cylinder = cylinderTemplate:Clone()
 	cylinder.Size = Vector3.new(10, radius * 2, radius * 2)
 	cylinder.Position = position
-	cylinder.Transparency = 0.7
-	cylinder.Color = Color3.new(1.000000, 0.000000, 0.000000)
+	cylinder.Transparency = 0.8
+	cylinder.Color = Color3.new(1.000000, 0.619608, 0.054902)
 	cylinder.Parent = workspace
 
 	local intersectingParts = workspace:GetPartsInPart(cylinder, overlapParams)
@@ -156,7 +156,11 @@ function CreateArcedAttack(
 	onHit: MultiHit?
 )
 	local pelletPart: BasePart = attackVFXFolder[attackData.Name]:Clone()
-	pelletPart.CFrame = origin
+	local baseRotation = pelletPart.CFrame.Rotation
+
+	origin = CFrame.new(origin.Position)
+
+	pelletPart.CFrame = origin * baseRotation
 	pelletPart.Parent = workspace
 
 	TriggerAllDescendantParticleEmitters(pelletPart)
@@ -170,7 +174,7 @@ function CreateArcedAttack(
 		local progress = timeTravelled / projectileTime
 
 		-- Move projectile to end point, and have it imitate the sin curve
-		pelletPart.CFrame = origin:Lerp(CFrame.new(target), progress)
+		pelletPart.CFrame = origin:Lerp(CFrame.new(target), progress) * baseRotation
 			+ Vector3.new(0, height * math.sin(progress * math.rad(180)))
 	end)
 
@@ -179,29 +183,33 @@ function CreateArcedAttack(
 	hitbox:HitStart()
 
 	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult)
-		if onHit then
-			local explosionParts = GetPartsInExplosion(attackData.Radius, result.Position)
-			local hitCharacters = {}
-			local hitRegisters = {}
-			for _, part in ipairs(explosionParts) do
-				local character = CombatPlayer.GetAncestorWhichIsACombatPlayer(part)
-				if character and not hitCharacters[character] then
-					print("hit", character)
-					hitCharacters[character] = true
-
-					table.insert(hitRegisters, {
-						instance = part :: Instance,
-						position = result.Position,
-					})
-				end
-			end
-			onHit(hitRegisters, id)
-		end
-		pelletPart:Destroy()
 		movementTick:Disconnect()
+
+		-- Not sure if yielding will cause issues with the hitbox module so just putting it in a separate thread
+		task.delay(attackData.TimeToDetonate, function()
+			if onHit then
+				local explosionParts = GetPartsInExplosion(attackData.Radius, result.Position)
+				local hitCharacters = {}
+				local hitRegisters = {}
+				for _, part in ipairs(explosionParts) do
+					local character = CombatPlayer.GetAncestorWhichIsACombatPlayer(part)
+					if character and not hitCharacters[character] then
+						print("hit", character)
+						hitCharacters[character] = true
+
+						table.insert(hitRegisters, {
+							instance = part :: Instance,
+							position = result.Position,
+						})
+					end
+				end
+				onHit(hitRegisters, id, result.Position)
+			end
+			pelletPart:Destroy()
+		end)
 	end)
 
-	task.delay(projectileTime * 1.1, function()
+	task.delay(projectileTime * 1.1 + attackData.TimeToDetonate, function()
 		pelletPart:Destroy()
 		movementTick:Disconnect()
 	end)
@@ -270,7 +278,7 @@ export type MultiHit = ({
 		instance: Instance,
 		position: Vector3,
 	}
-}, number) -> any
+}, number, Vector3) -> any
 
 export type AttackRenderer = typeof(AttackRenderer)
 

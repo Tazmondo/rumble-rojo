@@ -50,8 +50,8 @@ function GetGameState()
 end
 
 -- Player is optional as NPCs can be combatplayers
-function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?): CombatPlayer
-	local self = setmetatable({}, CombatPlayer)
+function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
+	local self = setmetatable({}, CombatPlayer) :: CombatPlayer
 
 	if not player then
 		LATENCYALLOWANCE = 0

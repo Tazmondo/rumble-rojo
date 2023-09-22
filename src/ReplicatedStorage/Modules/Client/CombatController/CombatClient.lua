@@ -14,6 +14,7 @@ local combatFolder = ReplicatedStorage.Modules.Shared.Combat
 local SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
+local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local AimRenderer = require(script.Parent.AimRenderer)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
 local AttackRenderer = require(script.Parent.AttackRenderer)
@@ -152,6 +153,20 @@ function CombatClient.RayHit(self: CombatClient, instance: Instance, position: V
 	if character then
 		Net:Fire("Hit", instance, position, id)
 	end
+end
+
+function CombatClient.ExplosionHit(
+	self: CombatClient,
+	hits: {
+		{
+			instance: Instance,
+			position: Vector3,
+		}
+	},
+	id: number,
+	explosionCentre: Vector3
+)
+	Net:Fire("HitMultiple", hits, id, explosionCentre)
 end
 
 -- Returns point of intersection between a ray and a plane
@@ -366,7 +381,7 @@ function CombatClient.GetInputs(self: CombatClient)
 end
 
 function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean)
-	local attackData
+	local attackData: HeroData.AbilityData
 	local target = self:GetRealTarget()
 
 	if not super then
@@ -388,7 +403,9 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 	end
 
 	-- Constrain target to range of attack
-	if attackData.Radius then
+	if attackData.AttackType == "Arced" then
+		local attackData = attackData :: HeroData.ArcedData & HeroData.AbilityData
+
 		local HRPToTarget = target - self.HRP.Position
 		target = self.HRP.Position
 			+ HRPToTarget.Unit * math.min(attackData.Range - attackData.Radius * 2, HRPToTarget.Magnitude)
@@ -399,9 +416,15 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 
 	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, attackData, target)
 
-	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, function(...)
-		self:RayHit(...)
-	end)
+	local hitFunction = if attackData.AttackType == "Arced"
+		then function(...)
+			self:ExplosionHit(...)
+		end
+		else function(...)
+			self:RayHit(...)
+		end
+
+	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction)
 
 	-- If attack doesn't go through on server then reset attack id to prevent desync
 	local serverId

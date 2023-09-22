@@ -52,6 +52,8 @@ local function replicateAttack(
 		return
 	end
 
+	print("registering1")
+
 	if attackData.AttackType == "Shotgun" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotgunDetails
 
@@ -83,6 +85,27 @@ local function replicateAttack(
 			attackData.ProjectileSpeed,
 			attackData
 		)
+
+		Net:FireAll("Attack", player, attackData, origin, attackDetails)
+	elseif attackData.AttackType == "Arced" then
+		local localAttackDetails = localAttackDetails :: AttackLogic.ArcDetails
+
+		local attackDetails =
+			AttackLogic.MakeAttack(combatPlayer, origin, attackData, localAttackDetails.target) :: AttackLogic.ArcDetails
+
+		if localAttackDetails.id ~= attackDetails.id then
+			warn(player, "mismatched attack ids, could be cheating.")
+			return
+		end
+
+		combatPlayer:RegisterBullet(
+			localAttackDetails.id,
+			localAttackDetails.origin,
+			attackData.ProjectileSpeed,
+			attackData
+		)
+
+		print("registered arc", localAttackDetails.id)
 
 		Net:FireAll("Attack", player, attackData, origin, attackDetails)
 	end
@@ -149,43 +172,18 @@ function handleAim(player: Player, aim: string)
 	combatPlayer:SetAiming(aim)
 end
 
-local function handleClientHit(player: Player, target: BasePart, localTargetPosition: Vector3, attackId: number)
-	if not player.Character or not target or not localTargetPosition or not attackId then
-		return
-	end
-	local combatPlayer = CombatPlayerData[player.Character]
-	if not combatPlayer then
-		return
-	end
-
-	local attackData = combatPlayer.attacks[attackId]
-	if not attackData then
-		return
-	end
-
-	local victimCharacter = CombatPlayer.GetAncestorWhichIsACombatPlayer(target)
-	if not victimCharacter then
-		return
-	end
-
-	local victimCombatPlayer = CombatPlayerData[victimCharacter]
-
+function processHit(
+	player: Player,
+	target: BasePart,
+	localTargetPosition: Vector3,
+	combatPlayer: CombatPlayer.CombatPlayer,
+	victimCharacter: Model,
+	victimCombatPlayer: CombatPlayer.CombatPlayer,
+	attackDetails: CombatPlayer.Attack
+)
+	print("processing hit")
 	if (target.Position - localTargetPosition).Magnitude > Config.MaximumPlayerPositionDifference then
 		warn("Rejected attack, too far away!", player, localTargetPosition, target, target.Position)
-		return
-	end
-
-	local serverAttackRay = Ray.new(attackData.FiredCFrame.Position, attackData.FiredCFrame.LookVector)
-	local rayDiff = serverAttackRay.Unit:Distance(localTargetPosition)
-
-	-- Accounts for NaN case
-	if rayDiff ~= rayDiff then
-		rayDiff = 0
-	end
-
-	-- Makes sure the trajectory of bullet doesn't change between fire and hit event.
-	if rayDiff > 5 then
-		warn(player, "Almost certainly exploiting, mismatched fired and hit bullet trajectories.")
 		return
 	end
 
@@ -216,20 +214,20 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	if not victimCombatPlayer:CanTakeDamage() then
 		return
 	end
-	if attackData.Data.AbilityType == Enums.AbilityType.Attack then
+	if attackDetails.Data.AbilityType == Enums.AbilityType.Attack then
 		combatPlayer:ChargeSuper(1)
 	end
 	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
-	combatPlayer:DealDamage(attackData.Data.Damage, victimCharacter)
+	combatPlayer:DealDamage(attackDetails.Data.Damage, victimCharacter)
 
 	-- Update Data
 	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)
-		data.Stats.DamageDealt += attackData.Data.Damage
+		data.Stats.DamageDealt += attackDetails.Data.Damage
 	end)
 
 	-- Must be cast to any to prevent "generic subtype escaping scope" error whatever that means
 	local beforeState = victimCombatPlayer:GetState() :: any
-	victimCombatPlayer:TakeDamage(attackData.Data.Damage) -- Will update state to dead if this kills
+	victimCombatPlayer:TakeDamage(attackDetails.Data.Damage) -- Will update state to dead if this kills
 	local afterState = victimCombatPlayer:GetState() :: any
 
 	local died = victimCombatPlayer:GetState() == "Dead" and beforeState ~= afterState
@@ -241,11 +239,121 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 			local data = {
 				Killer = player,
 				Victim = victimPlayer,
-				Attack = attackData.Data,
+				Attack = attackDetails.Data,
 			} :: KillData
 			CombatService.KillSignal:Fire(data)
 			Net:FireAll("PlayerKill", data)
 		end
+	end
+end
+
+local function handleClientHit(player: Player, target: BasePart, localTargetPosition: Vector3, attackId: number)
+	if not player.Character or not target or not localTargetPosition or not attackId then
+		return
+	end
+	local combatPlayer = CombatPlayerData[player.Character]
+	if not combatPlayer then
+		return
+	end
+
+	local attackDetails = combatPlayer.attacks[attackId]
+	if not attackDetails then
+		return
+	end
+	combatPlayer.attacks[attackId] = nil
+
+	local victimCharacter = CombatPlayer.GetAncestorWhichIsACombatPlayer(target)
+	if not victimCharacter then
+		return
+	end
+
+	local victimCombatPlayer = CombatPlayerData[victimCharacter]
+
+	local serverAttackRay = Ray.new(attackDetails.FiredCFrame.Position, attackDetails.FiredCFrame.LookVector)
+	local rayDiff = serverAttackRay.Unit:Distance(localTargetPosition)
+
+	-- Accounts for NaN case
+	if rayDiff ~= rayDiff then
+		rayDiff = 0
+	end
+
+	-- Makes sure the trajectory of bullet doesn't change between fire and hit event.
+	if rayDiff > 5 then
+		warn(player, "Almost certainly exploiting, mismatched fired and hit bullet trajectories.")
+		return
+	end
+
+	processHit(player, target, localTargetPosition, combatPlayer, victimCharacter, victimCombatPlayer, attackDetails)
+end
+
+function handleClientExplosionHit(
+	player: Player,
+	hitList: {
+		{
+			instance: BasePart,
+			position: Vector3,
+		}
+	},
+	attackId: number,
+	explosionCentre: Vector3
+)
+	if not player.Character then
+		return
+	end
+	local combatPlayer = CombatPlayerData[player.Character]
+	if not combatPlayer then
+		print("combatplayer not found")
+		return
+	end
+
+	local attackDetails = combatPlayer.attacks[attackId]
+	if not attackDetails then
+		print("attack details not found", attackId, combatPlayer.attacks)
+		return
+	end
+	combatPlayer.attacks[attackId] = nil
+
+	local serverAttackRay = Ray.new(attackDetails.FiredCFrame.Position, attackDetails.FiredCFrame.LookVector)
+	local rayDiff = serverAttackRay.Unit:Distance(explosionCentre)
+
+	-- Accounts for NaN case
+	if rayDiff ~= rayDiff then
+		rayDiff = 0
+	end
+
+	-- Makes sure the trajectory of bullet doesn't change between fire and hit event.
+	if rayDiff > 5 then
+		warn(player, "Almost certainly exploiting, mismatched fired and hit bullet trajectories.")
+		return
+	end
+
+	if (explosionCentre - attackDetails.FiredCFrame.Position).Magnitude > attackDetails.Data.Range + 10 then
+		warn(player, "Tried to explode at a point outside of the range of the attack. Probably exploiting.")
+		return
+	end
+
+	for _, hitData in ipairs(hitList) do
+		local victimCharacter = CombatPlayer.GetAncestorWhichIsACombatPlayer(hitData.instance)
+		if not victimCharacter then
+			return
+		end
+
+		local victimCombatPlayer = CombatPlayerData[victimCharacter]
+		local data = attackDetails.Data :: HeroData.ArcedData & HeroData.AbilityData
+		if ((hitData.position - explosionCentre) * Vector3.new(1, 0, 1)).Magnitude > data.Radius * 1.1 then
+			warn("Likely exploiting! Hit player was not in explosion radius!", player)
+			return
+		end
+
+		processHit(
+			player,
+			hitData.instance,
+			hitData.position,
+			combatPlayer,
+			victimCharacter,
+			victimCombatPlayer,
+			attackDetails
+		)
 	end
 end
 
@@ -412,6 +520,7 @@ function CombatService:Initialize()
 	Net:On("Attack", handleAttack)
 	Net:On("Super", handleSuper)
 	Net:On("Hit", handleClientHit)
+	Net:On("HitMultiple", handleClientExplosionHit)
 	Net:On("Aim", handleAim)
 
 	for _, v in pairs(workspace:GetChildren()) do

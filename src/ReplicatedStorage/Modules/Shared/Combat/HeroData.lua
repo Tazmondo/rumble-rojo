@@ -112,7 +112,7 @@ local HeroData: { [string]: HeroData } = {
 
 			AbilityType = "Super" :: "Super",
 			Name = "Plasma Grenade",
-			Charge = 0,
+			Charge = 2,
 			Damage = 1500,
 			Range = Enums.AttackRange.MediumLarge,
 			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
