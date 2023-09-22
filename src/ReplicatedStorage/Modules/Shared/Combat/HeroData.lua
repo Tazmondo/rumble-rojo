@@ -59,7 +59,7 @@ export type SuperData = BaseSuper & AttackType
 export type AbilityData = AttackData | SuperData
 
 local HeroData: { [string]: HeroData } = {
-	Fabio = {
+	Frankie = {
 		Health = 3600,
 		MovementSpeed = Enums.MovementSpeed.Normal,
 		Role = "Fighter",

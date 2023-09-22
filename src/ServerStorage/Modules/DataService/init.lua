@@ -2,7 +2,7 @@
 local DataService = {}
 
 local FreeCharacters = {
-	Fabio = true,
+	Frankie = true,
 	Taz = true,
 }
 
@@ -10,7 +10,7 @@ local ProfileTemplate = {
 	Trophies = 0,
 	Playtime = 0,
 	OwnedCharacters = {},
-	SelectedCharacter = "Fabio",
+	SelectedCharacter = "Frankie",
 	Version = 1, -- version is for data migration purposes in future
 	Stats = {
 		Kills = 0,

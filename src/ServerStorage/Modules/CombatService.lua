@@ -532,7 +532,7 @@ function CombatService:Initialize()
 
 	for _, v in pairs(workspace:GetChildren()) do
 		if v.Name == "Rig" then
-			local combatPlayer = CombatPlayer.new("Fabio", v.Humanoid) :: CombatPlayer.CombatPlayer
+			local combatPlayer = CombatPlayer.new("Frankie", v.Humanoid) :: CombatPlayer.CombatPlayer
 			CombatPlayerData[v] = combatPlayer
 			self:InitializeNameTag(v, combatPlayer)
 		end
