@@ -11,7 +11,7 @@ local CONFIG = {
 
 -- don't edit this to affect the game, this is just for studio testing
 local studioconfig = {
-	Intermission = 5, -- 30
+	Intermission = 15, -- 30
 	HeroSelection = 5, -- 15
 	RoundLength = 60, -- 2mimnutes
 
@@ -328,6 +328,9 @@ function ArenaService.Initialize()
 	end)
 
 	Net:On("Queue", function(player, isJoining)
+		if isJoining and ArenaService.GetQueuedPlayersLength() >= CONFIG.MaxPlayers then
+			return playerQueueStatus[player]
+		end
 		playerQueueStatus[player] = isJoining
 		Net:Folder():SetAttribute("QueuedCount", ArenaService.GetQueuedPlayersLength())
 		return isJoining
