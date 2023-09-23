@@ -1,6 +1,7 @@
 --!strict
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Red = require(ReplicatedStorage.Packages.Red)
 local Net = Red.Client("game")
 
@@ -83,6 +84,11 @@ function SoundController:PlayAttackSound(attackName: string, character: Model?)
 end
 
 function SoundController:StateUpdated()
+	if RunService:IsStudio() then
+		-- lobby music was annoying as fuck after a while, disabling music in studio.
+		return
+	end
+
 	local state = Net:Folder():GetAttribute("GameState")
 	local inMatch = Net:LocalFolder():GetAttribute("InMatch")
 
@@ -98,7 +104,7 @@ function SoundController:StateUpdated()
 	elseif state == "Ended" then
 		SoundController:SetAmbience()
 	else
-		print("Weird state: ", state, inMatch)
+		warn("Weird sound state: ", state, inMatch)
 		SoundController:SetAmbience()
 	end
 end
