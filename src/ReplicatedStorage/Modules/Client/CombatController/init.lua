@@ -37,7 +37,7 @@ local function InitializeCombatClient(heroName)
 		combatClient:Destroy()
 	end)
 
-	combatClient = CombatClient.new(heroName)
+	combatClient = CombatClient.new(heroName) :: CombatClient.CombatClient
 	print("Initialized combat client")
 end
 

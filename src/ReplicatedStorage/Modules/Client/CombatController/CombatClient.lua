@@ -63,6 +63,7 @@ function CombatClient.new(heroName: string): CombatClient
 	self.preRotateAttack = true
 	self.completedRotation = true
 	self.attemptingAttack = false
+	self.usingSuper = false
 
 	self.combatPlayer = self.janitor:Add(CombatPlayer.new(heroName, self.humanoid)) :: CombatPlayer.CombatPlayer
 	self.combatCamera = self.janitor:Add(CombatCamera.new())
@@ -217,7 +218,7 @@ end
 function CombatClient.SetupCharacterRotation(self: CombatClient)
 	self.janitor:Add(RunService.RenderStepped:Connect(function(dt: number)
 		-- Only update the aim direction while holding mouse
-		if self.attackButtonDown or self.superButtonDown then
+		if self.attackButtonDown then
 			local worldDirection = self.currentMouseDirection
 			if worldDirection then
 				self.lastAimDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
@@ -225,7 +226,7 @@ function CombatClient.SetupCharacterRotation(self: CombatClient)
 		end
 
 		-- Always want to finish rotating to the aim direction, so even if they release mouse, keep rotating until angle reached
-		if self.lastAimDirection and (self.superButtonDown or self.attackButtonDown or not self.completedRotation) then
+		if self.lastAimDirection and (self.attackButtonDown or not self.completedRotation) then
 			self.HRP.CFrame = self.HRP.CFrame:Lerp(
 				CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.lastAimDirection),
 				dt * 8
@@ -246,13 +247,26 @@ function CombatClient.SetupCharacterRotation(self: CombatClient)
 	end))
 end
 
-function CombatClient.HandleMouseDown(self: CombatClient)
-	if not self.attemptingAttack and not self.attackButtonDown and not self.superButtonDown then
-		self.attackButtonDown = true
-		self.humanoid.AutoRotate = false
+function CombatClient.PrepareAttack(self: CombatClient)
+	self.humanoid.AutoRotate = false
+	self.aimRenderer:Disable()
+	self.superAimRenderer:Disable()
+
+	if not self.usingSuper then
 		self.aimRenderer:Enable()
 		self.combatPlayer:SetAiming(Enums.AbilityType.Attack)
 		Net:Fire("Aim", Enums.AbilityType.Attack)
+	else
+		self.superAimRenderer:Enable()
+		self.combatPlayer:SetAiming(Enums.AbilityType.Super)
+		Net:Fire("Aim", Enums.AbilityType.Super)
+	end
+end
+
+function CombatClient.HandleMouseDown(self: CombatClient)
+	if not self.attemptingAttack and not self.attackButtonDown then
+		self.attackButtonDown = true
+		self:PrepareAttack()
 	end
 end
 
@@ -269,9 +283,13 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 		task.wait()
 	end
 	self.aimRenderer:Disable()
+	self.superAimRenderer:Disable()
 	self.combatPlayer:SetAiming(nil)
 	Net:Fire("Aim", nil)
-	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection), false)
+	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection), self.usingSuper)
+
+	self.usingSuper = false
+
 	while not self.completedRotation do
 		task.wait()
 	end
@@ -280,41 +298,21 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 end
 
 function CombatClient.HandleSuperDown(self: CombatClient)
-	if
-		not self.attemptingAttack
-		and not self.attackButtonDown
-		and not self.superButtonDown
-		and self.combatPlayer:CanSuperAttack()
-	then
-		self.superButtonDown = true
-		self.humanoid.AutoRotate = false
-		self.superAimRenderer:Enable()
-		self.combatPlayer:SetAiming(Enums.AbilityType.Super)
-		Net:Fire("Aim", Enums.AbilityType.Super)
+	if not self.usingSuper and not self.attemptingAttack and self.combatPlayer:CanSuperAttack() then
+		self.usingSuper = true
+	else
+		self.usingSuper = false
+	end
+	if self.attackButtonDown then
+		self:PrepareAttack()
 	end
 end
 
 function CombatClient.HandleSuperUp(self: CombatClient)
-	if self.attemptingAttack or not self.superButtonDown or not self.lastAimDirection then
-		return
-	end
-
-	self.superButtonDown = false
-	self.attemptingAttack = true
-
-	-- Wait to finish rotating to click direction before firing
-	while not self.preRotateAttack do
-		task.wait()
-	end
-	self.superAimRenderer:Disable()
-	self.combatPlayer:SetAiming(nil)
-	Net:Fire("Aim", nil)
-	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection), true)
-	while not self.completedRotation do
-		task.wait()
-	end
-	self.attemptingAttack = false
-	self.humanoid.AutoRotate = true
+	-- self.usingSuper = false
+	-- if self.attackButtonDown then
+	-- 	self:PrepareAttack()
+	-- end
 end
 
 function CombatClient.GetInputs(self: CombatClient)
