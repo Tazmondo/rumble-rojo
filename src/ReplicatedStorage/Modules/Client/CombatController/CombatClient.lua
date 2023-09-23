@@ -1,3 +1,5 @@
+--!nolint LocalShadow
+--!strict
 -- Handles all client sided combat systems, such as the inputs, the camera, and sending data to the server
 
 local CombatClient = {}
@@ -42,37 +44,8 @@ local function _VisualiseRay(ray: Ray)
 	Debris:AddItem(part, 15)
 end
 
--- Returns hit position, instance, normal
--- local function ScreenPointCast(x: number, y: number, exclude: { Instance }?)
--- 	exclude = exclude or {}
--- 	assert(exclude)
-
--- 	if workspace.Arena.Map:FindFirstChild("Arena") then
--- 		local border: Instance = assert(workspace.Arena.Map.Arena.Border)
--- 		table.insert(exclude, border)
--- 	end
-
--- 	local params = RaycastParams.new()
--- 	-- local mapFolder = workspace:FindFirstChild("Map")
--- 	-- assert(mapFolder, "map folder not found")
--- 	-- params.FilterDescendantsInstances = { mapFolder }
--- 	-- params.FilterType = Enum.RaycastFilterType.Include
--- 	params.FilterDescendantsInstances = exclude or {}
--- 	params.FilterType = Enum.RaycastFilterType.Exclude
-
--- 	local cam = workspace.CurrentCamera
--- 	local ray = cam:ScreenPointToRay(x, y)
-
--- 	local cast = workspace:Raycast(ray.Origin, ray.Direction * 1000, params)
--- 	if cast then
--- 		return { cast.Position, cast.Instance, cast.Normal }
--- 	else
--- 		return { ray.Origin + ray.Direction * 1000, nil, nil } -- Mimics the behaviour of Player.Mouse
--- 	end
--- end
-
 function CombatClient.new(heroName: string): CombatClient
-	local self = setmetatable({}, CombatClient)
+	local self = setmetatable({}, CombatClient) :: CombatClient
 	self.janitor = Janitor.new()
 
 	self.player = Players.LocalPlayer
@@ -80,7 +53,7 @@ function CombatClient.new(heroName: string): CombatClient
 	assert(self.character, "Combat Client intialized without character")
 	assert(self.character.Parent, "Combat client character parent is nil")
 	self.humanoid = self.character.Humanoid :: Humanoid
-	self.HRP = self.humanoid.RootPart
+	self.HRP = self.humanoid.RootPart :: BasePart
 	self.lastMousePosition = Vector3.new()
 	self.targetRelative = nil :: Vector3?
 	self.currentMouseDirection = nil :: Vector3?
@@ -90,9 +63,8 @@ function CombatClient.new(heroName: string): CombatClient
 	self.preRotateAttack = true
 	self.completedRotation = true
 	self.attemptingAttack = false
-	self.scheduleRotateBack = {}
 
-	self.combatPlayer = self.janitor:Add(CombatPlayer.new(heroName, self.humanoid))
+	self.combatPlayer = self.janitor:Add(CombatPlayer.new(heroName, self.humanoid)) :: CombatPlayer.CombatPlayer
 	self.combatCamera = self.janitor:Add(CombatCamera.new())
 	self.combatCamera:Enable()
 
@@ -105,11 +77,11 @@ function CombatClient.new(heroName: string): CombatClient
 	self.superAimRenderer =
 		self.janitor:Add(AimRenderer.new(self.combatPlayer.heroData.Super, self.character, self.combatPlayer, function()
 			return self.combatPlayer:CanSuperAttack()
-		end))
+		end)) :: AimRenderer.AimRenderer
 
 	self.janitor:Add(RunService.RenderStepped:Connect(function()
-		self.aimRenderer:Update(self.currentMouseDirection, self:GetRealTarget())
-		self.superAimRenderer:Update(self.currentMouseDirection, self:GetRealTarget())
+		self.aimRenderer:Update(self.currentMouseDirection :: any, self:GetRealTarget())
+		self.superAimRenderer:Update(self.currentMouseDirection :: any, self:GetRealTarget())
 	end))
 
 	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer, self.character))
@@ -132,7 +104,7 @@ function CombatClient.new(heroName: string): CombatClient
 		self:Destroy()
 	end)
 
-	return self
+	return self :: CombatClient
 end
 
 function CombatClient.Destroy(self: CombatClient)
@@ -170,7 +142,12 @@ function CombatClient.ExplosionHit(
 end
 
 -- Returns point of intersection between a ray and a plane
-local function RayPlaneIntersection(origin, normal, rayOrigin, unitRayDirection)
+local function RayPlaneIntersection(
+	origin: Vector3,
+	normal: Vector3,
+	rayOrigin: Vector3,
+	unitRayDirection: Vector3
+): Vector3?
 	local rpoint = rayOrigin - origin
 	local dot = unitRayDirection:Dot(normal)
 	if dot == 0 then
@@ -186,7 +163,7 @@ function CombatClient.NormaliseClickTarget(self: CombatClient): Ray
 	local ray = workspace.CurrentCamera:ScreenPointToRay(self.lastMousePosition.X, self.lastMousePosition.Y)
 	local rayPlaneIntersection =
 		RayPlaneIntersection(self.HRP.Position, Vector3.new(0, 1, 0), ray.Origin, ray.Direction)
-
+	assert(rayPlaneIntersection, "Click direction was parallel to HRP plane!")
 	return Ray.new(self.HRP.Position, rayPlaneIntersection - self.HRP.Position)
 
 	-- We do not need this code anymore as maps are flat
@@ -238,11 +215,13 @@ function CombatClient.HandleMove(self: CombatClient, input: InputObject)
 end
 
 function CombatClient.SetupCharacterRotation(self: CombatClient)
-	self.janitor:Add(RunService.RenderStepped:Connect(function(dt)
+	self.janitor:Add(RunService.RenderStepped:Connect(function(dt: number)
 		-- Only update the aim direction while holding mouse
 		if self.attackButtonDown or self.superButtonDown then
 			local worldDirection = self.currentMouseDirection
-			self.lastAimDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
+			if worldDirection then
+				self.lastAimDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
+			end
 		end
 
 		-- Always want to finish rotating to the aim direction, so even if they release mouse, keep rotating until angle reached
