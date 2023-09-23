@@ -289,6 +289,7 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection), self.usingSuper)
 
 	self.usingSuper = false
+	self.combatUI:UpdateSuperActive(self.usingSuper)
 
 	while not self.completedRotation do
 		task.wait()
@@ -303,6 +304,7 @@ function CombatClient.HandleSuperDown(self: CombatClient)
 	else
 		self.usingSuper = false
 	end
+	self.combatUI:UpdateSuperActive(self.usingSuper)
 	if self.attackButtonDown then
 		self:PrepareAttack()
 	end

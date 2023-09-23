@@ -18,11 +18,14 @@ function CombatUI.new(combatPlayer: CombatPlayer.CombatPlayer, character: Model)
 	self.combatPlayer = combatPlayer
 	self.character = character
 
+	self.superActive = false
+
 	self.mainUI = PlayerGui.CombatUI
 	self.attackFrame = self.mainUI.Attacks
 	self.attackButton = self.attackFrame.BasicAttack
 	self.superAttackCharge = self.attackFrame.SuperAttackCharge.CanvasGroup
 	self.readySuperButton = self.attackFrame.SuperAttackReady
+	self.activeSuperButton = self.attackFrame.SuperAttackActive
 
 	self.mainUI.Enabled = true
 	self.attackFrame.Visible = true
@@ -70,17 +73,30 @@ function CombatUI:RenderLoop()
 	self.janitor:Add(RunService.RenderStepped:Connect(function(dt)
 		local superChargeFill = self.combatPlayer.superCharge / self.combatPlayer.requiredSuperCharge
 		if superChargeFill < 1 then
-			self.superAttackCharge.Visible = true
 			self.readySuperButton.Visible = false
+			self.activeSuperButton.Visible = false
+
+			self.superAttackCharge.Visible = true
 			local leftFill = math.clamp(superChargeFill / 0.5, 0, 1)
 			local rightFill = math.clamp((superChargeFill - 0.5) / 0.5, 0, 1)
 			self.superAttackCharge.LeftFill.Size = UDim2.fromScale(0.5, leftFill)
 			self.superAttackCharge.RightFill.Size = UDim2.fromScale(0.5, rightFill)
 		else
 			self.superAttackCharge.Visible = false
-			self.readySuperButton.Visible = true
+
+			if self.superActive then
+				self.activeSuperButton.Visible = true
+				self.readySuperButton.Visible = false
+			else
+				self.activeSuperButton.Visible = false
+				self.readySuperButton.Visible = true
+			end
 		end
 	end))
+end
+
+function CombatUI.UpdateSuperActive(self: CombatUI, active: boolean)
+	self.superActive = active
 end
 
 function CombatUI:Destroy()
