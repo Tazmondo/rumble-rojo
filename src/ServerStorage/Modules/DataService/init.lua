@@ -1,16 +1,36 @@
 --!strict
 local DataService = {}
 
-local FreeCharacters = {
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LoadedService = require(script.Parent.LoadedService)
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
+local ProfileService = require(script.ProfileService)
+local Red = require(ReplicatedStorage.Packages.Red)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
+local Promise = Red.Promise
+local Signal = Red.Signal
+local Net = Red.Server("game", { "HeroSelect", "HeroData" })
+
+export type HeroData = {}
+
+local STOREPREFIX = "Player2_"
+
+local FreeHeroes = {
 	Frankie = true,
 	Taz = true,
+}
+
+local OwnedHeroTemplate: Types.HeroStats = {
+	Trophies = 0,
 }
 
 local ProfileTemplate = {
 	Trophies = 0,
 	Playtime = 0,
-	OwnedCharacters = {},
-	SelectedCharacter = "Frankie",
+	OwnedHeroes = {} :: { [string]: Types.HeroStats },
+	SelectedHero = "Frankie",
 	Version = 1, -- version is for data migration purposes in future
 	Stats = {
 		Kills = 0,
@@ -25,17 +45,6 @@ local ProfileTemplate = {
 }
 
 export type ProfileData = typeof(ProfileTemplate)
-
------ Loaded Modules -----
-
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local ProfileService = require(script.ProfileService)
-local Red = require(ReplicatedStorage.Packages.Red)
-local Promise = Red.Promise
-local Signal = Red.Signal
-local Net = Red.Server("game", { "HeroSelect" })
 
 local ProfileStore =
 	assert(ProfileService.GetProfileStore("PlayerData", ProfileTemplate), "Failed to load profile store")
@@ -54,14 +63,45 @@ function DataService.SyncPlayerData(player)
 	end
 
 	Net:Folder(player):SetAttribute("Trophies", profile.Data.Trophies)
-	Net:Folder(player):SetAttribute("Hero", profile.Data.SelectedCharacter)
+	Net:Folder(player):SetAttribute("Hero", profile.Data.SelectedHero)
+
+	-- Client needs to be loaded to receive the initial request
+	LoadedService.IsClientLoadedPromise(player):Then(function()
+		Net:Fire(player, "HeroData", profile.Data.OwnedHeroes)
+	end)
+end
+
+function DataService.PromiseLoad(player: Player)
+	return DataService.GetProfileData(player)
+		:Then(function()
+			return LoadedService.IsClientLoadedPromise(player)
+		end)
+		:Catch(function(reason)
+			player:Kick("Failed to load: " .. reason)
+		end)
+end
+
+local function reconcile(profile)
+	profile:Reconcile()
+
+	local data = profile.Data :: ProfileData
+
+	for hero, heroData in pairs(data.OwnedHeroes) do
+		TableUtil.Reconcile(heroData, OwnedHeroTemplate)
+	end
+
+	for heroName, _ in pairs(FreeHeroes) do
+		if not data.OwnedHeroes[heroName] then
+			data.OwnedHeroes[heroName] = TableUtil.Copy(OwnedHeroTemplate, true)
+		end
+	end
 end
 
 local function PlayerAdded(player: Player)
-	local profile = ProfileStore:LoadProfileAsync("Player2_" .. player.UserId)
+	local profile = ProfileStore:LoadProfileAsync(STOREPREFIX .. player.UserId)
 	if profile ~= nil then
 		profile:AddUserId(player.UserId) -- GDPR compliance
-		profile:Reconcile() -- Fill in missing variables from ProfileTemplate (optional)
+		reconcile(profile)
 		profile:ListenToRelease(function()
 			DataService.Profiles[player] = nil
 			-- The profile could've been loaded on another Roblox server:
@@ -112,8 +152,8 @@ end)
 
 Net:On("HeroSelect", function(player: Player, hero: string)
 	DataService.GetProfileData(player):Then(function(data: ProfileData)
-		if data.OwnedCharacters[hero] or FreeCharacters[hero] then
-			data.SelectedCharacter = hero
+		if data.OwnedHeroes[hero] or FreeHeroes[hero] then
+			data.SelectedHero = hero
 			DataService.HeroSelectSignal:Fire(player, hero)
 
 			DataService.SyncPlayerData(player)

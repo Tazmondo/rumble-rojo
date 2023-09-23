@@ -59,6 +59,7 @@ function ArenaService.HandleResults(player)
 
 	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)
 		data.Trophies += trophies
+		data.OwnedHeroes[battleData.Hero].Trophies += trophies
 
 		data.Stats.Kills += battleData.Kills
 		data.Stats.KillStreak += battleData.Kills
@@ -175,11 +176,11 @@ function ArenaService.StartMatch()
 			Kills = 0,
 			Won = false,
 			Died = false,
-			Hero = playerData.SelectedCharacter,
+			Hero = playerData.SelectedHero,
 		}
 		registeredPlayers[player] = data
 
-		data.Hero = playerData.SelectedCharacter
+		data.Hero = playerData.SelectedHero
 		assert(data.Hero, "Player did not have a selected character.")
 		Net:Folder(player):SetAttribute("InMatch", true)
 		CombatService:EnterPlayerCombat(player, data.Hero, spawns[spawnCount]):Then(function(char: Model)
@@ -270,7 +271,7 @@ function ArenaService.Initialize()
 	local function playerAdded(player: Player)
 		playerQueueStatus[player] = false
 
-		LoadedService.PromiseLoad(player):Then(function()
+		DataService.PromiseLoad(player):Then(function()
 			-- Do something here?
 		end)
 	end

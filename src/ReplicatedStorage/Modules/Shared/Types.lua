@@ -5,4 +5,8 @@ export type PlayerBattleStats = {
 	Died: boolean,
 }
 
+export type HeroStats = {
+	Trophies: number,
+}
+
 return {}

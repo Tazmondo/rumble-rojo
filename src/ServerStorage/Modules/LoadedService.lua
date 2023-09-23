@@ -3,7 +3,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LoadedService = {}
 
-local DataService = require(script.Parent.DataService)
 local Red = require(ReplicatedStorage.Packages.Red)
 local Promise = Red.Promise
 
@@ -32,16 +31,6 @@ function LoadedService.IsClientLoadedPromise(player: Player)
 		end
 		resolve(true)
 	end)
-end
-
-function LoadedService.PromiseLoad(player: Player)
-	return DataService.GetProfileData(player)
-		:Then(function()
-			return LoadedService.IsClientLoadedPromise(player)
-		end)
-		:Catch(function(reason)
-			player:Kick("Failed to load: " .. reason)
-		end)
 end
 
 function LoadedService.Initialize() end

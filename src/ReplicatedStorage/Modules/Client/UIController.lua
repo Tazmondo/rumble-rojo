@@ -19,6 +19,7 @@ local TopText = ArenaUI.Interface.TopBar.TopText.Text
 -- services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local DataController = require(script.Parent.DataController)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Red = require(ReplicatedStorage.Packages.Red)
@@ -330,7 +331,10 @@ function RenderHeroSelectScreen()
 		-- todo: tween in new information?
 	end
 
-	details:FindFirstChild("1-Trophies").TrophyCount.Text = Net:LocalFolder():GetAttribute("Trophies") or 0
+	local heroStats = DataController.ownedHeroData[currentHeroName]
+	local trophyCount = if heroStats then heroStats.Trophies else 0
+
+	details:FindFirstChild("1-Trophies").TrophyCount.Text = trophyCount
 	details:FindFirstChild("2-Name").Text = string.upper(currentHeroName)
 	details:FindFirstChild("3-Description").Text = heroData.Description
 

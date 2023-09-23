@@ -502,7 +502,7 @@ function CombatService:PlayerAdded(player: Player)
 	-- 	PlayersInCombat[player] = "Taz"
 	-- end
 
-	LoadedService.PromiseLoad(player):Then(function(resolve)
+	DataService.PromiseLoad(player):Then(function(resolve)
 		print("Resolved:", resolve)
 		if resolve then
 			self:SpawnCharacter(player)
