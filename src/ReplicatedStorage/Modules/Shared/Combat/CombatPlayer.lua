@@ -57,7 +57,7 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 		LATENCYALLOWANCE = 0
 	end
 
-	self.heroData = HeroData[heroName] :: typeof(HeroData.Frankie)
+	self.heroData = HeroData[heroName] :: HeroData.HeroData
 
 	self.maxHealth = self.heroData.Health
 	self.health = self.maxHealth

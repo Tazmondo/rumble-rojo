@@ -403,6 +403,7 @@ end
 
 function CombatService:SetupCombatPlayer(player: Player, heroName: string)
 	self = self :: CombatService
+	print("Setting up", player.Name, "as", heroName)
 	local char = assert(player.Character, "no character")
 	local humanoid = assert(char:FindFirstChildOfClass("Humanoid"), "no humanoid")
 
@@ -497,9 +498,9 @@ function CombatService:PlayerAdded(player: Player)
 
 	self:LoadPlayerGuis(player)
 
-	if RunService:IsStudio() then
-		PlayersInCombat[player] = "Taz"
-	end
+	-- if RunService:IsStudio() then
+	-- 	PlayersInCombat[player] = "Taz"
+	-- end
 
 	LoadedService.PromiseLoad(player):Then(function(resolve)
 		print("Resolved:", resolve)
