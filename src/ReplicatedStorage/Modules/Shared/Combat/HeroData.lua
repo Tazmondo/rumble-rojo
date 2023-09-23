@@ -6,7 +6,9 @@ local Enums = require(script.Parent.Enums)
 export type HeroData = {
 	Health: number,
 	MovementSpeed: number,
-	Role: string,
+	Description: string,
+	Offence: number,
+	Defence: number,
 	Attack: AttackData,
 	Super: SuperData,
 }
@@ -59,10 +61,12 @@ export type SuperData = BaseSuper & AttackType
 export type AbilityData = AttackData | SuperData
 
 local HeroData: { [string]: HeroData } = {
-	Frankie = {
+	Taz = {
 		Health = 3600,
 		MovementSpeed = Enums.MovementSpeed.Normal,
-		Role = "Fighter",
+		Description = "Taz specializes in range spray combat. With a fierce super shell.",
+		Offence = 4,
+		Defence = 2,
 		Attack = {
 			AbilityType = "Attack" :: "Attack",
 			Name = "Buckshot",
@@ -91,10 +95,12 @@ local HeroData: { [string]: HeroData } = {
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 		},
 	},
-	Taz = {
+	Frankie = {
 		Health = 4000,
 		MovementSpeed = Enums.MovementSpeed.Fast,
-		Role = "Fighter",
+		Description = "Frankie is a boss *****. Guy tosses mad water balloons and mushrooms.",
+		Offence = 2,
+		Defence = 4,
 		Attack = {
 			AbilityType = "Attack" :: "Attack",
 			Name = "Energy Ball",
@@ -108,8 +114,6 @@ local HeroData: { [string]: HeroData } = {
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 		},
 		Super = {
-			-- Uncomment when starting work on arcing
-
 			AbilityType = "Super" :: "Super",
 			Name = "Plasma Grenade",
 			Charge = 2,

@@ -1,3 +1,4 @@
+--!nonstrict
 -- I opted for a declarative approach to the UI. There are a lot of elements and dealing with state for each individual one
 -- is too much effort.
 -- There are some exceptions, e.g. for tweening.
@@ -5,16 +6,20 @@
 -- variables
 local UIController = {}
 
-local Player = game.Players.LocalPlayer
+local Player = game.Players.LocalPlayer :: Player
 
-local MainUI = Player:WaitForChild("PlayerGui"):WaitForChild("MainUI") :: ScreenGui
-local ArenaUI = Player:WaitForChild("PlayerGui"):WaitForChild("ArenaUI") :: ScreenGui
-local ResultsUI = Player:WaitForChild("PlayerGui"):WaitForChild("ResultsUI") :: ScreenGui
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local MainUI = PlayerGui:WaitForChild("MainUI") :: ScreenGui
+local ArenaUI = PlayerGui:WaitForChild("ArenaUI") :: ScreenGui
+local ResultsUI = PlayerGui:WaitForChild("ResultsUI") :: ScreenGui
+local HeroSelect = PlayerGui:WaitForChild("HeroSelectUI") :: ScreenGui
 local TopText = ArenaUI.Interface.TopBar.TopText.Text
 
 -- services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Red = require(ReplicatedStorage.Packages.Red)
 local SoundController = require(script.Parent.SoundController)
@@ -22,7 +27,10 @@ local SoundController = require(script.Parent.SoundController)
 local Net = Red.Client("game")
 
 local ready = false
-local selectedHero = false
+local heroSelectOpen = false
+local displayedHero: string? = nil
+local selectedHero: string? = Net:LocalFolder():GetAttribute("Hero")
+local shouldTryHide = false
 local UIState = ""
 
 function PositionCameraToModel(viewportFrame: ViewportFrame, camera: Camera, model: Model)
@@ -71,6 +79,7 @@ function HideAll()
 	MainUI.Interface.MenuBar.Visible = false
 	ArenaUI.Interface.CharacterSelection.Visible = false
 	ArenaUI.Interface.Game.Visible = false
+	HeroSelect.Enabled = false
 
 	TopText.Visible = false
 
@@ -90,6 +99,20 @@ function RenderTrophies()
 	MainUI.Interface.Inventory.Trophies.TrophyCount.Text = if trophies > 0 then "+" .. trophies else trophies
 end
 
+function RenderHeroIcon()
+	MainUI.Enabled = true
+	MainUI.Interface.MenuBar.Visible = true
+	for i, v in pairs(MainUI.Interface.MenuBar:FindFirstChild("Current Character"):GetChildren()) do
+		if v:IsA("ImageLabel") then
+			if v.Name == selectedHero then
+				v.Visible = true
+			else
+				v.Visible = false
+			end
+		end
+	end
+end
+
 function NotEnoughPlayersRender(changed)
 	if changed then
 		ArenaUI.Enabled = false
@@ -98,6 +121,7 @@ function NotEnoughPlayersRender(changed)
 
 	RenderTrophies()
 	UpdateQueueButtons()
+	RenderHeroIcon()
 end
 
 function IntermissionRender(changed)
@@ -110,19 +134,9 @@ function IntermissionRender(changed)
 
 	RenderTrophies()
 	UpdateQueueButtons()
+	RenderHeroIcon()
 	TopText.Visible = true
 	TopText.Text = Net:Folder():GetAttribute("IntermissionTime")
-end
-
-function CharacterSelectionRender(changed)
-	ArenaUI.Enabled = true
-
-	if ready and not selectedHero then
-		ArenaUI.Interface.CharacterSelection.Visible = true
-	end
-	RenderTrophies()
-	TopText.Visible = true
-	TopText.Text = "Starting Soon"
 end
 
 local prevCountdown = 0
@@ -165,10 +179,15 @@ function BattleStartingRender(changed)
 		prevCountdown = countdown
 	elseif not ready then
 		RenderTrophies()
+		RenderHeroIcon()
 	end
 
 	TopText.Visible = true
-	TopText.Text = "Fighters left: " .. Net:Folder():GetAttribute("AliveFighters") or 0
+	local fighters = Net:Folder():GetAttribute("AliveFighters")
+	if fighters == nil then
+		fighters = 0
+	end
+	TopText.Text = "Fighters left: " .. fighters
 end
 
 local died = false
@@ -199,6 +218,7 @@ function BattleRender(changed)
 
 	if not ready then
 		RenderTrophies()
+		RenderHeroIcon()
 	end
 
 	TopText.Visible = true
@@ -220,6 +240,7 @@ function BattleEndedRender(changed)
 
 	if not ready then
 		RenderTrophies()
+		RenderHeroIcon()
 	end
 
 	TopText.Visible = true
@@ -227,6 +248,11 @@ function BattleEndedRender(changed)
 end
 
 function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
+	-- TODO: REMOVE ME
+	if true then
+		return
+	end
+
 	if data.Won then
 		SoundController:PlayGeneralSound("Victory")
 	end
@@ -276,10 +302,88 @@ function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
 	return
 end
 
+local prevOpen = false
+function RenderHeroSelectScreen()
+	HeroSelect.Enabled = true
+	local frame = HeroSelect.Frame :: Frame
+	local details = frame.Information:FindFirstChild("2-Details")
+
+	if prevOpen ~= heroSelectOpen then
+		-- tween stuff
+	end
+	prevOpen = heroSelectOpen
+
+	local currentHeroName = displayedHero or Net:LocalFolder():GetAttribute("Hero")
+	if not currentHeroName then
+		warn("Could not find a selected hero!")
+		return
+	end
+
+	local heroData = HeroData[currentHeroName]
+	if not heroData then
+		warn("Tried to get data for hero", currentHeroName, "but it didn't exist!")
+		return
+	end
+
+	if displayedHero ~= currentHeroName then
+		displayedHero = currentHeroName
+		-- todo: tween in new information?
+	end
+
+	details:FindFirstChild("1-Trophies").TrophyCount.Text = Net:LocalFolder():GetAttribute("Trophies") or 0
+	details:FindFirstChild("2-Name").Text = string.upper(currentHeroName)
+	details:FindFirstChild("3-Description").Text = heroData.Description
+
+	local inactiveCount = 0
+	local activeCount = 0
+	for i, v in pairs(frame.Stats:FindFirstChild("1-Offence").Details.Meter:GetChildren()) do
+		if not v:IsA("ImageLabel") then
+			continue
+		end
+		if v.Name == "RedDot" and activeCount < heroData.Offence then
+			activeCount += 1
+			v.Visible = true
+		elseif v.Name == "WhiteDot" and inactiveCount < (5 - heroData.Offence) then
+			inactiveCount += 1
+			v.Visible = true
+		else
+			v.Visible = false
+		end
+	end
+
+	inactiveCount = 0
+	activeCount = 0
+	for i, v in pairs(frame.Stats:FindFirstChild("2-Defence").Details.Meter:GetChildren()) do
+		if not v:IsA("ImageLabel") then
+			continue
+		end
+		if v.Name == "GreenDot" and activeCount < heroData.Defence then
+			activeCount += 1
+			v.Visible = true
+		elseif v.Name == "WhiteDot" and inactiveCount < (5 - heroData.Defence) then
+			inactiveCount += 1
+			v.Visible = true
+		else
+			v.Visible = false
+		end
+	end
+
+	frame.Stats:FindFirstChild("3-Super").Details.SuperTitle.Text = heroData.Super.Name
+
+	for _, v in pairs(frame.Character:GetChildren()) do
+		if v:IsA("ImageLabel") then
+			if v.Name == currentHeroName then
+				v.Visible = true
+			else
+				v.Visible = false
+			end
+		end
+	end
+end
+
 function ResetRoundVariables()
 	-- We do not set ready to false because your ready status carries between rounds
 	-- ready = false
-	selectedHero = false
 	UpdateQueueButtons()
 end
 
@@ -291,28 +395,33 @@ function UIController:RenderAllUI()
 	local state = Net:Folder():GetAttribute("GameState")
 
 	local changed = state ~= UIState
-
+	if shouldTryHide then
+		changed = true
+		shouldTryHide = false
+	end
 	if changed then
 		print("UI State changed to ", UIState, state)
 		HideAll()
 	end
 
-	if state == "NotEnoughPlayers" then
-		NotEnoughPlayersRender(changed)
-	elseif state == "Intermission" then
-		IntermissionRender(changed)
-	elseif state == "CharacterSelection" then
-		CharacterSelectionRender(changed)
-	elseif state == "BattleStarting" then
-		BattleStartingRender(changed)
-	elseif state == "Battle" then
-		BattleRender(changed)
-	elseif state == "Ended" then
-		BattleEndedRender(changed)
-
-		if changed then
-			ResetRoundVariables()
+	if heroSelectOpen then
+		RenderHeroSelectScreen()
+	else
+		if state == "NotEnoughPlayers" then
+			NotEnoughPlayersRender(changed)
+		elseif state == "Intermission" then
+			IntermissionRender(changed)
+		elseif state == "BattleStarting" then
+			BattleStartingRender(changed)
+		elseif state == "Battle" then
+			BattleRender(changed)
+		elseif state == "Ended" then
+			BattleEndedRender(changed)
 		end
+	end
+
+	if changed and state == "Ended" then
+		ResetRoundVariables()
 	end
 
 	UIState = state
@@ -363,17 +472,31 @@ function UIController:Initialize()
 		self:ExitClick()
 	end)
 
-	for i, v in pairs(ArenaUI.Interface.CharacterSelection.Heros:GetChildren()) do
-		if v:IsA("ImageLabel") then
-			v.Button.MouseButton1Down:Connect(function()
-				SoundController:PlayGeneralSound("SelectedCharacter")
-				Net:Fire("HeroSelect", v.Name)
-				selectedHero = true
+	MainUI.Interface.MenuBar:FindFirstChild("Current Character").Button.Activated:Connect(function(input: InputObject)
+		heroSelectOpen = true
+		shouldTryHide = true
+	end)
 
-				task.wait(0.1)
-				ArenaUI.Interface.CharacterSelection.Visible = false
-			end)
+	HeroSelect.Frame.Exit.Activated:Connect(function(input: InputObject)
+		heroSelectOpen = false
+		shouldTryHide = true
+	end)
+
+	HeroSelect.Frame.Stats.Select.Activated:Connect(function()
+		heroSelectOpen = false
+		shouldTryHide = true
+		Net:Fire("HeroSelect", displayedHero)
+		selectedHero = displayedHero
+	end)
+
+	for _, heroButton in pairs(HeroSelect.Frame:FindFirstChild("Character Select"):GetChildren()) do
+		if not heroButton:IsA("ImageButton") then
+			continue
 		end
+		heroButton.Activated:Connect(function()
+			-- todo: check if owned
+			displayedHero = heroButton.Name
+		end)
 	end
 
 	Net:On("PlayerDied", function()
@@ -382,6 +505,10 @@ function UIController:Initialize()
 	end)
 
 	Net:On("MatchResults", RenderMatchResults)
+
+	Net:LocalFolder():GetAttributeChangedSignal("Hero"):Connect(function()
+		selectedHero = Net:LocalFolder():GetAttribute("Hero")
+	end)
 end
 
 UIController:Initialize()

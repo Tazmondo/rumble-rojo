@@ -46,12 +46,19 @@ DataService.Profiles = {} :: { [Player]: Profile }
 
 DataService.HeroSelectSignal = Signal.new()
 
-local function HandleSuccessfulProfile(player, profile: Profile)
+function DataService.SyncPlayerData(player)
+	local profile = DataService.Profiles[player]
+	if not profile then
+		warn("Tried to get profile for player that didn't have one", player)
+		return
+	end
+
 	Net:Folder(player):SetAttribute("Trophies", profile.Data.Trophies)
+	Net:Folder(player):SetAttribute("Hero", profile.Data.SelectedCharacter)
 end
 
 local function PlayerAdded(player: Player)
-	local profile = ProfileStore:LoadProfileAsync("Player_" .. player.UserId)
+	local profile = ProfileStore:LoadProfileAsync("Player2_" .. player.UserId)
 	if profile ~= nil then
 		profile:AddUserId(player.UserId) -- GDPR compliance
 		profile:Reconcile() -- Fill in missing variables from ProfileTemplate (optional)
@@ -63,7 +70,7 @@ local function PlayerAdded(player: Player)
 		if player:IsDescendantOf(Players) == true then
 			DataService.Profiles[player] = profile
 			-- A profile has been successfully loaded:
-			HandleSuccessfulProfile(player, profile)
+			DataService.SyncPlayerData(player)
 		else
 			-- Player left before the profile loaded:
 			profile:Release()
@@ -108,6 +115,8 @@ Net:On("HeroSelect", function(player: Player, hero: string)
 		if data.OwnedCharacters[hero] or FreeCharacters[hero] then
 			data.SelectedCharacter = hero
 			DataService.HeroSelectSignal:Fire(player, hero)
+
+			DataService.SyncPlayerData(player)
 		end
 	end)
 end)

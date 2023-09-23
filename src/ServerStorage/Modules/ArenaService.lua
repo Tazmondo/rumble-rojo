@@ -73,6 +73,7 @@ function ArenaService.HandleResults(player)
 			data.Stats.WinStreak = 0
 			data.Stats.KillStreak = 0
 		end
+		DataService.SyncPlayerData(player)
 	end)
 
 	Net:Fire(player, "MatchResults", trophies, battleData)
@@ -126,6 +127,11 @@ function ArenaService.StartIntermission()
 	-- INTERMISSION
 	Net:Folder():SetAttribute("GameState", "Intermission")
 
+	-- Since intermission can restart, we don't need to always reload the map.
+	if not MapService:IsLoaded() then
+		MapService:LoadNextMap()
+	end
+
 	while intermissionTime > 0 do
 		task.wait(1)
 		intermissionTime -= 1
@@ -136,16 +142,11 @@ function ArenaService.StartIntermission()
 		end
 	end
 
-	-- Since intermission can restart, we don't need to always reload the map.
-	if not MapService:IsLoaded() then
-		MapService:LoadNextMap()
-	end
-
 	Net:Folder():SetAttribute("QueuedCount", ArenaService.GetQueuedPlayersLength())
 
 	-- BATTLE START
 
-	if ArenaService.GetRegisteredPlayersLength() < CONFIG.MinPlayers then
+	if ArenaService.GetQueuedPlayersLength() < CONFIG.MinPlayers then
 		-- Players have left
 		ArenaService.StartIntermission()
 		return
