@@ -8,7 +8,7 @@ local CONFIG = {
 	RoundLength = 400,
 
 	MinPlayers = 2,
-	MaxPlayers = 10,
+	MaxPlayers = 6,
 }
 
 -- don't edit this to affect the game, this is just for studio testing
@@ -18,7 +18,7 @@ local studioconfig = {
 	RoundLength = 60, -- 2mimnutes
 
 	MinPlayers = 1,
-	MaxPlayers = 10,
+	MaxPlayers = 6,
 }
 
 return if RunService:IsStudio() then studioconfig else CONFIG

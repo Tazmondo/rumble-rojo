@@ -237,7 +237,7 @@ function ArenaService.EndMatch(winner: Player?)
 
 	registeredPlayers = {}
 
-	MapService:UnloadCurrentMap()
+	MapService:UnloadCurrentMap():Await()
 
 	ArenaService.StartIntermission()
 	return

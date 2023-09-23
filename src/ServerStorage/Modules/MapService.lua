@@ -1,56 +1,29 @@
+--!strict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerConfig = require(script.Parent.ServerConfig)
 local Red = require(ReplicatedStorage.Packages.Red)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
 local MapService = {}
 
-local Net = Red.Server("Map", { "SetDoors", "MoveMap" })
+local Net = Red.Server("Map", { "MoveMap" })
 
 local arena = workspace.Arena
 local activeMapFolder = arena.Map
-local mapFolder = game.ServerStorage.Maps
-local doors: Model = arena.Doors
+local mapFolder = workspace.Maps
+local lobby = workspace.Lobby :: Model
+local pivotPoint = assert(lobby:FindFirstChild("MapPivotPoint"), "Lobby did not have a MapPivotPoint.") :: BasePart
 
-local DOORTRANSITIONTIME = 2
-local MAPTRANSITIONTIME = 2
-
-local doorOne: Model = doors:FindFirstChild("One") :: Model
-local doorTwo: Model = doors:FindFirstChild("Two") :: Model
-
-local closedOne = doorOne:GetPivot()
-local closedTwo = doorTwo:GetPivot()
-
-local openOne = closedOne * CFrame.Angles(math.rad(-90), 0, 0)
-local openTwo = closedTwo * CFrame.Angles(math.rad(-90), 0, 0)
+local MAPTRANSITIONTIME = 4
 
 -- Here we position the map slightly above the door centre
-local activeMapCFrame = doors:GetPivot() * CFrame.new(0, 2 + doors:GetExtentsSize().Y / 2, 0)
-local inactiveMapCFrame = activeMapCFrame * CFrame.new(0, -90, 0)
+local activeMapCFrame = pivotPoint.CFrame
+local inactiveMapCFrame = activeMapCFrame * CFrame.new(0, -50, 0)
 
 local loadedFolder = nil
 local map = nil
 
 -- functions
-local function OpenDoors()
-	return Red.Promise.new(function(resolve)
-		Net:FireAll("SetDoors", { openOne, openTwo }, DOORTRANSITIONTIME)
-		task.wait(DOORTRANSITIONTIME + 0.25)
-		doorOne:PivotTo(openOne)
-		doorTwo:PivotTo(openTwo)
-		resolve()
-	end)
-end
-
-local function CloseDoors()
-	return Red.Promise.new(function(resolve)
-		Net:FireAll("SetDoors", { closedOne, closedTwo }, DOORTRANSITIONTIME)
-		task.wait(DOORTRANSITIONTIME + 0.25)
-		doorOne:PivotTo(closedOne)
-		doorTwo:PivotTo(closedTwo)
-		resolve()
-	end)
-end
-
 local function GetRandomMap(): Model
 	local maps = mapFolder:GetChildren()
 	local validMaps = {}
@@ -58,20 +31,20 @@ local function GetRandomMap(): Model
 		if not map:FindFirstChild("Arena") then
 			continue
 		end
-		local spawnCount = #map.Arena.Spawns:GetChildren()
-		if spawnCount >= 10 then
+		local spawnCount = #map.Spawns:GetChildren()
+		if spawnCount >= ServerConfig.MaxPlayers then
 			table.insert(validMaps, map)
 		else
-			warn("MAP HAS INVALID SPAWN COUNT", spawnCount, map.Name)
+			warn("MAP HAS INVALID SPAWN COUNT", spawnCount, map.Name, "required: ", ServerConfig.MaxPlayers)
 		end
 	end
 
-	return validMaps[math.random(1, #validMaps)].Arena
+	return validMaps[math.random(1, #validMaps)]
 end
 
 local function MoveMapUp()
 	return Red.Promise.new(function(resolve)
-		Net:FireAll("MoveMap", map, activeMapCFrame, MAPTRANSITIONTIME)
+		Net:FireAll("MoveMap", map, activeMapCFrame, inactiveMapCFrame, MAPTRANSITIONTIME)
 		task.wait(MAPTRANSITIONTIME + 0.25)
 		map:PivotTo(activeMapCFrame)
 		resolve()
@@ -80,7 +53,7 @@ end
 
 function MoveMapDown()
 	return Red.Promise.new(function(resolve)
-		Net:FireAll("MoveMap", map, inactiveMapCFrame, MAPTRANSITIONTIME)
+		Net:FireAll("MoveMap", map, inactiveMapCFrame, activeMapCFrame, MAPTRANSITIONTIME)
 		task.wait(MAPTRANSITIONTIME + 0.25)
 		map:PivotTo(inactiveMapCFrame)
 		resolve()
@@ -107,7 +80,7 @@ function MapService:LoadNextMap()
 		UnloadMap()
 	end
 	LoadMap(GetRandomMap())
-	return OpenDoors():Then(MoveMapUp)
+	return MoveMapUp()
 end
 
 function MapService:IsLoaded()
@@ -123,24 +96,28 @@ end
 function MapService:UnloadCurrentMap()
 	if not map then
 		warn("Tried to unload map when map did not exist.", debug.traceback())
-		return
+		return Red.Promise.new(function(resolve)
+			resolve()
+		end)
 	end
-	return MoveMapDown():Then(CloseDoors):Then(UnloadMap)
+	return Red.Promise.new(function(resolve)
+		MoveMapDown():Then(function()
+			UnloadMap()
+			resolve()
+		end)
+	end)
 end
 
 function MapService:Initialize()
+	-- MapService:LoadNextMap():Await()
+
 	-- task.spawn(function()
 	-- 	while true do
-	-- 		LoadMap(GetRandomMap())
-	-- 		OpenDoors():Await()
-	-- 		task.wait(1)
-	-- 		MoveMapUp():Await()
+	-- 		MapService:LoadNextMap():Await()
 	-- 		task.wait(1)
 	-- 		MoveMapDown():Await()
-	-- 		task.wait(1)
-	-- 		CloseDoors():Await()
-	-- 		task.wait(1)
 	-- 		UnloadMap()
+	-- 		task.wait(1)
 	-- 	end
 	-- end)
 end
