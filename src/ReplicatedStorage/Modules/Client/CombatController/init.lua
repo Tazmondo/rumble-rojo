@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local AttackRenderer = require(script.AttackRenderer)
+local BushController = require(script.BushController)
 local CombatClient = require(script.CombatClient)
 local Red = require(ReplicatedStorage.Packages.Red)
 
@@ -34,9 +35,11 @@ local function InitializeCombatClient(heroName)
 
 	localPlayer.CharacterRemoving:Once(function()
 		print("destroying combat client")
+		BushController.SetCombatStatus(false)
 		combatClient:Destroy()
 	end)
 
+	BushController.SetCombatStatus(true)
 	combatClient = CombatClient.new(heroName) :: CombatClient.CombatClient
 	print("Initialized combat client")
 end

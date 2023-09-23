@@ -15,6 +15,9 @@ local Config = {
 	-- Tag applied to all valid combat players, change if it conflicts
 	CombatPlayerTag = "CombatPlayer",
 
+	-- Tag used to register bushes
+	BushTag = "CombatBush",
+
 	-- Random shotgun spread to apply in degrees on either side (value of 2 means between -2 and 2)
 	ShotgunRandomSpread = 2,
 
