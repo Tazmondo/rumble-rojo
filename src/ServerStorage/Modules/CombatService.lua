@@ -452,6 +452,14 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 
 			if PlayersInCombat[player] then
 				self:SetupCombatPlayer(player, PlayersInCombat[player])
+			else
+				DataService.GetProfileData(player)
+					:Then(function(profile: DataService.ProfileData)
+						NameTag.LobbyInit(player, char, profile.Trophies)
+					end)
+					:Catch(function(msg)
+						warn(msg)
+					end)
 			end
 
 			local humanoid = char:FindFirstChild("Humanoid") :: Humanoid
@@ -498,9 +506,9 @@ function CombatService:PlayerAdded(player: Player)
 
 	self:LoadPlayerGuis(player)
 
-	-- if RunService:IsStudio() then
-	-- 	PlayersInCombat[player] = "Taz"
-	-- end
+	if RunService:IsStudio() then
+		PlayersInCombat[player] = "Taz"
+	end
 
 	DataService.PromiseLoad(player):Then(function(resolve)
 		print("Resolved:", resolve)

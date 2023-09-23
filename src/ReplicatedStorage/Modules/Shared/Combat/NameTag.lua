@@ -5,6 +5,7 @@ local Enums = require(script.Parent.Enums)
 local NameTag = {}
 
 local nameTagTemplate = ReplicatedStorage.Assets.NameTag
+local lobbyNameTagTemplate = ReplicatedStorage.Assets.LobbyNameTag
 local haloTemplate: Part = ReplicatedStorage.Assets.VFX.General.Halo
 
 local SPINSPEED = 1.5 -- Seconds for full rotation
@@ -20,7 +21,7 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 		nameTag.PlayerToHideFrom = hide
 	end
 
-	nameTag.PlayerName.Text = character.Name
+	nameTag.name.nametag.PlayerName.Text = character.Name
 
 	task.spawn(function()
 		nameTag.Parent = character:WaitForChild("Head")
@@ -29,9 +30,9 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 			halo.Name = character.Name .. "ServerHalo"
 
 			-- Hide ammo bar from other players, only yours is visible
-			nameTag.AmmoBar.Visible = false
+			nameTag.stats.ammo.Visible = false
 		else
-			nameTag.AmmoBar.Visible = true
+			nameTag.stats.ammo.Visible = true
 		end
 
 		while true do
@@ -41,18 +42,18 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 			end
 
 			for i = 1, 3 do
-				local individualAmmoBar = nameTag.AmmoBar:FindFirstChild("Ammo" .. i)
+				local individualAmmoBar = nameTag.stats.ammo:FindFirstChild("Ammo" .. i)
 
 				if individualAmmoBar then
 					individualAmmoBar.Visible = i <= combatPlayer.ammo
 				end
 			end
-			nameTag.HealthNumber.Text = combatPlayer.health
+			nameTag.stats.healthnumber.Text = combatPlayer.health
 			local healthRatio = combatPlayer.health / combatPlayer.maxHealth
 
 			-- Size the smaller bar as a percentage of the size of the parent bar, based off player health percentage
-			local healthBar = nameTag.HealthBar.HealthBar
-			healthBar.Size = UDim2.new(healthRatio, 0, 0, healthBar.Size.Y.Offset)
+			local healthBar = nameTag.stats.healthbar.HealthBar
+			healthBar.Size = UDim2.new(healthRatio, 0, 1, 0)
 
 			-- Fixes weird bug where it would still render with a width at 0, looking incredibly strange.
 			if healthBar.AbsoluteSize.X < 2.1 then
@@ -63,7 +64,7 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 
 			local colour1 = Color3.fromHSV(healthRatio * 100 / 255, 206 / 255, 1)
 			local colour2 = Color3.fromHSV(healthRatio * 88 / 255, 197 / 255, 158 / 255)
-			nameTag.HealthBar.HealthBar.UIGradient.Color = ColorSequence.new(colour1, colour2)
+			healthBar.UIGradient.Color = ColorSequence.new(colour1, colour2)
 
 			if RunService:IsClient() then
 				local serverHalo = workspace:FindFirstChild(character.Name .. "ServerHalo")
@@ -96,4 +97,14 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 	end)
 	return nameTag
 end
+
+function NameTag.LobbyInit(player: Player, character: Model, trophies: number)
+	local nameTag = lobbyNameTagTemplate:Clone() :: BillboardGui
+
+	nameTag.name.name.PlayerName.Text = player.DisplayName
+	nameTag.Trophies.TrophyCount.Text = trophies
+
+	nameTag.Parent = assert(character:FindFirstChild("Head"), "Character did not have head")
+end
+
 return NameTag
