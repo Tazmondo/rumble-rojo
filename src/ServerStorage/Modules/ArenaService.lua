@@ -1,23 +1,5 @@
 --!strict
 -- variables
-local CONFIG = {
-	Intermission = 20, -- 30
-	HeroSelection = 10, -- 15
-	RoundLength = 400,
-
-	MinPlayers = 2,
-	MaxPlayers = 10,
-}
-
--- don't edit this to affect the game, this is just for studio testing
-local studioconfig = {
-	Intermission = 15, -- 30
-	HeroSelection = 5, -- 15
-	RoundLength = 60, -- 2mimnutes
-
-	MinPlayers = 1,
-	MaxPlayers = 10,
-}
 
 local ArenaService = {}
 
@@ -33,10 +15,9 @@ local CombatService = require(script.Parent.CombatService)
 local DataService = require(script.Parent.DataService)
 local LoadedService = require(script.Parent.LoadedService)
 local MapService = require(script.Parent.MapService)
+local ServerConfig = require(script.Parent.ServerConfig)
 
-if RunService:IsStudio() then
-	CONFIG = studioconfig
-end
+local CONFIG = ServerConfig
 
 -- Use Net:Folder() predominantly, as multiple scripts on client need access to information about game state
 local Net = Red.Server("game", { "PlayerDied", "MatchResults" })
