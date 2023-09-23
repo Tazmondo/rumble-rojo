@@ -26,6 +26,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Red = require(ReplicatedStorage.Packages.Red)
 local CombatService = require(script.Parent.CombatService)
@@ -50,11 +51,11 @@ function ArenaService.HandleResults(player)
 	local battleData = registeredPlayers[player]
 	assert(battleData, "HandleResults called on player without battle data!")
 
-	local trophies = battleData.Kills * 2
+	local trophies = battleData.Kills * Config.TrophyKill
 	if battleData.Won then
-		trophies += 10
+		trophies += Config.TrophyWin
 	elseif battleData.Died then
-		trophies -= 2
+		trophies -= Config.TrophyDeath
 	end
 
 	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)

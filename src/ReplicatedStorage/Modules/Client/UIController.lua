@@ -17,8 +17,10 @@ local HeroSelect = PlayerGui:WaitForChild("HeroSelectUI") :: ScreenGui
 local TopText = ArenaUI.Interface.TopBar.TopText.Text
 
 -- services
+local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local DataController = require(script.Parent.DataController)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
@@ -97,7 +99,7 @@ function RenderTrophies()
 	MainUI.Interface.Inventory.Visible = true
 
 	local trophies = Net:LocalFolder():GetAttribute("Trophies") or 0
-	MainUI.Interface.Inventory.Trophies.TrophyCount.Text = if trophies > 0 then "+" .. trophies else trophies
+	MainUI.Interface.Inventory.Trophies.TrophyCount.Text = trophies
 end
 
 function RenderHeroIcon()
@@ -248,57 +250,45 @@ function BattleEndedRender(changed)
 	TopText.Text = "Battle over!"
 end
 
+function LabelRenderTrophyCount(label: TextLabel, trophyCount: number)
+	local positive = trophyCount >= 0
+	label.Text = tostring(if positive then "+" .. trophyCount else trophyCount)
+	label.TextColor3 = if positive then Color3.fromRGB(67, 179, 69) else Color3.fromRGB(228, 2, 43)
+end
+
+local displayResults = false
 function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
-	-- TODO: REMOVE ME
-	if true then
-		return
-	end
+	displayResults = true
 
 	if data.Won then
 		SoundController:PlayGeneralSound("Victory")
 	end
 	ResultsUI.Enabled = true
-
-	local characterName = data.Hero
-
-	-- RENDER HERO MODEL --
-	local characterModel = ReplicatedStorage.Assets.CharacterModels[characterName]
-	assert(characterModel, "Match results did not pass in a valid character name : " .. characterName)
-
-	characterModel = characterModel:Clone()
-
-	local viewport = ResultsUI.Results.ViewportFrame
-	local camera = viewport:FindFirstChild("Camera")
-	if not camera then
-		camera = Instance.new("Camera")
-		camera.Parent = viewport
-	end
-
-	characterModel.Parent = viewport
-	characterModel:PivotTo(CFrame.new())
-
-	PositionCameraToModel(viewport, camera, characterModel)
+	local blur = assert(Lighting:FindFirstChild("ResultsBlur"), "Could not find blur effect in lighting.") :: BlurEffect
+	blur.Enabled = true
 
 	-- DISPLAY TROPHY COUNT --
-	local statsFrame = ResultsUI.Results.Stats
+	local statsFrame = ResultsUI.Frame.ImageLabel.Frame.Stats:FindFirstChild("Stat Lines")
 	statsFrame.Victory.Visible = data.Won
-	statsFrame.KnockedOut.Visible = not data.Won
+	LabelRenderTrophyCount(statsFrame.Victory.TrophyCount, Config.TrophyWin)
+	LabelRenderTrophyCount(statsFrame.Total.Frame.TrophyCount, trophies)
 
-	statsFrame.Total.TextLabel.Text = if trophies >= 0 then "+" .. trophies else trophies
-
-	statsFrame.Count.Victory.Visible = data.Won
-	statsFrame.Count.Death.Visible = data.Died
+	statsFrame.Died.Visible = data.Died
+	LabelRenderTrophyCount(statsFrame.Died.TrophyCount, Config.TrophyDeath)
 
 	if data.Kills > 0 then
-		statsFrame.Count.Ko.Text = "KO x " .. data.Kills .. ": +" .. 2 * data.Kills
+		statsFrame.Knockouts.Knockouts.Text = if data.Kills > 1 then "Knockouts x " .. data.Kills else "Knockout"
+		LabelRenderTrophyCount(statsFrame.Knockouts.TrophyCount, data.Kills * Config.TrophyKill)
 	else
-		statsFrame.Count.Ko.Visible = false
+		statsFrame.Knockouts.Visible = false
 	end
 
-	ResultsUI.Results.Actions.Proceed.Activated:Wait()
+	ResultsUI.Frame.ImageLabel.Frame.Action.Proceed.Activated:Wait()
 	SoundController:PlayGeneralSound("ButtonClick")
 
 	ResultsUI.Enabled = false
+	displayResults = false
+	blur.Enabled = false
 
 	return
 end
@@ -397,6 +387,11 @@ function UIController:RenderAllUI()
 	debug.profilebegin("UIControllerRender")
 
 	local state = Net:Folder():GetAttribute("GameState")
+
+	if displayResults then
+		HideAll()
+		return
+	end
 
 	local changed = state ~= UIState
 	if shouldTryHide then

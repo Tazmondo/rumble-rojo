@@ -2,7 +2,7 @@
 -- Config for the combat system
 local Config = {
 	-- Server will be more lenient with attack checking the higher this value. Improves gameplay for laggy players, but gives exploiters more leeway
-	-- Default: 0.1
+	-- Default: 0.1 (seconds)
 	MaximumAllowedLatencyVariation = 0.1,
 
 	-- Maximum allowed distance between client position and server position of characters
@@ -29,6 +29,11 @@ local Config = {
 
 	-- Regeneration amount as a multiplier of maximum health
 	RegenAmount = 0.2,
+
+	-- trophy values
+	TrophyWin = 10,
+	TrophyKill = 2,
+	TrophyDeath = -2,
 }
 
 return Config
