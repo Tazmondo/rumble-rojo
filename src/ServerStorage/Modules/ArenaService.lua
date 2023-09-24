@@ -13,6 +13,7 @@ local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Red = require(ReplicatedStorage.Packages.Red)
 local CombatService = require(script.Parent.CombatService)
 local DataService = require(script.Parent.DataService)
+local ItemService = require(script.Parent.ItemService)
 local LoadedService = require(script.Parent.LoadedService)
 local MapService = require(script.Parent.MapService)
 local ServerConfig = require(script.Parent.ServerConfig)
@@ -237,6 +238,7 @@ function ArenaService.EndMatch(winner: Player?)
 
 	registeredPlayers = {}
 
+	ItemService.CleanUp()
 	MapService:UnloadCurrentMap():Await()
 
 	ArenaService.StartIntermission()

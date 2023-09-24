@@ -3,12 +3,13 @@ local ItemService = {}
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LoadedService = require(script.Parent.LoadedService)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Red = require(ReplicatedStorage.Packages.Red)
-local Net = Red.Server("Items", { "SpawnItem", "DestroyItem" })
+local Net = Red.Server("Items", { "SpawnItem", "DestroyItem", "RegisterItem" })
 
-local spawnedItems = {}
+local spawnedItems: { { Position: Vector3, Id: number } } = {}
 
 local arenaFolder = workspace:WaitForChild("Arena") :: Folder
 
@@ -17,9 +18,9 @@ local id = 0
 local maxDistance = 5
 local minDistance = 3
 
-function ItemService.spawnBooster(position: Vector3) end
+function ItemService.SpawnBooster(position: Vector3) end
 
-function ItemService.explodeBoosters(position: Vector3, count: number)
+function ItemService.ExplodeBoosters(position: Vector3, count: number)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params.FilterDescendantsInstances = { arenaFolder }
@@ -46,6 +47,13 @@ function ItemService.explodeBoosters(position: Vector3, count: number)
 		Net:FireAll("SpawnItem", "Booster", id, position, newPosition)
 		table.insert(spawnedItems, { Position = newPosition, Id = id })
 	end
+end
+
+function ItemService.CleanUp()
+	for i, item in ipairs(spawnedItems) do
+		Net:FireAll("DestroyItem", item.Id)
+	end
+	spawnedItems = {}
 end
 
 function CheckItems(combatPlayers: { [Model]: CombatPlayer.CombatPlayer })
@@ -77,6 +85,15 @@ end
 function ItemService.Initialize(combatPlayers: { [Model]: CombatPlayer.CombatPlayer })
 	Players.PlayerAdded:Connect(function(player: Player)
 		-- TODO: register current items
+		LoadedService.IsClientLoadedPromise(player)
+			:Then(function()
+				for i, item in pairs(spawnedItems) do
+					Net:Fire(player, "RegisterItem", item.Id, item.Position)
+				end
+			end)
+			:Catch(function(err)
+				error(err)
+			end)
 	end)
 
 	CheckItems(combatPlayers)

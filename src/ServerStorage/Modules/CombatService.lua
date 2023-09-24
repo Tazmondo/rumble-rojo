@@ -246,7 +246,7 @@ function processHit(
 			Net:FireAll("PlayerKill", data)
 		end
 		local victimHRP = assert(victimCharacter:FindFirstChild("HumanoidRootPart")) :: BasePart
-		ItemService.explodeBoosters(victimHRP.Position, victimCombatPlayer.boosterCount + 1)
+		ItemService.ExplodeBoosters(victimHRP.Position, victimCombatPlayer.boosterCount + 1)
 	end
 end
 
