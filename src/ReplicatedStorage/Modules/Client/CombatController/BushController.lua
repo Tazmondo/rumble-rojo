@@ -52,11 +52,13 @@ function ModifyTransparency(character: Model, newValue: number)
 	end
 
 	for _, part in pairs(character:GetDescendants()) do
-		if part:IsA("BasePart") and (part.Transparency == 0 or transparencies[character][part] ~= nil) then -- Don't affect invisible parts like HRP
-			if save then
-				transparencies[character][part] = part.Transparency
+		if part:IsA("BasePart") then -- Don't affect invisible parts like HRP
+			if part.Transparency == 0 or transparencies[character][part] ~= nil then
+				if save then
+					transparencies[character][part] = part.Transparency
+				end
+				part.Transparency = newValue
 			end
-			part.Transparency = newValue
 
 			-- for hiding nametag
 			local billboard = part:FindFirstChildOfClass("BillboardGui")
