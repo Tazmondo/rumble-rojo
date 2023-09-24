@@ -49,8 +49,7 @@ function GetGameState()
 	end
 end
 
--- Player is optional as NPCs can be combatplayers
-function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
+function InitializeSelf(heroName: string, humanoid: Humanoid, player: Player?)
 	local self = setmetatable({}, CombatPlayer)
 
 	if not player then
@@ -97,6 +96,12 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 	self.scheduledReloads = 0
 	self.scheduledRegen = nil :: {}?
 
+	return self
+end
+
+-- Player is optional as NPCs can be combatplayers
+function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?): CombatPlayer
+	local self = InitializeSelf(heroName, humanoid, player)
 	if RunService:IsClient() then
 		NetClient:On(SYNCEVENT, function(func, ...)
 			self[func](self, ...)
@@ -342,7 +347,7 @@ function CombatPlayer.DealDamage(self: CombatPlayer, damage: number, targetChara
 end
 
 -- aim is an attacktype enum
-function CombatPlayer.SetAiming(self: CombatPlayer, aim: string)
+function CombatPlayer.SetAiming(self: CombatPlayer, aim: string?)
 	self.aiming = aim
 end
 
@@ -363,6 +368,6 @@ export type Attack = {
 	Data: HeroData.AbilityData,
 	-- HitPosition: Vector3?,
 }
-export type CombatPlayer = typeof(CombatPlayer.new(...)) & typeof(CombatPlayer)
+export type CombatPlayer = typeof(InitializeSelf(...))
 
 return CombatPlayer
