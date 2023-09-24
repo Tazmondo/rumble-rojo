@@ -4,28 +4,28 @@ local ItemService = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
+local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Red = require(ReplicatedStorage.Packages.Red)
 local Net = Red.Server("Items", { "SpawnItem", "DestroyItem" })
 
 local spawnedItems = {}
 
-local pickupRadius = 5
 local arenaFolder = workspace:WaitForChild("Arena") :: Folder
 
 local random = Random.new(os.clock())
 local id = 0
+local maxDistance = 5
+local minDistance = 3
 
 function ItemService.spawnBooster(position: Vector3) end
 
 function ItemService.explodeBoosters(position: Vector3, count: number)
-	local maxDistance = 5
-
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params.FilterDescendantsInstances = { arenaFolder }
 
 	for i = 1, count do
-		local randomDistance = random:NextNumber() * (maxDistance - 1) + 1
+		local randomDistance = random:NextNumber() * (maxDistance - minDistance) + minDistance
 		local randomDirection = (random:NextUnitVector() * Vector3.new(1, 0, 1)).Unit
 
 		local newPosition = position + randomDirection * randomDistance
@@ -59,7 +59,7 @@ function CheckItems(combatPlayers: { [Model]: CombatPlayer.CombatPlayer })
 				for i, character in ipairs(characters) do
 					local HRP = character:FindFirstChild("HRP") :: BasePart
 					if HRP then
-						if (HRP.Position - item.Position).Magnitude <= pickupRadius then
+						if (HRP.Position - item.Position).Magnitude <= Config.PickupRadius then
 							local combatPlayer =
 								assert(combatPlayers[character], "Combat player should not be nil here")
 

@@ -44,6 +44,9 @@ local Config = {
 	-- booster modifier multipliers
 	BoosterHealth = 1.1,
 	BoosterDamage = 1.1,
+
+	-- pickup radius for items
+	PickupRadius = 5,
 }
 
 return Config
