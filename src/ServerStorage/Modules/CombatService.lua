@@ -218,16 +218,18 @@ function processHit(
 		combatPlayer:ChargeSuper(1)
 	end
 	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
-	combatPlayer:DealDamage(attackDetails.Data.Damage, victimCharacter)
+	combatPlayer:DealDamage(attackDetails.Damage, victimCharacter)
+
+	combatPlayer:AddBooster(1)
 
 	-- Update Data
 	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)
-		data.Stats.DamageDealt += attackDetails.Data.Damage
+		data.Stats.DamageDealt += attackDetails.Damage
 	end)
 
 	-- Must be cast to any to prevent "generic subtype escaping scope" error whatever that means
 	local beforeState = victimCombatPlayer:GetState() :: any
-	victimCombatPlayer:TakeDamage(attackDetails.Data.Damage) -- Will update state to dead if this kills
+	victimCombatPlayer:TakeDamage(attackDetails.Damage) -- Will update state to dead if this kills
 	local afterState = victimCombatPlayer:GetState() :: any
 
 	local died = victimCombatPlayer:GetState() == "Dead" and beforeState ~= afterState

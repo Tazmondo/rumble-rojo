@@ -37,6 +37,10 @@ local Config = {
 	TrophyWin = 10,
 	TrophyKill = 2,
 	TrophyDeath = -2,
+
+	-- booster modifier multipliers
+	BoosterHealth = 1.1,
+	BoosterDamage = 1.1,
 }
 
 return Config

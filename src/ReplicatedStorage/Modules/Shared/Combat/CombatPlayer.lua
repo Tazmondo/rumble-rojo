@@ -67,6 +67,10 @@ function InitializeSelf(heroName: string, humanoid: Humanoid, player: Player?)
 	self.reloadSpeed = self.heroData.Attack.ReloadSpeed - LATENCYALLOWANCE
 	self.requiredSuperCharge = self.heroData.Super.Charge
 	self.superCharge = 0
+	self.boosterCount = 0
+
+	self.baseAttackDamage = self.heroData.Attack.Damage
+	self.baseSuperDamage = self.heroData.Super.Damage
 
 	self.character = assert(humanoid.Parent) :: Model
 	self.humanoid = humanoid
@@ -164,7 +168,7 @@ function CombatPlayer.ScheduleReload(self: CombatPlayer)
 end
 
 function CombatPlayer.Regen(self: CombatPlayer)
-	if self.state == "Dead" then
+	if self.state == "Dead" or self.health >= self.maxHealth then
 		return
 	end
 
@@ -255,12 +259,14 @@ function CombatPlayer.RegisterBullet(
 	attackSpeed: number,
 	attackData: HeroData.AbilityData
 )
+	local damage = self:GetAttackDamage(attackData.AbilityType)
 	self.attacks[attackId] = {
 		AttackId = attackId,
 		FiredTime = os.clock(),
 		FiredCFrame = attackCF,
 		Speed = attackSpeed,
 		Data = attackData,
+		Damage = damage,
 		HitPosition = nil,
 	}
 	task.delay(Config.MaxAttackTimeout, function()
@@ -277,7 +283,6 @@ end
 
 function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 	self.health = math.clamp(self.health - amount, 0, self.maxHealth)
-	self.humanoid.Health = self.health
 	self:Sync("TakeDamage", amount)
 	self.TookDamageSignal:Fire(amount)
 
@@ -305,8 +310,10 @@ function CombatPlayer.CanTakeDamage(self: CombatPlayer)
 end
 
 function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
-	self.maxHealth = newMaxHealth
-	self.health = math.clamp(self.health, 0, newMaxHealth)
+	local previousHealthPercentage = self.health / self.maxHealth
+
+	self.maxHealth = math.round(newMaxHealth) -- prevent decimals
+	self.health = math.clamp(self.maxHealth * previousHealthPercentage, 0, newMaxHealth)
 
 	self:ScheduleRegen(Config.InitialRegenTime)
 
@@ -351,6 +358,20 @@ function CombatPlayer.SetAiming(self: CombatPlayer, aim: string?)
 	self.aiming = aim
 end
 
+function CombatPlayer.AddBooster(self: CombatPlayer, count: number)
+	self.boosterCount += count
+
+	local baseHealth = self.heroData.Health
+
+	self:SetMaxHealth(baseHealth + (baseHealth * Config.BoosterHealth - baseHealth) * self.boosterCount)
+end
+
+function CombatPlayer.GetAttackDamage(self: CombatPlayer, attackType: "Attack" | "Super")
+	local baseDamage = if attackType == "Attack" then self.baseAttackDamage else self.baseSuperDamage
+
+	return math.round(baseDamage + (baseDamage * Config.BoosterDamage - baseDamage) * self.boosterCount)
+end
+
 function CombatPlayer.Destroy(self: CombatPlayer)
 	-- warn("CombatPlayer was destroyed, but this is undefined behaviour! Killing humanoid instead.")
 	-- self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
@@ -365,6 +386,7 @@ export type Attack = {
 	FiredTime: number,
 	FiredCFrame: CFrame,
 	Speed: number,
+	Damage: number,
 	Data: HeroData.AbilityData,
 	-- HitPosition: Vector3?,
 }
