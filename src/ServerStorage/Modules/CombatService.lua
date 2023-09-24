@@ -220,8 +220,6 @@ function processHit(
 	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
 	combatPlayer:DealDamage(attackDetails.Damage, victimCharacter)
 
-	combatPlayer:AddBooster(1)
-
 	-- Update Data
 	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)
 		data.Stats.DamageDealt += attackDetails.Damage
