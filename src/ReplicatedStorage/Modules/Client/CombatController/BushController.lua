@@ -13,6 +13,7 @@ local player = Players.LocalPlayer
 
 local registeredBushes: { [BasePart]: boolean } = {}
 local transparencies: { [Model]: { [BasePart]: number | boolean } } = {}
+local arenaFolder = workspace:WaitForChild("Arena") :: Folder
 
 local inCombat = false
 
@@ -90,6 +91,10 @@ function Render(dt: number)
 		local isPlayerCharacter = character == player.Character
 
 		for bush, data in pairs(registeredBushes) do
+			if not bush:IsDescendantOf(arenaFolder) then
+				-- Bushes that aren't active can be skipped
+				continue
+			end
 			if bushReset[bush] == nil then
 				bushReset[bush] = true
 			end
