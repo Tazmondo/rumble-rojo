@@ -274,8 +274,12 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 
 	local victimCombatPlayer = CombatPlayerData[victimCharacter]
 
-	local serverAttackRay = Ray.new(attackDetails.FiredCFrame.Position, attackDetails.FiredCFrame.LookVector)
-	local rayDiff = serverAttackRay.Unit:Distance(localTargetPosition)
+	-- flatten everything because the target can be at a different height to the initial firing position
+	local flatVector = Vector3.new(1, 0, 1)
+
+	local serverAttackRay =
+		Ray.new(attackDetails.FiredCFrame.Position * flatVector, attackDetails.FiredCFrame.LookVector * flatVector)
+	local rayDiff = serverAttackRay.Unit:Distance(localTargetPosition * flatVector)
 
 	-- Accounts for NaN case
 	if rayDiff ~= rayDiff then
@@ -318,8 +322,11 @@ function handleClientExplosionHit(
 	end
 	combatPlayer.attacks[attackId] = nil
 
-	local serverAttackRay = Ray.new(attackDetails.FiredCFrame.Position, attackDetails.FiredCFrame.LookVector)
-	local rayDiff = serverAttackRay.Unit:Distance(explosionCentre)
+	-- flatten everything because the target can be at a different height to the initial firing position
+	local flatVector = Vector3.new(1, 0, 1)
+	local serverAttackRay =
+		Ray.new(attackDetails.FiredCFrame.Position * flatVector, attackDetails.FiredCFrame.LookVector * flatVector)
+	local rayDiff = serverAttackRay.Unit:Distance(explosionCentre * flatVector)
 
 	-- Accounts for NaN case
 	if rayDiff ~= rayDiff then
