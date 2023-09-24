@@ -4,8 +4,8 @@ local CombatPlayer = require(script.Parent.CombatPlayer)
 local Enums = require(script.Parent.Enums)
 local NameTag = {}
 
-local nameTagTemplate = ReplicatedStorage.Assets.NameTag
-local lobbyNameTagTemplate = ReplicatedStorage.Assets.LobbyNameTag
+local nameTagTemplate = ReplicatedStorage.Assets.NameTag :: BillboardGui
+local lobbyNameTagTemplate = ReplicatedStorage.Assets.LobbyNameTag :: BillboardGui
 local haloTemplate: Part = ReplicatedStorage.Assets.VFX.General.Halo
 
 local SPINSPEED = 1.5 -- Seconds for full rotation
@@ -23,8 +23,12 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 
 	nameTag.name.nametag.PlayerName.Text = character.Name
 
+	-- I don't know why we need to do it like this, but it works
+	nameTag.ExtentsOffset = Vector3.zero
+	nameTag.ExtentsOffsetWorldSpace = Vector3.new(0, 4, 0)
+
 	task.spawn(function()
-		nameTag.Parent = character:WaitForChild("Head")
+		nameTag.Parent = character:WaitForChild("HumanoidRootPart")
 		halo.Parent = workspace
 		if RunService:IsServer() then
 			halo.Name = character.Name .. "ServerHalo"
@@ -104,7 +108,9 @@ function NameTag.LobbyInit(player: Player, character: Model, trophies: number)
 	nameTag.name.name.PlayerName.Text = player.DisplayName
 	nameTag.Trophies.TrophyCount.Text = trophies
 
-	nameTag.Parent = assert(character:FindFirstChild("Head"), "Character did not have head")
+	nameTag.ExtentsOffset = Vector3.zero
+	nameTag.ExtentsOffsetWorldSpace = Vector3.new(0, 3, 0)
+	nameTag.Parent = assert(character:FindFirstChild("HumanoidRootPart"), "Character did not have HRP")
 end
 
 return NameTag
