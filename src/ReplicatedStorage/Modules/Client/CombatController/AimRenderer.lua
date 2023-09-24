@@ -83,8 +83,8 @@ function AimRenderer.Disable(self: AimRenderer)
 	self.enabled = false
 end
 
-function AimRenderer.Update(self: AimRenderer, direction: Vector3, target: Vector3)
-	self.direction = direction
+function AimRenderer.Update(self: AimRenderer, direction: Vector3?, target: Vector3)
+	self.direction = direction or self.direction
 	self.target = target
 end
 
