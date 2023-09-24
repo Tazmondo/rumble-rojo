@@ -60,6 +60,40 @@ export type SuperData = BaseSuper & AttackType
 
 export type AbilityData = AttackData | SuperData
 
+-- to keep the system simple, chests are fully fledged combat players, they just can't attack and won't move.
+local ChestData: HeroData = {
+	Health = 1,
+	MovementSpeed = 0,
+	Description = "",
+	Offence = 0,
+	Defence = 0,
+	Attack = {
+		AbilityType = "Attack" :: "Attack",
+		Name = "",
+		Damage = 0,
+		Ammo = 0,
+		AmmoRegen = 0,
+		Range = 0,
+		ReloadSpeed = 0,
+
+		AttackType = "Shot" :: "Shot",
+		ProjectileSpeed = 0,
+	},
+	Super = {
+		AbilityType = "Super" :: "Super",
+		Name = "",
+		Charge = 0,
+		Damage = 0,
+		Range = 0,
+		Modifiers = {},
+
+		AttackType = "Shot" :: "Shot",
+		ProjectileSpeed = 0,
+	},
+}
+
+ChestData = table.freeze(ChestData)
+
 local HeroData: { [string]: HeroData } = {
 	Taz = {
 		Health = 3600,
@@ -133,4 +167,4 @@ local HeroData: { [string]: HeroData } = {
 -- Ensures we dont accidentally change any of the data in the table, as this would be a bug.
 HeroData = table.freeze(HeroData)
 
-return HeroData
+return { HeroData = HeroData, ChestData = ChestData }

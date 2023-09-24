@@ -65,7 +65,7 @@ function CombatClient.new(heroName: string): CombatClient
 	self.attemptingAttack = false
 	self.usingSuper = false
 
-	self.combatPlayer = self.janitor:Add(CombatPlayer.new(heroName, self.humanoid)) :: CombatPlayer.CombatPlayer
+	self.combatPlayer = self.janitor:Add(CombatPlayer.new(heroName, self.character)) :: CombatPlayer.CombatPlayer
 	self.combatCamera = self.janitor:Add(CombatCamera.new())
 	self.combatCamera:Enable()
 

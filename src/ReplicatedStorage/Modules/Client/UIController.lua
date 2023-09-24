@@ -310,7 +310,7 @@ function RenderHeroSelectScreen()
 		return
 	end
 
-	local heroData = HeroData[currentHeroName]
+	local heroData = HeroData.HeroData[currentHeroName]
 	if not heroData then
 		warn("Tried to get data for hero", currentHeroName, "but it didn't exist!")
 		return

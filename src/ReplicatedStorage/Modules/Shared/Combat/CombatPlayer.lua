@@ -49,14 +49,14 @@ function GetGameState()
 	end
 end
 
-function InitializeSelf(heroName: string, humanoid: Humanoid, player: Player?)
+function InitializeSelf(heroData: HeroData.HeroData, model: Model, player: Player?, object: boolean?)
 	local self = setmetatable({}, CombatPlayer)
 
 	if not player then
 		LATENCYALLOWANCE = 0
 	end
 
-	self.heroData = HeroData[heroName] :: HeroData.HeroData
+	self.heroData = heroData
 
 	self.maxHealth = self.heroData.Health
 	self.health = self.maxHealth
@@ -72,16 +72,22 @@ function InitializeSelf(heroName: string, humanoid: Humanoid, player: Player?)
 	self.baseAttackDamage = self.heroData.Attack.Damage
 	self.baseSuperDamage = self.heroData.Super.Damage
 
-	self.character = assert(humanoid.Parent) :: Model
-	self.humanoid = humanoid
-	self.humanoidData = { humanoid.MaxHealth, humanoid.WalkSpeed, humanoid.DisplayDistanceType } :: { any }
+	self.character = model
+	self.character:AddTag(Config.CombatPlayerTag)
 
-	self.humanoid.MaxHealth = self.maxHealth
-	self.humanoid.Health = self.health
-	self.humanoid.WalkSpeed = self.movementSpeed
-	self.humanoid:AddTag(Config.CombatPlayerTag)
-	self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-	self.humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	self.humanoid = model:FindFirstChildOfClass("Humanoid") :: Humanoid?
+	self.isObject = if object then true else false
+
+	if self.humanoid then
+		self.humanoidData =
+			{ self.humanoid.MaxHealth, self.humanoid.WalkSpeed, self.humanoid.DisplayDistanceType } :: { any }
+
+		self.humanoid.MaxHealth = self.maxHealth
+		self.humanoid.Health = self.health
+		self.humanoid.WalkSpeed = self.movementSpeed
+		self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+		self.humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	end
 
 	self.state = "Idle" :: State
 	self.lastAttackTime = 0 -- os.clock based
@@ -104,8 +110,10 @@ function InitializeSelf(heroName: string, humanoid: Humanoid, player: Player?)
 end
 
 -- Player is optional as NPCs can be combatplayers
-function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?): CombatPlayer
-	local self = InitializeSelf(heroName, humanoid, player)
+function CombatPlayer.new(heroName: string, model: Model, player: Player?): CombatPlayer
+	local heroData = assert(HeroData.HeroData[heroName], "Invalid hero name:", heroName)
+	local self = InitializeSelf(heroData, model, player)
+
 	if RunService:IsClient() then
 		NetClient:On(SYNCEVENT, function(func, ...)
 			self[func](self, ...)
@@ -116,22 +124,18 @@ function CombatPlayer.new(heroName: string, humanoid: Humanoid, player: Player?)
 end
 
 function CombatPlayer.GetAncestorWhichIsACombatPlayer(instance: Instance)
-	local humanoids = CollectionService:GetTagged(Config.CombatPlayerTag)
-	for _, humanoid in pairs(humanoids) do
-		if instance:IsDescendantOf(humanoid.Parent) then
-			return humanoid.Parent
+	local models = CollectionService:GetTagged(Config.CombatPlayerTag)
+	for _, model in pairs(models) do
+		if instance:IsDescendantOf(model) then
+			return model
 		end
 	end
 	return nil
 end
 
 function CombatPlayer.GetAllCombatPlayerCharacters(): { Model }
-	local out = {}
-	local humanoids = CollectionService:GetTagged(Config.CombatPlayerTag)
-	for _, humanoid in pairs(humanoids) do
-		table.insert(out, humanoid.Parent)
-	end
-	return out
+	local models = CollectionService:GetTagged(Config.CombatPlayerTag)
+	return models
 end
 
 function CombatPlayer.Sync(self: CombatPlayer, funcName, ...)
@@ -293,7 +297,9 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 	self:ScheduleRegen(Config.InitialRegenTime)
 
 	if self.health <= 0 then
-		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
+		if self.humanoid then
+			self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
+		end
 		self:ChangeState("Dead")
 	end
 end
@@ -304,7 +310,6 @@ function CombatPlayer.Heal(self: CombatPlayer, amount: number)
 	end
 
 	self.health = math.clamp(self.health + amount, 0, self.maxHealth)
-	self.humanoid.Health = self.health
 	self:Sync("Heal", amount)
 end
 
@@ -379,10 +384,12 @@ end
 function CombatPlayer.Destroy(self: CombatPlayer)
 	-- warn("CombatPlayer was destroyed, but this is undefined behaviour! Killing humanoid instead.")
 	-- self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
-	self.humanoid.MaxHealth, self.humanoid.WalkSpeed, self.humanoid.DisplayDistanceType =
-		table.unpack(self.humanoidData)
-	self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-	self.humanoid:RemoveTag(Config.CombatPlayerTag)
+	if self.humanoid then
+		self.humanoid.MaxHealth, self.humanoid.WalkSpeed, self.humanoid.DisplayDistanceType =
+			table.unpack(self.humanoidData)
+		self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+	end
+	self.character:RemoveTag(Config.CombatPlayerTag)
 end
 
 export type Attack = {

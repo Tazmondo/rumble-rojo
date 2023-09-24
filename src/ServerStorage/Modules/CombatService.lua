@@ -118,11 +118,12 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails):
 		return 0
 	end
 	local combatPlayer = CombatPlayerData[player.Character]
-	if not combatPlayer or not combatPlayer:CanAttack() then
+	if not combatPlayer then
 		return 0
 	end
 
 	if not combatPlayer:CanAttack() then
+		warn(player, "Tried to attack when they couldn't")
 		return combatPlayer.attackId
 	end
 
@@ -144,11 +145,12 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 	end
 
 	local combatPlayer = CombatPlayerData[player.Character]
-	if not combatPlayer or not combatPlayer:CanSuperAttack() then
+	if not combatPlayer then
 		return 0
 	end
 
 	if not combatPlayer:CanSuperAttack() then
+		warn(player, "Tried to super when they couldn't")
 		return combatPlayer.attackId
 	end
 	local superData = combatPlayer.heroData.Super :: HeroData.SuperData
@@ -408,9 +410,8 @@ function CombatService:SetupCombatPlayer(player: Player, heroName: string)
 	self = self :: CombatService
 	print("Setting up", player.Name, "as", heroName)
 	local char = assert(player.Character, "no character")
-	local humanoid = assert(char:FindFirstChildOfClass("Humanoid"), "no humanoid")
 
-	local combatPlayer = CombatPlayer.new(heroName, humanoid, player) :: CombatPlayer.CombatPlayer
+	local combatPlayer = CombatPlayer.new(heroName, char, player) :: CombatPlayer.CombatPlayer
 	CombatPlayerData[char] = combatPlayer
 
 	self:InitializeNameTag(char, combatPlayer, player)
@@ -544,7 +545,7 @@ function CombatService:Initialize()
 
 	for _, v in pairs(workspace:GetChildren()) do
 		if v.Name == "Rig" then
-			local combatPlayer = CombatPlayer.new("Frankie", v.Humanoid) :: CombatPlayer.CombatPlayer
+			local combatPlayer = CombatPlayer.new("Frankie", v) :: CombatPlayer.CombatPlayer
 			CombatPlayerData[v] = combatPlayer
 			self:InitializeNameTag(v, combatPlayer)
 		end
