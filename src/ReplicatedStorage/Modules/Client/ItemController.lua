@@ -133,7 +133,7 @@ end
 function CheckItems()
 	task.spawn(function()
 		while true do
-			task.wait(0.1)
+			task.wait()
 			if not inCombat then
 				return
 			end
