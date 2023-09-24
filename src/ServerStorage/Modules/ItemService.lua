@@ -7,9 +7,11 @@ local LoadedService = require(script.Parent.LoadedService)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Red = require(ReplicatedStorage.Packages.Red)
-local Net = Red.Server("Items", { "SpawnItem", "DestroyItem", "RegisterItem" })
+local Net = Red.Server("Items", { "SpawnItem", "DestroyItem", "RegisterItem", "CollectItem", "BeginAbsorb" })
 
-local spawnedItems: { { Position: Vector3, Id: number } } = {}
+local spawnedItems: { [number]: Item } = {}
+
+type Item = { Position: Vector3, Id: number, Collector: Player? }
 
 local arenaFolder = workspace:WaitForChild("Arena") :: Folder
 
@@ -17,6 +19,8 @@ local random = Random.new(os.clock())
 local id = 0
 local maxDistance = 5
 local minDistance = 3
+
+type CombatPlayers = { [Model]: CombatPlayer.CombatPlayer }
 
 function ItemService.SpawnBooster(position: Vector3) end
 
@@ -45,7 +49,7 @@ function ItemService.ExplodeBoosters(position: Vector3, count: number)
 
 		id += 1
 		Net:FireAll("SpawnItem", "Booster", id, position, newPosition)
-		table.insert(spawnedItems, { Position = newPosition, Id = id })
+		spawnedItems[id] = { Position = newPosition, Id = id }
 	end
 end
 
@@ -56,33 +60,62 @@ function ItemService.CleanUp()
 	spawnedItems = {}
 end
 
-function CheckItems(combatPlayers: { [Model]: CombatPlayer.CombatPlayer })
-	task.spawn(function()
-		while true do
-			task.wait(0.1)
+function HandleBeginAbsorb(combatPlayers: CombatPlayers, player: Player, id: number)
+	local item = spawnedItems[id]
 
-			for i, item in ipairs(spawnedItems) do
-				local characters = CombatPlayer.GetAllCombatPlayerCharacters()
+	if not player.Character or not item then
+		return
+	end
+	local combatPlayer = combatPlayers[player.Character]
+	if not combatPlayer then
+		return
+	end
+	local HRP = player.Character:FindFirstChild("HumanoidRootPart") :: BasePart
+	if not HRP then
+		return
+	end
 
-				for i, character in ipairs(characters) do
-					local HRP = character:FindFirstChild("HRP") :: BasePart
-					if HRP then
-						if (HRP.Position - item.Position).Magnitude <= Config.PickupRadius then
-							local combatPlayer =
-								assert(combatPlayers[character], "Combat player should not be nil here")
+	-- make sure exploiters dont pick up items from infinite range
+	-- this can be bypassed by teleporting to the item, but this can be stopped by anti-teleport checks
+	if (HRP.Position - item.Position).Magnitude > Config.PickupRadius + 5 then
+		-- since this is likely due to lag, get the client to replace the item again (as it will have assumed it to be picked up)
+		warn(player, "picked up item from too far away")
+		Net:Fire(player, "DestroyItem", item.Id)
+		Net:Fire(player, "RegisterItem", item.Id, item.Position)
+		return
+	end
 
-							combatPlayer:AddBooster(1)
-							Net:FireAll("DestroyItem", id, HRP.Position)
-							break
-						end
-					end
-				end
-			end
-		end
-	end)
+	item.Collector = player
+
+	Net:FireAllExcept(player, "CollectItem", id, HRP)
 end
 
-function ItemService.Initialize(combatPlayers: { [Model]: CombatPlayer.CombatPlayer })
+function HandleItemPickup(combatPlayers: CombatPlayers, player: Player, id: number)
+	local item = spawnedItems[id]
+
+	if not player.Character or not item then
+		return
+	end
+
+	if item.Collector ~= player then
+		return
+	end
+
+	local combatPlayer = combatPlayers[player.Character]
+	if not combatPlayer then
+		return
+	end
+	local HRP = player.Character:FindFirstChild("HumanoidRootPart") :: BasePart
+	if not HRP then
+		return
+	end
+
+	combatPlayer:AddBooster(1)
+	-- don't need to tell players to destroy item as that's part of the CollectItem call in the absorb handler
+	spawnedItems[id] = nil
+end
+
+function ItemService.Initialize(combatPlayers: CombatPlayers)
 	Players.PlayerAdded:Connect(function(player: Player)
 		-- TODO: register current items
 		LoadedService.IsClientLoadedPromise(player)
@@ -96,7 +129,13 @@ function ItemService.Initialize(combatPlayers: { [Model]: CombatPlayer.CombatPla
 			end)
 	end)
 
-	CheckItems(combatPlayers)
+	Net:On("BeginAbsorb", function(...)
+		HandleBeginAbsorb(combatPlayers, ...)
+	end)
+
+	Net:On("CollectItem", function(...)
+		HandleItemPickup(combatPlayers, ...)
+	end)
 end
 
 return ItemService

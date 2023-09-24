@@ -549,6 +549,8 @@ function CombatService:Initialize()
 			self:InitializeNameTag(v, combatPlayer)
 		end
 	end
+
+	ItemService.Initialize(CombatPlayerData)
 end
 
 CombatService.KillSignal = Red.Signal.new()

@@ -46,7 +46,7 @@ local Config = {
 	BoosterDamage = 1.1,
 
 	-- pickup radius for items
-	PickupRadius = 5,
+	PickupRadius = 8,
 }
 
 return Config
