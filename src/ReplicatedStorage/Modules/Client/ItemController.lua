@@ -3,6 +3,7 @@ local ItemController = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local RenderFunctions = require(script.Parent.RenderFunctions)
 local Red = require(ReplicatedStorage.Packages.Red)
 
 local Net = Red.Client("Items")
@@ -14,16 +15,35 @@ itemFolder.Name = "Items"
 
 local items = {}
 
+-- time taken for spawned items to jump from origin to new position
+local spawnTime = 0.5
+local itemHeight = 3.25
+
 function SpawnItem(type: string, id: number, origin: Vector3, position: Vector3)
 	print("Spawning item")
 	local item = boosterTemplate:Clone()
-	item:PivotTo(CFrame.new(origin))
 	item.Parent = itemFolder
 
 	items[id] = {
 		Position = position,
 		Item = item,
 	}
+
+	local startCF = CFrame.new(origin)
+	local endCF = CFrame.new(position)
+
+	item:PivotTo(startCF)
+
+	local timeTaken = 0
+	local render = RunService.PreRender:Connect(function(dt)
+		timeTaken += dt
+		local rotation = item:GetPivot().Rotation
+		item:PivotTo(RenderFunctions.RenderArc(startCF, endCF, itemHeight, timeTaken / spawnTime) * rotation)
+	end)
+
+	task.delay(spawnTime, function()
+		render:Disconnect()
+	end)
 end
 
 function Render(dt: number)
