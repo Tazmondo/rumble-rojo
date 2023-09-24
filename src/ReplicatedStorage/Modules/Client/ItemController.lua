@@ -13,7 +13,7 @@ local boosterTemplate = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("B
 local itemFolder = Instance.new("Folder", workspace)
 itemFolder.Name = "Items"
 
-local items = {}
+local spawnedItems = {}
 
 -- time taken for spawned items to jump from origin to new position
 local spawnTime = 1.5
@@ -48,7 +48,7 @@ function RegisterItem(id: number, position: Vector3)
 	local item = boosterTemplate:Clone()
 	item.Parent = itemFolder
 
-	items[id] = {
+	spawnedItems[id] = {
 		Position = position,
 		Item = item,
 	}
@@ -56,7 +56,7 @@ function RegisterItem(id: number, position: Vector3)
 end
 
 function Render(dt: number)
-	for id, item in pairs(items) do
+	for id, item in pairs(spawnedItems) do
 		item.Item:PivotTo(item.Item:GetPivot() * CFrame.Angles(0, dt * 1, 0))
 	end
 end
