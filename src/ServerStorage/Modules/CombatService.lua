@@ -217,7 +217,7 @@ function processHit(
 	if not victimCombatPlayer:CanTakeDamage() then
 		return
 	end
-	if attackDetails.Data.AbilityType == Enums.AbilityType.Attack then
+	if attackDetails.Data.AbilityType == Enums.AbilityType.Attack and victimCombatPlayer:CanGiveSuperCharge() then
 		combatPlayer:ChargeSuper(1)
 	end
 	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
@@ -247,7 +247,9 @@ function processHit(
 			CombatService.KillSignal:Fire(data)
 			Net:FireAll("PlayerKill", data)
 		end
-		local victimHRP = assert(victimCharacter:FindFirstChild("HumanoidRootPart")) :: BasePart
+		local victimHRP = (
+			victimCharacter:FindFirstChild("box") or victimCharacter:FindFirstChild("HumanoidRootPart")
+		) :: BasePart
 		ItemService.ExplodeBoosters(victimHRP.Position, victimCombatPlayer.boosterCount + 1)
 	end
 end
@@ -505,6 +507,33 @@ for _, gui in pairs(starterGuis) do
 	gui.Parent = script
 end
 
+function CombatService.RegisterChest(chest: Model)
+	local lid = chest:FindFirstChild("lid") :: BasePart
+
+	local combatPlayer = CombatPlayer.newChest(2000, chest)
+	CombatPlayerData[chest] = combatPlayer
+
+	local nameTag = NameTag.Init(chest, combatPlayer, nil, lid, true)
+
+	combatPlayer.DiedSignal:Connect(function()
+		nameTag:Destroy()
+		combatPlayer:Destroy()
+		lid.Anchored = false
+		lid:SetNetworkOwner(nil)
+		-- lid.CanCollide = false
+		-- lid.CanTouch = false
+		-- lid.CanQuery = false
+
+		lid.AssemblyLinearVelocity = (
+			CFrame.Angles(math.rad(90), 0, Random.new():NextNumber() * 2 * math.pi)
+			* CFrame.Angles(-math.rad(30), 0, 0)
+		).LookVector * 150
+
+		task.wait(1)
+		chest:Destroy()
+	end)
+end
+
 function CombatService:LoadPlayerGuis(player: Player)
 	-- This function is necessary as startergui is only cloned into playergui when character spawns, but we take control of character spawning.
 	for _, gui in pairs(starterGuis) do
@@ -518,7 +547,7 @@ function CombatService:PlayerAdded(player: Player)
 	self:LoadPlayerGuis(player)
 
 	if RunService:IsStudio() then
-		PlayersInCombat[player] = "Taz"
+		PlayersInCombat[player] = "Frankie"
 	end
 
 	DataService.PromiseLoad(player):Then(function(resolve)
@@ -555,6 +584,8 @@ function CombatService:Initialize()
 			local combatPlayer = CombatPlayer.new("Frankie", v) :: CombatPlayer.CombatPlayer
 			CombatPlayerData[v] = combatPlayer
 			self:InitializeNameTag(v, combatPlayer)
+		elseif v.Name == "Chest" then
+			CombatService.RegisterChest(v)
 		end
 	end
 

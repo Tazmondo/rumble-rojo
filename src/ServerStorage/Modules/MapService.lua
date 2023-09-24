@@ -1,5 +1,9 @@
 --!strict
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CombatService = require(script.Parent.CombatService)
+local ItemService = require(script.Parent.ItemService)
+local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local ServerConfig = require(script.Parent.ServerConfig)
 local Red = require(ReplicatedStorage.Packages.Red)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
@@ -22,6 +26,11 @@ local inactiveMapCFrame = activeMapCFrame * CFrame.new(0, -50, 0)
 
 local loadedFolder = nil
 local map = nil
+
+local savedChests: { [Model]: Instance } = {}
+local temporaryChests: { Model } = {}
+local chestFolder = Instance.new("Folder", ReplicatedStorage)
+chestFolder.Name = "ChestFolder"
 
 -- functions
 local function GetRandomMap(): Model
@@ -60,16 +69,50 @@ function MoveMapDown()
 	end)
 end
 
-local function LoadMap(storedMap: Model)
+function RegisterChests()
+	if not MapService:IsLoaded() then
+		warn("Tried to register chests without a map")
+		return
+	end
+	local chests = CollectionService:GetTagged(Config.ChestTag)
+	for i, chest: Model in ipairs(chests) do
+		if chest:IsDescendantOf(map) then
+			savedChests[chest] = assert(chest.Parent)
+
+			local newChest = chest:Clone()
+			newChest.Parent = chest.Parent
+			CombatService.RegisterChest(newChest)
+
+			chest.Parent = chestFolder
+		end
+	end
+end
+
+function RestoreChests()
+	for i, chest in ipairs(temporaryChests) do
+		chest:Destroy()
+	end
+	for chest, parent in pairs(savedChests) do
+		chest.Parent = parent
+	end
+	temporaryChests = {}
+	savedChests = {}
+end
+
+function LoadMap(storedMap: Model)
 	map = storedMap
+	RegisterChests()
+
 	loadedFolder = map.Parent
 
 	map.Parent = activeMapFolder
 	map:PivotTo(inactiveMapCFrame)
 end
 
-local function UnloadMap()
+function UnloadMap()
 	map.Parent = loadedFolder
+	RestoreChests()
+
 	loadedFolder = nil
 	map = nil
 end

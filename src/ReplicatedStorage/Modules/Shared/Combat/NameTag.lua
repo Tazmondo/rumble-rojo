@@ -10,12 +10,16 @@ local haloTemplate: Part = ReplicatedStorage.Assets.VFX.General.Halo
 
 local SPINSPEED = 1.5 -- Seconds for full rotation
 
-function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer, hide: Player?)
+function NameTag.Init(
+	character: Model,
+	combatPlayer: CombatPlayer.CombatPlayer,
+	hide: Player?,
+	anchor: BasePart?,
+	isObject: boolean?
+)
 	local nameTag = nameTagTemplate:Clone()
 	local halo = haloTemplate:Clone()
 	assert(character.Parent, "Character has not been parented to workspace yet!")
-	local HRP = assert(character:FindFirstChild("HumanoidRootPart"), "Character did not have a humanoidrootpart")
-	local humanoid = assert(character:FindFirstChild("Humanoid"), "Character did not have a humanoid")
 
 	if hide then
 		nameTag.PlayerToHideFrom = hide
@@ -24,11 +28,17 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 	nameTag.name.nametag.PlayerName.Text = character.Name
 
 	-- I don't know why we need to do it like this, but it works
-	nameTag.ExtentsOffset = Vector3.zero
-	nameTag.ExtentsOffsetWorldSpace = Vector3.new(0, 4, 0)
+	local offset = Vector3.new(0, 4, 0)
+	if isObject then
+		nameTag.ExtentsOffsetWorldSpace = Vector3.zero
+		nameTag.ExtentsOffset = offset
+	else
+		nameTag.ExtentsOffset = Vector3.zero
+		nameTag.ExtentsOffsetWorldSpace = offset
+	end
 
 	task.spawn(function()
-		nameTag.Parent = character:WaitForChild("HumanoidRootPart")
+		nameTag.Parent = anchor or character:WaitForChild("HumanoidRootPart")
 		halo.Parent = workspace
 		if RunService:IsServer() then
 			halo.Name = character.Name .. "ServerHalo"
@@ -70,30 +80,34 @@ function NameTag.Init(character: Model, combatPlayer: CombatPlayer.CombatPlayer,
 			local colour2 = Color3.fromHSV(healthRatio * 88 / 255, 197 / 255, 158 / 255)
 			healthBar.UIGradient.Color = ColorSequence.new(colour1, colour2)
 
-			if RunService:IsClient() then
-				local serverHalo = workspace:FindFirstChild(character.Name .. "ServerHalo")
-				if serverHalo then
-					serverHalo:Destroy()
+			if not isObject then
+				if RunService:IsClient() then
+					local serverHalo = workspace:FindFirstChild(character.Name .. "ServerHalo")
+					if serverHalo then
+						serverHalo:Destroy()
+					end
 				end
-			end
 
-			local superAvailable = combatPlayer:CanSuperAttack()
-			local aiming = combatPlayer.aiming
-			if not superAvailable then
-				halo.Decal.Transparency = 1
-			else
-				halo.Decal.Transparency = 0
-				if aiming == Enums.AbilityType.Super then
-					halo.Decal.Color3 = Color3.fromHex("#ebb800")
+				local superAvailable = combatPlayer:CanSuperAttack()
+				local aiming = combatPlayer.aiming
+				if not superAvailable then
+					halo.Decal.Transparency = 1
 				else
-					halo.Decal.Color3 = Color3.fromHex("#619cf5")
+					halo.Decal.Transparency = 0
+					if aiming == Enums.AbilityType.Super then
+						halo.Decal.Color3 = Color3.fromHex("#ebb800")
+					else
+						halo.Decal.Color3 = Color3.fromHex("#619cf5")
+					end
 				end
-			end
+				local HRP = character:FindFirstChild("HumanoidRootPart")
+				local humanoid = character:FindFirstChild("Humanoid")
 
-			halo.CFrame = CFrame.new(HRP.Position)
-				* CFrame.new(0, -humanoid.HipHeight - HRP.Size.Y / 2 + 0.2, 0)
-				* halo.CFrame.Rotation
-				* CFrame.Angles(0, math.pi * 2 * dt / SPINSPEED, 0)
+				halo.CFrame = CFrame.new(HRP.Position)
+					* CFrame.new(0, -humanoid.HipHeight - HRP.Size.Y / 2 + 0.2, 0)
+					* halo.CFrame.Rotation
+					* CFrame.Angles(0, math.pi * 2 * dt / SPINSPEED, 0)
+			end
 		end
 
 		-- Since it's not parented to the character

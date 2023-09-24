@@ -101,6 +101,7 @@ function InitializeSelf(heroData: HeroData.HeroData, model: Model, player: Playe
 
 	self.DamageDealtSignal = Signal.new()
 	self.TookDamageSignal = Signal.new()
+	self.DiedSignal = Signal.new()
 
 	self.scheduledChange = nil :: {}? -- We use a table so if it updates we can detect and cancel the change
 	self.scheduledReloads = 0
@@ -119,6 +120,15 @@ function CombatPlayer.new(heroName: string, model: Model, player: Player?): Comb
 			self[func](self, ...)
 		end)
 	end
+
+	return self :: CombatPlayer
+end
+
+function CombatPlayer.newChest(health: number, model: Model): CombatPlayer
+	local heroData = HeroData.ChestData
+	local self = InitializeSelf(heroData, model, nil, true)
+	self.maxHealth = health
+	self.health = health
 
 	return self :: CombatPlayer
 end
@@ -176,7 +186,7 @@ function CombatPlayer.ScheduleReload(self: CombatPlayer)
 end
 
 function CombatPlayer.Regen(self: CombatPlayer)
-	if self.state == "Dead" or self.health >= self.maxHealth then
+	if not self:CanRegen() then
 		return
 	end
 
@@ -187,6 +197,10 @@ function CombatPlayer.Regen(self: CombatPlayer)
 	if self.health < self.maxHealth then
 		self:ScheduleRegen(Config.RegenCooldown)
 	end
+end
+
+function CombatPlayer.CanRegen(self: CombatPlayer)
+	return not self.isObject and self.state ~= "Dead" and self.health < self.maxHealth
 end
 
 function CombatPlayer.ScheduleRegen(self: CombatPlayer, delay)
@@ -236,7 +250,7 @@ end
 
 function CombatPlayer:AttackingEnabled()
 	self = self :: CombatPlayer
-	return (GetGameState() ~= "BattleStarting" or RunService:IsStudio())
+	return (GetGameState() ~= "BattleStarting" or RunService:IsStudio()) and not self.isObject
 end
 
 function CombatPlayer.CanAttack(self: CombatPlayer)
@@ -301,6 +315,7 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 			self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 		end
 		self:ChangeState("Dead")
+		self.DiedSignal:Fire()
 	end
 end
 
@@ -339,6 +354,10 @@ function CombatPlayer.ChargeSuper(self: CombatPlayer, amount: number)
 	end
 
 	self:Sync("ChargeSuper", amount)
+end
+
+function CombatPlayer.CanGiveSuperCharge(self: CombatPlayer)
+	return not self.isObject and not self:IsDead()
 end
 
 function CombatPlayer.CanSuperAttack(self: CombatPlayer)
@@ -384,12 +403,12 @@ end
 function CombatPlayer.Destroy(self: CombatPlayer)
 	-- warn("CombatPlayer was destroyed, but this is undefined behaviour! Killing humanoid instead.")
 	-- self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
+	self.character:RemoveTag(Config.CombatPlayerTag)
 	if self.humanoid then
 		self.humanoid.MaxHealth, self.humanoid.WalkSpeed, self.humanoid.DisplayDistanceType =
 			table.unpack(self.humanoidData)
 		self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
 	end
-	self.character:RemoveTag(Config.CombatPlayerTag)
 end
 
 export type Attack = {
