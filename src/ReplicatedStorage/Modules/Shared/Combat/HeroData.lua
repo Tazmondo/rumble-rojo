@@ -130,4 +130,7 @@ local HeroData: { [string]: HeroData } = {
 	},
 }
 
+-- Ensures we dont accidentally change any of the data in the table, as this would be a bug.
+HeroData = table.freeze(HeroData)
+
 return HeroData
