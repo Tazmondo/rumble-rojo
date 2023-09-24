@@ -18,6 +18,9 @@ local Config = {
 	-- Tag used to register bushes
 	BushTag = "CombatBush",
 
+	-- Tag used to register chests
+	ChestTag = "CombatChest",
+
 	-- Random shotgun spread to apply in degrees on either side (value of 2 means between -2 and 2)
 	ShotgunRandomSpread = 2,
 

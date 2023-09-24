@@ -144,6 +144,10 @@ function CombatPlayer.GetState(self: CombatPlayer)
 	return self.state
 end
 
+function CombatPlayer.IsDead(self: CombatPlayer)
+	return self.state == "Dead"
+end
+
 function CombatPlayer.Reload(self: CombatPlayer)
 	if RunService:IsClient() then
 		SoundController:PlayGeneralSound("ReloadAmmo")

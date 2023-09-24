@@ -15,6 +15,7 @@ local StarterGui = game:GetService("StarterGui")
 
 local LoadedService = require(script.Parent.LoadedService)
 local DataService = require(script.Parent.DataService)
+local ItemService = require(script.Parent.ItemService)
 local SoundService = require(script.Parent.SoundService)
 
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
@@ -244,6 +245,8 @@ function processHit(
 			CombatService.KillSignal:Fire(data)
 			Net:FireAll("PlayerKill", data)
 		end
+		local victimHRP = assert(victimCharacter:FindFirstChild("HumanoidRootPart")) :: BasePart
+		ItemService.explodeBoosters(victimHRP.Position, victimCombatPlayer.boosterCount + 1)
 	end
 end
 
