@@ -16,18 +16,13 @@ itemFolder.Name = "Items"
 local items = {}
 
 -- time taken for spawned items to jump from origin to new position
-local spawnTime = 0.5
-local itemHeight = 3.25
+local spawnTime = 1.5
+local itemHeight = 2.5
 
 function SpawnItem(type: string, id: number, origin: Vector3, position: Vector3)
 	print("Spawning item")
-	local item = boosterTemplate:Clone()
-	item.Parent = itemFolder
 
-	items[id] = {
-		Position = position,
-		Item = item,
-	}
+	local item = RegisterItem(id, position)
 
 	local startCF = CFrame.new(origin)
 	local endCF = CFrame.new(position)
@@ -38,12 +33,26 @@ function SpawnItem(type: string, id: number, origin: Vector3, position: Vector3)
 	local render = RunService.PreRender:Connect(function(dt)
 		timeTaken += dt
 		local rotation = item:GetPivot().Rotation
-		item:PivotTo(RenderFunctions.RenderArc(startCF, endCF, itemHeight, timeTaken / spawnTime) * rotation)
+
+		local alpha = timeTaken / spawnTime
+
+		item:PivotTo(RenderFunctions.RenderArc(startCF, endCF, itemHeight, alpha, true) * rotation)
 	end)
 
 	task.delay(spawnTime, function()
 		render:Disconnect()
 	end)
+end
+
+function RegisterItem(id: number, position: Vector3)
+	local item = boosterTemplate:Clone()
+	item.Parent = itemFolder
+
+	items[id] = {
+		Position = position,
+		Item = item,
+	}
+	return item
 end
 
 function Render(dt: number)
