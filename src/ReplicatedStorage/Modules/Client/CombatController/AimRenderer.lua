@@ -139,9 +139,16 @@ function AimRenderer.StartRendering(self: AimRenderer)
 		if self.targetedAimPart then
 			local data = self.attackData :: HeroData.AbilityData & HeroData.ArcedData
 
-			-- Position at target, but raised a little bit to prevent z-fighting with ground
-			self.targetedAimPart.CFrame =
-				CFrame.lookAt(self.target + Vector3.new(0, 0.1, 0), self.target + self.direction)
+			local XYVector = (self.target - self.HRP.Position) * Vector3.new(1, 0, 1)
+
+			-- Stop target from going outside of range
+			local XYDistance = math.min(data.Range - data.Radius, XYVector.Magnitude)
+
+			local newVector = XYVector.Unit * XYDistance
+				+ Vector3.new(self.HRP.Position.X, self.target.Y, self.HRP.Position.Z)
+
+			-- lift above ground to remove z fighting
+			self.targetedAimPart.CFrame = CFrame.new(newVector + Vector3.new(0, 0.1, 0))
 
 			self.targetedAimPart.Size = Vector3.new(targetWidth, 0, targetDepth)
 
