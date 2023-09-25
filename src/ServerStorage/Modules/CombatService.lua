@@ -11,6 +11,7 @@ local CombatService = {}
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
 local StarterGui = game:GetService("StarterGui")
 
 local LoadedService = require(script.Parent.LoadedService)
@@ -546,7 +547,7 @@ function CombatService:PlayerAdded(player: Player)
 
 	self:LoadPlayerGuis(player)
 
-	if RunService:IsStudio() then
+	if RunService:IsStudio() and ServerScriptService:GetAttribute("combat") then
 		PlayersInCombat[player] = "Frankie"
 	end
 
