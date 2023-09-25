@@ -108,7 +108,9 @@ function CreateAttackProjectile(
 
 	TriggerAllDescendantParticleEmitters(pelletPart)
 
-	local projectileTime = attackData.Range / speed
+	local projectileTime = (attackData.Range - 1 - pelletPart.Size.Z / 2) / speed
+
+	-- assumes physics doesnt drop any frames, which could result in range being reduced when laggy
 	Debris:AddItem(pelletPart, projectileTime)
 
 	local hitbox = RaycastHitbox.new(pelletPart)
