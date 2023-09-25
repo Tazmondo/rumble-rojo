@@ -7,9 +7,10 @@ local MapController = {}
 
 local Net = Red.Client("Map")
 
+local Add, Cleanup
+
 function MoveMap(map: Model, newCF: CFrame, oldCF: CFrame, tweenTime: number)
-	task.wait(1)
-	local Add, Cleanup = Red.Bin()
+	Add, Cleanup = Red.Bin()
 
 	local mapStart = map:GetPivot()
 
@@ -24,13 +25,21 @@ function MoveMap(map: Model, newCF: CFrame, oldCF: CFrame, tweenTime: number)
 		)
 		if os.clock() - start > tweenTime then
 			Cleanup()
-			return
+			map:PivotTo(newCF)
 		end
 	end))
 end
 
+function ForceMoveMap(map: Model, newCF: CFrame)
+	if Cleanup then
+		Cleanup()
+	end
+	map:PivotTo(newCF)
+end
+
 function MapController:Initialize()
 	Net:On("MoveMap", MoveMap)
+	Net:On("ForceMoveMap", ForceMoveMap)
 end
 
 MapController:Initialize()

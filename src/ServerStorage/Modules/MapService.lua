@@ -54,8 +54,9 @@ end
 local function MoveMapUp()
 	return Red.Promise.new(function(resolve)
 		Net:FireAll("MoveMap", map, activeMapCFrame, inactiveMapCFrame, MAPTRANSITIONTIME)
-		task.wait(MAPTRANSITIONTIME + 0.25)
+		task.wait(MAPTRANSITIONTIME + 0.5)
 		map:PivotTo(activeMapCFrame)
+		Net:Fire("ForceMoveMap", activeMapCFrame)
 		resolve()
 	end)
 end
@@ -63,8 +64,9 @@ end
 function MoveMapDown()
 	return Red.Promise.new(function(resolve)
 		Net:FireAll("MoveMap", map, inactiveMapCFrame, activeMapCFrame, MAPTRANSITIONTIME)
-		task.wait(MAPTRANSITIONTIME + 0.25)
+		task.wait(MAPTRANSITIONTIME + 0.5)
 		map:PivotTo(inactiveMapCFrame)
+		Net:Fire("ForceMoveMap", inactiveMapCFrame)
 		resolve()
 	end)
 end
@@ -82,6 +84,7 @@ function RegisterChests()
 			local newChest = chest:Clone()
 			newChest.Parent = chest.Parent
 			CombatService.RegisterChest(newChest)
+			table.insert(temporaryChests, newChest)
 
 			chest.Parent = chestFolder
 		end
@@ -101,16 +104,17 @@ end
 
 function LoadMap(storedMap: Model)
 	map = storedMap
+	map:PivotTo(inactiveMapCFrame)
 	RegisterChests()
 
 	loadedFolder = map.Parent
 
 	map.Parent = activeMapFolder
-	map:PivotTo(inactiveMapCFrame)
 end
 
 function UnloadMap()
 	map.Parent = loadedFolder
+	map:PivotTo(inactiveMapCFrame)
 	RestoreChests()
 
 	loadedFolder = nil
