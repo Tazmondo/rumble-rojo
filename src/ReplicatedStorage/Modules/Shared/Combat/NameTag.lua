@@ -4,7 +4,8 @@ local CombatPlayer = require(script.Parent.CombatPlayer)
 local Enums = require(script.Parent.Enums)
 local NameTag = {}
 
-local nameTagTemplate = ReplicatedStorage.Assets.NameTag :: BillboardGui
+local enemyNameTagTemplate = ReplicatedStorage.Assets.EnemyNameTag :: BillboardGui
+local friendlyNameTagTemplate = ReplicatedStorage.Assets.FriendlyNameTag :: BillboardGui
 local lobbyNameTagTemplate = ReplicatedStorage.Assets.LobbyNameTag :: BillboardGui
 local haloTemplate: Part = ReplicatedStorage.Assets.VFX.General.Halo
 
@@ -17,7 +18,7 @@ function NameTag.Init(
 	anchor: BasePart?,
 	isObject: boolean?
 )
-	local nameTag = nameTagTemplate:Clone()
+	local nameTag = if RunService:IsClient() then friendlyNameTagTemplate:Clone() else enemyNameTagTemplate:Clone()
 	local halo = haloTemplate:Clone()
 	assert(character.Parent, "Character has not been parented to workspace yet!")
 
@@ -30,11 +31,11 @@ function NameTag.Init(
 	-- I don't know why we need to do it like this, but it works
 	local offset = Vector3.new(0, 4, 0)
 	if isObject then
-		nameTag.ExtentsOffsetWorldSpace = Vector3.zero
-		nameTag.ExtentsOffset = offset
+		nameTag.StudsOffsetWorldSpace = Vector3.zero
+		nameTag.StudsOffset = offset
 	else
-		nameTag.ExtentsOffset = Vector3.zero
-		nameTag.ExtentsOffsetWorldSpace = offset
+		nameTag.StudsOffset = Vector3.zero
+		nameTag.StudsOffsetWorldSpace = offset
 	end
 
 	task.spawn(function()
@@ -44,7 +45,6 @@ function NameTag.Init(
 			halo.Name = character.Name .. "ServerHalo"
 
 			-- Hide ammo bar from other players, only yours is visible
-			nameTag.stats.ammo.Visible = false
 		else
 			nameTag.stats.ammo.Visible = true
 		end
@@ -55,11 +55,13 @@ function NameTag.Init(
 				break
 			end
 
-			for i = 1, 3 do
-				local individualAmmoBar = nameTag.stats.ammo:FindFirstChild("Ammo" .. i)
+			if RunService:IsClient() then
+				for i = 1, 3 do
+					local individualAmmoBar = nameTag.stats.ammo:FindFirstChild("Ammo" .. i)
 
-				if individualAmmoBar then
-					individualAmmoBar.Visible = i <= combatPlayer.ammo
+					if individualAmmoBar then
+						individualAmmoBar.Visible = i <= combatPlayer.ammo
+					end
 				end
 			end
 			nameTag.stats.healthnumber.Text = combatPlayer.health
@@ -118,6 +120,9 @@ end
 
 function NameTag.LobbyInit(player: Player, character: Model, trophies: number)
 	local nameTag = lobbyNameTagTemplate:Clone() :: BillboardGui
+
+	local hum = assert(character:FindFirstChildOfClass("Humanoid"))
+	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 
 	nameTag.name.name.PlayerName.Text = player.DisplayName
 	nameTag.Trophies.TrophyCount.Text = trophies
