@@ -112,14 +112,14 @@ local HeroData: { [string]: HeroData } = {
 
 			AttackType = "Shotgun" :: "Shotgun",
 			ShotCount = 10,
-			Angle = 20,
+			Angle = 25,
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 		},
 		Super = {
 			AbilityType = "Super" :: "Super",
 			Name = "Super Shell",
-			Charge = 7,
-			Damage = 330,
+			Charge = 10,
+			Damage = 300,
 			Range = Enums.AttackRange.Short,
 			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
 
@@ -131,17 +131,17 @@ local HeroData: { [string]: HeroData } = {
 	},
 	Frankie = {
 		Health = 4000,
-		MovementSpeed = Enums.MovementSpeed.Fast,
+		MovementSpeed = Enums.MovementSpeed.Normal,
 		Description = "Frankie is a boss *****. Guy tosses mad water balloons and mushrooms.",
 		Offence = 2,
 		Defence = 4,
 		Attack = {
 			AbilityType = "Attack" :: "Attack",
 			Name = "Energy Ball",
-			Damage = 750,
+			Damage = 800,
 			Ammo = 3,
-			AmmoRegen = 1.5,
-			Range = Enums.AttackRange.Short,
+			AmmoRegen = 2,
+			Range = Enums.AttackRange.Short, -- to account for size of projectile
 			ReloadSpeed = 0.5,
 
 			AttackType = "Shot" :: "Shot",
@@ -150,15 +150,15 @@ local HeroData: { [string]: HeroData } = {
 		Super = {
 			AbilityType = "Super" :: "Super",
 			Name = "Plasma Grenade",
-			Charge = 2,
-			Damage = 1500,
+			Charge = 4,
+			Damage = 2000,
 			Range = Enums.AttackRange.MediumLarge,
 			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
 
 			AttackType = "Arced" :: "Arced",
-			ProjectileSpeed = 100,
+			ProjectileSpeed = 90,
 			Height = Enums.ArcHeight.Low,
-			TimeToDetonate = 0.5,
+			TimeToDetonate = 0.6,
 			Radius = Enums.Radius.Small,
 		},
 	},
