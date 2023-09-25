@@ -137,7 +137,7 @@ function GetPartsInExplosion(radius: number, position: Vector3)
 	local cylinder = cylinderTemplate:Clone()
 	cylinder.Size = Vector3.new(10, radius * 2, radius * 2)
 	cylinder.Position = position
-	cylinder.Transparency = if RunService:IsStudio() then 0.8 else 1
+	cylinder.Transparency = if RunService:IsStudio() then 0.95 else 1
 	cylinder.Color = Color3.new(1.000000, 0.619608, 0.054902)
 	cylinder.Parent = partFolder
 

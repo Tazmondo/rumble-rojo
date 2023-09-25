@@ -156,7 +156,7 @@ local HeroData: { [string]: HeroData } = {
 			Name = "Plasma Grenade",
 			Charge = 4,
 			Damage = 2000,
-			Range = Enums.AttackRange.MediumLarge,
+			Range = Enums.AttackRange.Medium,
 			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
 
 			AttackType = "Arced" :: "Arced",
