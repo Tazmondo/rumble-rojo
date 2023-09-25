@@ -8,6 +8,8 @@ local HeroData = require(script.Parent.HeroData)
 
 local AttackLogic = {}
 
+local arenaFolder = workspace:WaitForChild("Arena")
+
 type IdFunction = () -> number
 
 function AttackLogic.MakeAttack(
@@ -40,7 +42,7 @@ function AttackLogic.MakeAttack(
 		assert(target, "Tried to fire arced attack without a target!")
 		local attackData = attackData :: HeroData.ArcedData & HeroData.AbilityData
 
-		return AttackLogic.Arced(origin, idFunction(), target)
+		return AttackLogic.Arced(origin, idFunction(), target, attackData.ProjectileSpeed)
 	else
 		error("Invalid shot type provided " .. attackData.AttackType)
 	end
@@ -100,13 +102,25 @@ export type ShotgunDetails = {
 	} },
 }
 
--- constant: distance, velocity, initial height, gravity
--- to calculate: fire angle
-function AttackLogic.Arced(origin: CFrame, id: number, target: Vector3): ArcDetails
+function AttackLogic.Arced(origin: CFrame, id: number, target: Vector3, speed: number): ArcDetails
+	local timeToLand = (target - origin.Position).Magnitude / speed
+
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { arenaFolder }
+
+	-- make sure target is on the ground
+	local groundCast = workspace:Raycast(target + Vector3.new(0, 30, 0), Vector3.new(0, -60, 0), params)
+
+	if groundCast then
+		target = groundCast.Position
+	end
+
 	return {
 		origin = origin,
 		id = id or 1,
 		target = target,
+		timeToLand = timeToLand,
 	}
 end
 
@@ -114,6 +128,7 @@ export type ArcDetails = {
 	origin: CFrame,
 	id: number,
 	target: Vector3,
+	timeToLand: number,
 }
 
 export type AttackDetails = ShotDetails | ShotgunDetails

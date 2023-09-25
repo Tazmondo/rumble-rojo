@@ -4,6 +4,7 @@
 local Enums = require(script.Parent.Enums)
 
 export type HeroData = {
+	Name: string,
 	Health: number,
 	MovementSpeed: number,
 	Description: string,
@@ -62,6 +63,7 @@ export type AbilityData = AttackData | SuperData
 
 -- to keep the system simple, chests are fully fledged combat players, they just can't attack and won't move.
 local ChestData: HeroData = {
+	Name = "Chest",
 	Health = 1,
 	MovementSpeed = 0,
 	Description = "",
@@ -96,6 +98,7 @@ ChestData = table.freeze(ChestData)
 
 local HeroData: { [string]: HeroData } = {
 	Taz = {
+		Name = "Taz",
 		Health = 3600,
 		MovementSpeed = Enums.MovementSpeed.Normal,
 		Description = "Taz specializes in range spray combat. With a fierce super shell.",
@@ -130,6 +133,7 @@ local HeroData: { [string]: HeroData } = {
 		},
 	},
 	Frankie = {
+		Name = "Frankie",
 		Health = 4000,
 		MovementSpeed = Enums.MovementSpeed.Normal,
 		Description = "Frankie is a boss *****. Guy tosses mad water balloons and mushrooms.",
@@ -156,7 +160,7 @@ local HeroData: { [string]: HeroData } = {
 			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
 
 			AttackType = "Arced" :: "Arced",
-			ProjectileSpeed = 90,
+			ProjectileSpeed = 75,
 			Height = Enums.ArcHeight.Low,
 			TimeToDetonate = 0.6,
 			Radius = Enums.Radius.Small,

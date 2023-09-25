@@ -132,7 +132,7 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails):
 
 	replicateAttack(player, origin, combatPlayer, attackData, localAttackDetails)
 
-	SoundService:PlayAttack(player, attackData.Name, player.Character)
+	SoundService:PlayHeroAttack(player, combatPlayer.heroData, false, player.Character)
 
 	combatPlayer:Attack()
 
@@ -158,7 +158,7 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 
 	replicateAttack(player, origin, combatPlayer, superData, localAttackDetails)
 
-	SoundService:PlayAttack(player, superData.Name, player.Character)
+	SoundService:PlayHeroAttack(player, combatPlayer.heroData, true, player.Character)
 
 	combatPlayer:SuperAttack()
 

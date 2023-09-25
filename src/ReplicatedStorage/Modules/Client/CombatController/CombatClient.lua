@@ -218,7 +218,7 @@ end
 function CombatClient.SetupCharacterRotation(self: CombatClient)
 	self.janitor:Add(RunService.RenderStepped:Connect(function(dt: number)
 		-- Only update the aim direction while holding mouse
-		if self.attackButtonDown then
+		if self.attackButtonDown or self.usingSuper then
 			local worldDirection = self.currentMouseDirection
 			if worldDirection then
 				self.lastAimDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
@@ -226,7 +226,8 @@ function CombatClient.SetupCharacterRotation(self: CombatClient)
 		end
 
 		-- Always want to finish rotating to the aim direction, so even if they release mouse, keep rotating until angle reached
-		if self.lastAimDirection and (self.attackButtonDown or not self.completedRotation) then
+		if self.lastAimDirection and (self.attackButtonDown or not self.completedRotation or self.usingSuper) then
+			self.humanoid.AutoRotate = false
 			self.HRP.CFrame = self.HRP.CFrame:Lerp(
 				CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.lastAimDirection),
 				dt * 8
@@ -243,14 +244,19 @@ function CombatClient.SetupCharacterRotation(self: CombatClient)
 				self.completedRotation = false
 				self.preRotateAttack = false
 			end
+		else
+			self.humanoid.AutoRotate = true
 		end
 	end))
 end
 
-function CombatClient.PrepareAttack(self: CombatClient)
-	self.humanoid.AutoRotate = false
+function CombatClient.PrepareAttack(self: CombatClient, cancel: boolean?)
 	self.aimRenderer:Disable()
 	self.superAimRenderer:Disable()
+
+	if cancel then
+		return
+	end
 
 	if not self.usingSuper then
 		self.aimRenderer:Enable()
@@ -295,18 +301,24 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 		task.wait()
 	end
 	self.attemptingAttack = false
-	self.humanoid.AutoRotate = true
 end
 
 function CombatClient.HandleSuperDown(self: CombatClient)
-	if not self.usingSuper and not self.attemptingAttack and self.combatPlayer:CanSuperAttack() then
+	if
+		not self.usingSuper
+		and not self.attemptingAttack
+		and self.combatPlayer:CanSuperAttack()
+		and not self.attackButtonDown
+	then
 		self.usingSuper = true
 	else
 		self.usingSuper = false
 	end
 	self.combatUI:UpdateSuperActive(self.usingSuper)
-	if self.attackButtonDown then
-		self:PrepareAttack()
+
+	-- don't do anything if the user is already aiming an attack
+	if not self.attackButtonDown then
+		self:PrepareAttack(not self.usingSuper)
 	end
 end
 
@@ -369,7 +381,7 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 			return
 		end
 		self.combatPlayer:Attack()
-		SoundController:PlayAttackSound(self.combatPlayer.heroData.Attack.Name)
+		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, false)
 		attackData = self.combatPlayer.heroData.Attack
 	else
 		if not self.combatPlayer:CanSuperAttack() then
@@ -377,7 +389,7 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 			return
 		end
 		self.combatPlayer:SuperAttack()
-		SoundController:PlayAttackSound(self.combatPlayer.heroData.Super.Name)
+		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, true)
 		attackData = self.combatPlayer.heroData.Super
 	end
 

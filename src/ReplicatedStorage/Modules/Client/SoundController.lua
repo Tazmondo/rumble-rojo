@@ -2,6 +2,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Red = require(ReplicatedStorage.Packages.Red)
 local Net = Red.Client("game")
 
@@ -17,6 +19,8 @@ playingFolder.Name = "PlayingSounds"
 -- Index is original, value is clone
 local playingSounds: { [Sound]: Sound } = {}
 local ambience: Sound? = nil
+
+local player = Players.LocalPlayer
 
 function SoundController:SetAmbience(sound: Sound?)
 	print("Setting ambience to", sound)
@@ -40,7 +44,7 @@ end
 
 function SoundController:_PlaySound(sound: Sound, anchor: Instance?)
 	print("Playing", sound.Name, "in", anchor)
-	assert(sound, "Nil sound passed to PlaySound")
+	assert(sound, "Nil sound passed to PlaySound " .. sound.Name)
 	local clonedSound = playingSounds[sound]
 	if clonedSound then
 		clonedSound:Destroy()
@@ -73,14 +77,29 @@ function SoundController:PlayGeneralSound(soundName: string, anchor: Instance?)
 	self:_PlaySound(sound, anchor)
 end
 
-function SoundController:PlayAttackSound(attackName: string, character: Model?)
-	local sound = soundFolder.Attack:FindFirstChild(attackName)
-	if not sound then
-		error("Invalid sound provided: " .. attackName)
-	end
+function SoundController:PlayGeneralAttackSound(soundName: string, anchor: Instance?)
+	local sounds = assert(soundFolder.Attack.General)
+	local sound = assert(sounds:FindFirstChild(soundName), "invalid sound " .. soundName)
+
+	self:_PlaySound(sound, anchor)
+end
+
+function SoundController:PlayHeroAttack(heroName: string, super: boolean, character: Model?)
+	local heroData = assert(HeroData.HeroData[heroName], "No herodata for", heroName)
+
+	local heroSounds = assert(soundFolder.Attack[heroName], "Tried to get sound for non-existent hero:", heroName)
+
 	local part = if character then character:FindFirstChild("HumanoidRootPart") else nil
 
-	self:_PlaySound(sound, part)
+	local attackData: HeroData.AbilityData = if super then heroData.Super else heroData.Attack
+	if attackData.AttackType == "Arced" then
+		local sound = soundFolder.Attack.General.BombThrow
+		self:_PlaySound(sound, part)
+	else
+		local sound =
+			assert(if super then heroSounds.Super else heroSounds.Attack, "Hero did not have attack: ", heroName, super)
+		self:_PlaySound(sound, part)
+	end
 end
 
 function SoundController:StateUpdated()
@@ -109,14 +128,30 @@ function SoundController:StateUpdated()
 	end
 end
 
+function CharacterAdded(char)
+	local HRP = char:WaitForChild("HumanoidRootPart", 5)
+	if not HRP then
+		warn("could not get HRP when setting soundservice listener")
+		return
+	end
+
+	SoundService:SetListener(Enum.ListenerType.ObjectPosition, HRP)
+end
+
 function SoundController:Initialize()
 	Net:Folder():GetAttributeChangedSignal("GameState"):Connect(SoundController.StateUpdated)
 	Net:LocalFolder():GetAttributeChangedSignal("InMatch"):Connect(SoundController.StateUpdated)
 	SoundController:StateUpdated()
 
 	Net:On("AttackSound", function(...)
-		SoundController:PlayAttackSound(...)
+		SoundController:PlayHeroAttack(...)
 	end)
+
+	if player.Character then
+		CharacterAdded(player.Character)
+	end
+	player.CharacterAdded:Connect(CharacterAdded)
+
 	print("SoundController initialized")
 end
 

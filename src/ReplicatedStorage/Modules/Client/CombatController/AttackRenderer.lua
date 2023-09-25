@@ -7,6 +7,7 @@ local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
@@ -150,6 +151,7 @@ function CreateArcedAttack(
 	player: Player,
 	attackData: HeroData.AbilityData & HeroData.ArcedData,
 	origin: CFrame,
+	projectileTime: number,
 	speed: number,
 	id: number,
 	target: Vector3,
@@ -165,53 +167,48 @@ function CreateArcedAttack(
 
 	TriggerAllDescendantParticleEmitters(pelletPart)
 
-	local projectileTime = attackData.Range / speed
-
 	local height = 10
 	local timeTravelled = 0
 	local movementTick = RunService.PreSimulation:Connect(function(dt: number)
 		timeTravelled += dt
-		local progress = timeTravelled / projectileTime
+		local progress = math.clamp(timeTravelled / projectileTime, 0, 1)
 
 		-- Move projectile to end point, and have it imitate the sin curve
 		pelletPart.CFrame = origin:Lerp(CFrame.new(target), progress) * baseRotation
 			+ Vector3.new(0, height * math.sin(progress * math.rad(180)))
 	end)
 
-	local hitbox = RaycastHitbox.new(pelletPart)
-	InitializeHitboxParams(hitbox, RaycastOnlyMap())
-	hitbox:HitStart()
-
-	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult)
+	-- Don't care about hit detection with map walls, we should handle that before the target is passed in.
+	task.delay(projectileTime, function()
 		movementTick:Disconnect()
 
-		-- Not sure if yielding will cause issues with the hitbox module so just putting it in a separate thread
-		task.delay(attackData.TimeToDetonate, function()
-			if onHit then
-				local explosionParts = GetPartsInExplosion(attackData.Radius, result.Position)
-				local hitCharacters = {}
-				local hitRegisters = {}
-				for _, part in ipairs(explosionParts) do
-					local character = CombatPlayer.GetAncestorWhichIsACombatPlayer(part)
-					if character and not hitCharacters[character] then
-						print("hit", character)
-						hitCharacters[character] = true
+		local anchor = if player == localPlayer then nil else pelletPart
 
-						table.insert(hitRegisters, {
-							instance = part :: Instance,
-							position = result.Position,
-						})
-					end
+		SoundController:PlayGeneralAttackSound("BombTimer", anchor)
+
+		task.wait(attackData.TimeToDetonate)
+
+		SoundController:PlayGeneralAttackSound("BombBlast", anchor)
+
+		if onHit then
+			local explosionParts = GetPartsInExplosion(attackData.Radius, target)
+			local hitCharacters = {}
+			local hitRegisters = {}
+			for _, part in ipairs(explosionParts) do
+				local character = CombatPlayer.GetAncestorWhichIsACombatPlayer(part)
+				if character and not hitCharacters[character] then
+					print("hit", character)
+					hitCharacters[character] = true
+
+					table.insert(hitRegisters, {
+						instance = part :: Instance,
+						position = target,
+					})
 				end
-				onHit(hitRegisters, id, result.Position)
 			end
-			pelletPart:Destroy()
-		end)
-	end)
-
-	task.delay(projectileTime * 1.1 + attackData.TimeToDetonate, function()
+			onHit(hitRegisters, id, target)
+		end
 		pelletPart:Destroy()
-		movementTick:Disconnect()
 	end)
 end
 
@@ -248,6 +245,7 @@ function AttackRenderer.RenderAttack(
 			player,
 			attackData :: HeroData.AbilityData & HeroData.ArcedData,
 			origin,
+			details.timeToLand,
 			attackData.ProjectileSpeed,
 			details.id,
 			details.target,
