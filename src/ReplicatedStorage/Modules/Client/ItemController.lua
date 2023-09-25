@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local RenderFunctions = require(script.Parent.RenderFunctions)
+local SoundController = require(script.Parent.SoundController)
 local Red = require(ReplicatedStorage.Packages.Red)
 
 local Net = Red.Client("Items")
@@ -101,6 +102,7 @@ function RenderAbsorption(model: Model, targetPart: BasePart)
 		model:ScaleTo((1 - alpha) / 2 + 0.5)
 		task.wait()
 	end
+	SoundController:PlayGeneralSound("CollectBooster", targetPart)
 end
 
 function AbsorbItem(item: Item, part: BasePart)
