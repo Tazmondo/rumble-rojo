@@ -137,13 +137,12 @@ function GetPartsInExplosion(radius: number, position: Vector3)
 	local cylinder = cylinderTemplate:Clone()
 	cylinder.Size = Vector3.new(10, radius * 2, radius * 2)
 	cylinder.Position = position
-	cylinder.Transparency = 0.8
+	cylinder.Transparency = if RunService:IsStudio() then 0.8 else 1
 	cylinder.Color = Color3.new(1.000000, 0.619608, 0.054902)
-	cylinder.Parent = workspace
+	cylinder.Parent = partFolder
 
 	local intersectingParts = workspace:GetPartsInPart(cylinder, overlapParams)
 
-	-- cylinder:Destroy()
 	Debris:AddItem(cylinder, 1)
 
 	return intersectingParts
@@ -191,6 +190,15 @@ function CreateArcedAttack(
 		task.wait(attackData.TimeToDetonate)
 
 		SoundController:PlayGeneralAttackSound("BombBlast", anchor)
+		local explosion = attackVFXFolder.Explosion:Clone()
+		explosion.Position = target + Vector3.new(0, 0, 0)
+
+		explosion.a1.explode.Size = NumberSequence.new(attackData.Radius * 2)
+		explosion.a1.explode.Enabled = false
+
+		explosion.Parent = partFolder
+		explosion.a1.explode:Emit(1)
+		Debris:AddItem(explosion, 5)
 
 		if onHit then
 			local explosionParts = GetPartsInExplosion(attackData.Radius, target)

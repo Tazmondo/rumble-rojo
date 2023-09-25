@@ -163,7 +163,7 @@ local HeroData: { [string]: HeroData } = {
 			ProjectileSpeed = 75,
 			Height = Enums.ArcHeight.Low,
 			TimeToDetonate = 0.6,
-			Radius = Enums.Radius.Small,
+			Radius = Enums.Radius.Medium,
 		},
 	},
 }

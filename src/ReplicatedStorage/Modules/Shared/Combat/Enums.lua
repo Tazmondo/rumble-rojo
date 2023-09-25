@@ -30,7 +30,7 @@ Enums.ArcHeight = {
 
 Enums.Radius = {
 	Small = 3,
-	Medium = 6,
+	Medium = 5,
 	Large = 12,
 }
 
