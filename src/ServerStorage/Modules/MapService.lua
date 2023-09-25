@@ -10,7 +10,7 @@ local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
 local MapService = {}
 
-local Net = Red.Server("Map", { "MoveMap" })
+local Net = Red.Server("Map", { "MoveMap", "ForceMoveMap" })
 
 local arena = workspace.Arena
 local activeMapFolder = arena.Map
