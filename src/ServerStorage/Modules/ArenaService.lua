@@ -219,8 +219,13 @@ function ArenaService.EndMatch(winner: Player?)
 	-- Allow round ended text to appear for a bit
 	task.wait(2)
 
+	-- if tie, the registeredPlayers for the winner will be nil before this runs
 	if winner then
-		registeredPlayers[winner].Won = true
+		if registeredPlayers[winner] then
+			registeredPlayers[winner].Won = true
+		else
+			-- TODO: HANDLE TIES
+		end
 	end
 	for player, heroName in pairs(registeredPlayers) do
 		if player.Parent == nil then
