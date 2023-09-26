@@ -1,12 +1,13 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
 local DamagePopup = {}
 DamagePopup.__index = DamagePopup
 
-local LIFETIME = 3
-local template = ReplicatedStorage.Assets.DamagePopup
+local LIFETIME = 2
 
+local combatGuiTemplate = ReplicatedStorage.Assets.CombatGUI
 local hitHighlightTemplate = ReplicatedStorage.Assets.VFX.General.HitHighlight
 local fillTransparency = hitHighlightTemplate.fillTransparency
 local outlineTransparency = hitHighlightTemplate.outlineTransparency
@@ -26,18 +27,25 @@ function DamagePopup.get(color: Color3, anchor: Instance, highlight: Instance)
 
 	self.janitor = Janitor.new()
 
-	self.gui = self.janitor:Add(template:Clone())
-	self.gui.Enabled = true
-	self.gui.Parent = anchor
+	local gui = anchor:FindFirstChild("CombatGUI") :: BillboardGui
+	if not gui then
+		warn("Damage popup making its own gui! should not happen")
+		gui = combatGuiTemplate:Clone()
+		gui.Enabled = true
+	end
+
+	self.billboardGui = gui
+	self.gui = gui:FindFirstChild("DamagePopup") :: Frame
+	self.gui.Visible = true
 
 	self.anchor = anchor
 
 	self.color = color
 	self.damage = 0
 
-	self.baseOffset = Vector3.new(0, 4, 0)
-	self.currentOffset = 0
-	self.maxOffset = 2
+	self.baseOffset = gui.StudsOffsetWorldSpace
+	self.currentProgress = 0
+	self.maxOffset = -24
 	self.riseTime = 0.3
 
 	self.highlight = self.janitor:Add(hitHighlightTemplate:Clone()) :: Highlight
@@ -60,6 +68,7 @@ function DamagePopup:Destroy()
 	self = self :: DamagePopup
 
 	popups[self.anchor] = nil
+	self.gui.Visible = false
 
 	self.janitor:Destroy()
 end
@@ -71,11 +80,17 @@ function DamagePopup:Update(dt: number)
 		self:Destroy()
 		return
 	end
-	self.currentOffset = math.clamp(self.currentOffset + self.maxOffset * dt / self.riseTime, 0, self.maxOffset)
-	self.gui.ExtentsOffset = self.baseOffset + Vector3.new(0, self.currentOffset, 0)
+	self.currentProgress = TweenService:GetValue(
+		(os.clock() - self.lastUpdated) / self.riseTime,
+		Enum.EasingStyle.Quint,
+		Enum.EasingDirection.Out
+	)
+
+	self.gui.DamageNumber.Position = UDim2.new(0.5, 0, 0.15, self.currentProgress * self.maxOffset)
 
 	self.gui.DamageNumber.Text = self.damage
 	self.gui.DamageNumber.TextColor3 = self.color
+	self.gui.DamageNumber.TextSize = math.ceil(24 + self.currentProgress * 6)
 
 	self.highlightProgress = math.clamp(self.highlightProgress + (dt / self.highlightTime), 0, 1)
 

@@ -49,21 +49,21 @@ end
 
 function CombatUI:HandleDamageDealt(amount: number, target: Model?)
 	self = self :: CombatUI
-	if not target or not target:FindFirstChild("Head") then
+	if not target or not target:FindFirstChild("HumanoidRootPart") then
 		return
 	end
-	local head = target:FindFirstChild("Head")
+	local HRP = target:FindFirstChild("HumanoidRootPart")
 
-	local popup = DamagePopup.get(Color3.fromHSV(0, 0, 1), head, target)
+	local popup = DamagePopup.get(Color3.fromHSV(0, 0, 1), HRP, target)
 	popup:AddDamage(amount)
 end
 
 function CombatUI:HandleDamageTaken(amount: number)
 	self = self :: CombatUI
 
-	local head = self.character:FindFirstChild("Head")
+	local HRP = self.character:FindFirstChild("HumanoidRootPart")
 
-	local popup = DamagePopup.get(Color3.fromHSV(0, 1, 1), head, self.character)
+	local popup = DamagePopup.get(Color3.fromHSV(0, 1, 1), HRP, self.character)
 	popup:AddDamage(amount)
 end
 

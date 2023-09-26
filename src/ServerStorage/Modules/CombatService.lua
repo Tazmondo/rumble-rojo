@@ -314,13 +314,13 @@ function handleClientExplosionHit(
 	end
 	local combatPlayer = CombatPlayerData[player.Character]
 	if not combatPlayer then
-		print("combatplayer not found")
+		warn("combatplayer not found")
 		return
 	end
 
 	local attackDetails = combatPlayer.attacks[attackId]
 	if not attackDetails then
-		print("attack details not found", attackId, combatPlayer.attacks)
+		warn("attack details not found", attackId, combatPlayer.attacks)
 		return
 	end
 	combatPlayer.attacks[attackId] = nil
@@ -559,7 +559,7 @@ function CombatService:PlayerAdded(player: Player)
 	self:LoadPlayerGuis(player)
 
 	if RunService:IsStudio() and ServerScriptService:GetAttribute("combat") then
-		PlayersInCombat[player] = "Frankie"
+		PlayersInCombat[player] = ServerScriptService:GetAttribute("hero")
 	end
 
 	DataService.PromiseLoad(player):Then(function(resolve)
