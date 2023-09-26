@@ -10,7 +10,7 @@ local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
 local MapService = {}
 
-local Net = Red.Server("Map", { "MoveMap", "ForceMoveMap" })
+local Net = Red.Server("Map", { "MoveMap" })
 
 local arena = workspace.Arena
 local activeMapFolder = arena.Map
@@ -56,7 +56,6 @@ local function MoveMapUp()
 		Net:FireAll("MoveMap", map, activeMapCFrame, inactiveMapCFrame, MAPTRANSITIONTIME)
 		task.wait(MAPTRANSITIONTIME + 0.5)
 		map:PivotTo(activeMapCFrame)
-		Net:Fire("ForceMoveMap", activeMapCFrame)
 		resolve()
 	end)
 end
@@ -66,7 +65,6 @@ function MoveMapDown()
 		Net:FireAll("MoveMap", map, inactiveMapCFrame, activeMapCFrame, MAPTRANSITIONTIME)
 		task.wait(MAPTRANSITIONTIME + 0.5)
 		map:PivotTo(inactiveMapCFrame)
-		Net:Fire("ForceMoveMap", inactiveMapCFrame)
 		resolve()
 	end)
 end
@@ -148,7 +146,9 @@ function MapService:UnloadCurrentMap()
 		end)
 	end
 	return Red.Promise.new(function(resolve)
-		MoveMapDown():Then(function()
+		MoveMapDown():Catch(function(msg)
+			warn(debug.traceback(msg))
+		end):Finally(function()
 			UnloadMap()
 			resolve()
 		end)

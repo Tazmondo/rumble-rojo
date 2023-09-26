@@ -160,7 +160,7 @@ local HeroData: { [string]: HeroData } = {
 			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
 
 			AttackType = "Arced" :: "Arced",
-			ProjectileSpeed = 75,
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			Height = Enums.ArcHeight.Low,
 			TimeToDetonate = 0.6,
 			Radius = Enums.Radius.Medium,

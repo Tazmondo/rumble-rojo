@@ -7,6 +7,7 @@
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local SoundController
 if RunService:IsClient() then
@@ -250,7 +251,9 @@ end
 
 function CombatPlayer:AttackingEnabled()
 	self = self :: CombatPlayer
-	return (GetGameState() ~= "BattleStarting" or RunService:IsStudio()) and not self.isObject
+	return (
+		GetGameState() ~= "BattleStarting" or (RunService:IsStudio() and ServerScriptService:GetAttribute("combat"))
+	) and not self.isObject
 end
 
 function CombatPlayer.CanAttack(self: CombatPlayer)

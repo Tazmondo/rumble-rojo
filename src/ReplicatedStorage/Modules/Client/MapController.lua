@@ -39,7 +39,6 @@ end
 
 function MapController:Initialize()
 	Net:On("MoveMap", MoveMap)
-	Net:On("ForceMoveMap", ForceMoveMap)
 end
 
 MapController:Initialize()
