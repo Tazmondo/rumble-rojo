@@ -78,8 +78,9 @@ function DamagePopup:Update(dt: number)
 	self.gui.DamageNumber.TextColor3 = self.color
 
 	self.highlightProgress = math.clamp(self.highlightProgress + (dt / self.highlightTime), 0, 1)
-	self.highlight.FillTransparency = 1 - (1 - self.highlightProgress * (1 - fillTransparency))
-	self.highlight.OutlineTransparency = 1 - (1 - self.highlightProgress * (1 - outlineTransparency))
+
+	self.highlight.FillTransparency = fillTransparency + self.highlightProgress * (1 - fillTransparency)
+	self.highlight.OutlineTransparency = outlineTransparency + self.highlightProgress * (1 - outlineTransparency)
 end
 
 function DamagePopup:AddDamage(damage: number)
