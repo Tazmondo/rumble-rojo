@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local CombatPlayer = require(script.Parent.CombatPlayer)
@@ -6,6 +7,7 @@ local NameTag = {}
 
 local enemyNameTagTemplate = ReplicatedStorage.Assets.EnemyNameTag :: BillboardGui
 local friendlyNameTagTemplate = ReplicatedStorage.Assets.FriendlyNameTag :: BillboardGui
+local objectNameTagTemplate = ReplicatedStorage.Assets.ObjectNameTag :: BillboardGui
 local lobbyNameTagTemplate = ReplicatedStorage.Assets.LobbyNameTag :: BillboardGui
 local haloTemplate: Part = ReplicatedStorage.Assets.VFX.General.Halo
 
@@ -18,7 +20,11 @@ function NameTag.Init(
 	anchor: BasePart?,
 	isObject: boolean?
 )
-	local nameTag = if RunService:IsClient() then friendlyNameTagTemplate:Clone() else enemyNameTagTemplate:Clone()
+	local nameTag = if isObject
+		then objectNameTagTemplate:Clone()
+		elseif RunService:IsClient() then friendlyNameTagTemplate:Clone()
+		else enemyNameTagTemplate:Clone()
+
 	local halo = haloTemplate:Clone()
 	assert(character.Parent, "Character has not been parented to workspace yet!")
 
@@ -26,20 +32,17 @@ function NameTag.Init(
 		nameTag.PlayerToHideFrom = hide
 	end
 
-	nameTag.name.nametag.PlayerName.Text = character.Name
-
-	-- I don't know why we need to do it like this, but it works
-	local offset = Vector3.new(0, 4, 0)
-	if isObject then
-		nameTag.StudsOffsetWorldSpace = Vector3.zero
-		nameTag.StudsOffset = offset
-	else
-		nameTag.StudsOffset = Vector3.zero
-		nameTag.StudsOffsetWorldSpace = offset
+	if not isObject then
+		nameTag.name.nametag.PlayerName.Text = character.Name
 	end
 
 	task.spawn(function()
-		nameTag.Parent = anchor or character:WaitForChild("HumanoidRootPart")
+		nameTag.Parent = anchor or character:WaitForChild("HumanoidRootPart") :: BasePart
+
+		-- roblox are stupid and made studsoffsetworldspace relative to the object and not the world
+		nameTag.StudsOffsetWorldSpace =
+			nameTag.Parent.CFrame.Rotation:VectorToObjectSpace(nameTag.StudsOffsetWorldSpace)
+
 		halo.Parent = workspace
 		if RunService:IsServer() then
 			halo.Name = character.Name .. "ServerHalo"
@@ -64,7 +67,11 @@ function NameTag.Init(
 					end
 				end
 			end
-			nameTag.stats.healthnumber.Text = combatPlayer.health
+
+			if not isObject then
+				nameTag.stats.healthnumber.Text = combatPlayer.health
+			end
+
 			local healthRatio = combatPlayer.health / combatPlayer.maxHealth
 
 			-- Size the smaller bar as a percentage of the size of the parent bar, based off player health percentage
@@ -78,9 +85,14 @@ function NameTag.Init(
 				healthBar.Visible = true
 			end
 
-			local colour1 = Color3.fromHSV(healthRatio * 100 / 255, 206 / 255, 1)
-			local colour2 = Color3.fromHSV(healthRatio * 88 / 255, 197 / 255, 158 / 255)
-			healthBar.UIGradient.Color = ColorSequence.new(colour1, colour2)
+			-- only render colour gradients for local character
+			if RunService:IsClient() and character == Players.LocalPlayer.Character then
+				local colour1 = Color3.fromHSV(healthRatio * 100 / 255, 206 / 255, 1)
+				local colour2 = Color3.fromHSV(healthRatio * 88 / 255, 197 / 255, 158 / 255)
+				healthBar.UIGradient.Color = ColorSequence.new(colour1, colour2)
+			else
+				healthBar.UIGradient.Color = ColorSequence.new(Color3.fromHex("#f6266e"), Color3.fromHex("#a80050"))
+			end
 
 			if not isObject then
 				if RunService:IsClient() then
