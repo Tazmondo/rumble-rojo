@@ -415,8 +415,6 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 			self:RayHit(...)
 		end
 
-	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction)
-
 	-- If attack doesn't go through on server then reset attack id to prevent desync
 	local serverId
 	if not super then
@@ -427,6 +425,9 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 	if serverId then
 		self.combatPlayer.attackId = serverId
 	end
+
+	-- calling this after calling the server so the hit does not reach server before the attack start
+	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction)
 end
 
 export type CombatClient = typeof(CombatClient.new(...)) & typeof(CombatClient)

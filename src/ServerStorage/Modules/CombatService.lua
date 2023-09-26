@@ -120,6 +120,7 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails):
 	end
 	local combatPlayer = CombatPlayerData[player.Character]
 	if not combatPlayer then
+		warn(player, "Tried to attack without a combatplayer!")
 		return 0
 	end
 
