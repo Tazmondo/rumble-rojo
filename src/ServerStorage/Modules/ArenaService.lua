@@ -276,11 +276,14 @@ function ArenaService.Initialize()
 	end)
 
 	CombatService.KillSignal:Connect(function(data: CombatService.KillData)
-		print("Received kill signal: " .. data.Killer.Name .. " -> " .. data.Victim.Name)
-		local killerData = registeredPlayers[data.Killer]
+		-- If there was no killer, treat it as a suicide
+		local killer = data.Killer or data.Victim
+
+		print("Received kill signal: " .. killer.Name .. " -> " .. data.Victim.Name)
+		local killerData = registeredPlayers[killer]
 		local victimData = registeredPlayers[data.Victim]
 
-		if killerData then
+		if killerData and killer ~= data.Victim then
 			killerData.Kills += 1
 		end
 		if victimData then

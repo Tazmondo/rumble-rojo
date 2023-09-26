@@ -246,8 +246,7 @@ function processHit(
 				Victim = victimPlayer,
 				Attack = attackDetails.Data,
 			} :: KillData
-			CombatService.KillSignal:Fire(data)
-			Net:FireAll("PlayerKill", data)
+			CombatService:HandlePlayerDeath(victimPlayer, data)
 		end
 		local victimHRP = (
 			victimCharacter:FindFirstChild("box") or victimCharacter:FindFirstChild("HumanoidRootPart")
@@ -417,6 +416,20 @@ function CombatService:ExitPlayerCombat(player: Player)
 	self:SpawnCharacter(player)
 end
 
+function CombatService:HandlePlayerDeath(player: Player, data: KillData?)
+	if data then
+		CombatService.KillSignal:Fire(data)
+		Net:FireAll("PlayerKill", data)
+	else
+		local data = { Victim = player }
+		CombatService.KillSignal:Fire(data)
+		Net:FireAll("PlayerKill", data)
+	end
+
+	task.wait(3)
+	self:ExitPlayerCombat(player)
+end
+
 function CombatService:SetupCombatPlayer(player: Player, heroName: string)
 	self = self :: CombatService
 	print("Setting up", player.Name, "as", heroName)
@@ -477,15 +490,12 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 					end)
 			end
 
-			local humanoid = char:FindFirstChild("Humanoid") :: Humanoid
-			assert(humanoid, "Humanoid was not found during character spawning.").Died:Once(function()
-				-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
-				task.wait(3)
-				if PlayersInCombat[player] then
-					self:ExitPlayerCombat(player)
-				else
-					self:SpawnCharacter(player)
-				end
+			local humanoid =
+				assert(char:FindFirstChild("Humanoid"), "Humanoid was not found during character spawning.") :: Humanoid
+
+			-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
+			humanoid.Died:Once(function()
+				self:HandlePlayerDeath(player)
 			end)
 
 			if spawnCFrame then
@@ -597,9 +607,9 @@ end
 CombatService.KillSignal = Red.Signal.new()
 
 export type KillData = {
-	Killer: Player,
+	Killer: Player?,
 	Victim: Player,
-	Attack: HeroData.AttackData | HeroData.SuperData,
+	Attack: HeroData.AttackData | HeroData.SuperData?,
 }
 export type CombatService = typeof(CombatService)
 
