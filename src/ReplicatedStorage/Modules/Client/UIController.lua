@@ -22,19 +22,27 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
-local DataController = require(script.Parent.DataController)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
+local DataController = require(script.Parent.DataController)
+local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Red = require(ReplicatedStorage.Packages.Red)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local SoundController = require(script.Parent.SoundController)
+local ViewportFrameController = require(script.Parent.ViewportFrameController)
 
 local Net = Red.Client("game")
 
 local ready = false
 local heroSelectOpen = false
 local skinSelectOpen = false
-local displayedHero: string? = nil
-local selectedHero: string? = Net:LocalFolder():GetAttribute("Hero")
+
+local selectedHero: string = assert(Net:LocalFolder():GetAttribute("Hero"))
+local displayedHero = selectedHero
+
+local selectedSkin: string = assert(Net:LocalFolder():GetAttribute("Skin"))
+local displayedSkin = selectedSkin
+
 local shouldTryHide = false
 local UIState = ""
 
@@ -296,8 +304,13 @@ function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
 end
 
 local prevOpen = false
+local prevModel = nil
 function RenderHeroSelectScreen()
 	HeroSelect.Enabled = true
+
+	-- RENDERING HERO SELECT
+	RenderCharacterSelectButtons()
+
 	local frame = HeroSelect.Frame.Select :: Frame
 	local details = frame.Information:FindFirstChild("2-Details")
 
@@ -306,27 +319,23 @@ function RenderHeroSelectScreen()
 	end
 	prevOpen = heroSelectOpen
 
-	local currentHeroName = displayedHero or Net:LocalFolder():GetAttribute("Hero")
+	local currentHeroName = selectedHero or Net:LocalFolder():GetAttribute("Hero")
 	if not currentHeroName then
 		warn("Could not find a selected hero!")
 		return
 	end
 
-	local heroData = HeroData.HeroData[currentHeroName]
+	local combatData = HeroData.HeroData[currentHeroName]
+	local heroData = HeroDetails.HeroDetails[currentHeroName]
 	if not heroData then
 		warn("Tried to get data for hero", currentHeroName, "but it didn't exist!")
 		return
 	end
 
-	if displayedHero ~= currentHeroName then
-		displayedHero = currentHeroName
-		-- todo: tween in new information?
-	end
-
 	local heroStats = DataController.ownedHeroData[currentHeroName]
 	local trophyCount = if heroStats then heroStats.Trophies else 0
 
-	details:FindFirstChild("1-Trophies").TrophyCount.Text = trophyCount
+	details:FindFirstChild("Trophies").TrophyCount.Text = trophyCount
 	details:FindFirstChild("2-Name").Text = string.upper(currentHeroName)
 	details:FindFirstChild("3-Description").Text = heroData.Description
 
@@ -364,7 +373,42 @@ function RenderHeroSelectScreen()
 		end
 	end
 
-	frame.Stats:FindFirstChild("3-Super").Details.SuperTitle.Text = heroData.Super.Name
+	frame.Stats:FindFirstChild("3-Super").Details.SuperTitle.Text = combatData.Super.Name
+	frame.Stats.Unlock.Cost.Text = heroData.Price
+	frame.Stats.Unlock.Visible = if heroStats then true else false
+
+	-- RENDERING SKIN SELECT
+	RenderSkinSelectButtons()
+	local skinFrame = HeroSelect.Frame.Skin
+	local skinInfo = skinFrame.Info
+
+	local skinData = heroData.Skins[displayedSkin]
+	local rarity = skinData.Rarity
+
+	skinInfo.Common.Visible = rarity == "Common"
+	skinInfo.Uncommon.Visible = rarity == "Uncommon"
+	skinInfo.Rare.Visible = rarity == "Rare"
+	skinInfo.Epic.Visible = rarity == "Epic"
+	skinInfo.Legendary.Visible = rarity == "Legendary"
+
+	skinInfo["2-Details"]["2-Name"].Text = skinData.Name
+	skinInfo["2-Details"]["3-Description"].Text = skinData.Description
+
+	local owned = heroStats.Skins[displayedSkin] ~= nil
+
+	skinInfo.Equip.Visible = displayedSkin ~= selectedSkin and owned
+	skinInfo.Equipped.Visible = displayedSkin == selectedSkin and owned
+	skinInfo.Unlock.Visible = not owned
+
+	-- RENDER PREVIEW
+	local model = HeroDetails.GetModelFromName(selectedHero, if skinSelectOpen then displayedSkin else selectedSkin)
+	if model == prevModel then
+		return
+	end
+	prevModel = model
+
+	local viewportController = ViewportFrameController.get(HeroSelect.Frame.Character.ViewportFrame)
+	viewportController:UpdateModel(model)
 end
 
 function ResetRoundVariables()
@@ -447,6 +491,88 @@ function UIController:ExitClick()
 	UpdateQueueButtons()
 end
 
+local shouldReRenderCharacterSelectButtons = true
+local shouldReRenderSkinSelectButtons = true
+
+function RenderCharacterSelectButtons()
+	if not shouldReRenderCharacterSelectButtons then
+		return
+	end
+	shouldReRenderCharacterSelectButtons = false
+
+	local characterSelect = HeroSelect.Frame.Select["Character Select"]
+	for i, v in pairs(characterSelect:GetChildren()) do
+		if v:IsA("TextButton") then
+			v:Destroy()
+		end
+	end
+
+	task.spawn(function()
+		-- Wait for data to be received from server
+		DataController.HasLoadedDataPromise():Await()
+		for hero, heroData in pairs(HeroDetails.HeroDetails) do
+			local model =
+				HeroDetails.GetModelFromName(heroData.Name, assert(DataController.ownedHeroData[hero].SelectedSkin))
+			local button = ViewportFrameController.NewHeadButton(model)
+			button.Parent = characterSelect
+			button.Name = hero
+			if selectedHero == hero then
+				button.ViewportFrame.Equipped.Visible = true
+			else
+				button.ViewportFrame.Equipped.Visible = false
+			end
+			button.Activated:Connect(function()
+				DataController.SelectHero(hero)
+				shouldReRenderSkinSelectButtons = true
+				characterSelect[selectedHero].ViewportFrame.Equipped.Visible = false
+
+				selectedHero = hero
+
+				characterSelect[selectedHero].ViewportFrame.Equipped.Visible = true
+
+				displayedHero = selectedHero
+
+				selectedSkin = DataController.ownedHeroData[hero].SelectedSkin
+				displayedSkin = selectedSkin
+			end)
+		end
+	end)
+end
+
+function RenderSkinSelectButtons()
+	if not shouldReRenderSkinSelectButtons then
+		return
+	end
+	shouldReRenderSkinSelectButtons = false
+
+	local skinSelect = HeroSelect.Frame.Skin.SkinSelect
+	for i, v in pairs(skinSelect:GetChildren()) do
+		if v:IsA("TextButton") then
+			v:Destroy()
+		end
+	end
+
+	task.spawn(function()
+		-- Wait for data to be received from server
+		DataController.HasLoadedDataPromise():Await()
+		for skin, skinData in pairs(HeroDetails.HeroDetails[selectedHero].Skins) do
+			local model = HeroDetails.GetModelFromName(selectedHero, skin)
+			local button = ViewportFrameController.NewHeadButton(model)
+			button.Parent = skinSelect
+			button.Name = skin
+			if selectedSkin == skin then
+				button.ViewportFrame.Equipped.Visible = true
+			else
+				button.ViewportFrame.Equipped.Visible = false
+			end
+
+			button.Activated:Connect(function()
+				displayedSkin = skin
+			end)
+		end
+	end)
+end
+
 function UIController:Initialize()
 	self = self :: UIController
 
@@ -473,18 +599,26 @@ function UIController:Initialize()
 		shouldTryHide = true
 	end)
 
-	-- HeroSelect.Frame.Select.Stats.Select.Activated:Connect(function()
-	-- 	heroSelectOpen = false
-	-- 	shouldTryHide = true
-	-- 	Net:Fire("HeroSelect", displayedHero)
-	-- 	selectedHero = displayedHero
-	-- end)
+	HeroSelect.Frame.Skin.Info.Equip.Activated:Connect(function()
+		shouldReRenderCharacterSelectButtons = true
+		DataController.SelectSkin(selectedHero, displayedSkin)
+
+		local skinSelect = HeroSelect.Frame.Skin.SkinSelect
+		if skinSelect:FindFirstChild(selectedSkin) then
+			-- if switch to a different character then the previous one wont exist
+			skinSelect[selectedSkin].ViewportFrame.Equipped.Visible = false
+		end
+
+		selectedSkin = displayedSkin
+
+		skinSelect[selectedSkin].ViewportFrame.Equipped.Visible = true
+	end)
 
 	local TRANSITIONTIME = 0.5
 	local STYLE = Enum.EasingStyle.Quad
 	local transitioning = false
 	local outSize = UDim2.fromScale(1.2, 1)
-	local inSize = UDim2.fromScale(0.7, 0.7)
+	-- local inSize = UDim2.fromScale(0.7, 0.7)
 	-- local outSize = UDim2.fromScale(1, 1)
 	-- local inSize = UDim2.fromScale(1, 1)
 
@@ -556,16 +690,6 @@ function UIController:Initialize()
 		end)
 	end)
 
-	-- for _, heroButton in pairs(HeroSelect.Frame:FindFirstChild("Character Select"):GetChildren()) do
-	-- 	if not heroButton:IsA("ImageButton") then
-	-- 		continue
-	-- 	end
-	-- 	heroButton.Activated:Connect(function()
-	-- 		-- todo: check if owned
-	-- 		displayedHero = heroButton.Name
-	-- 	end)
-	-- end
-
 	Net:On("PlayerDied", function()
 		died = true
 		SoundController:PlayGeneralSound("Died")
@@ -575,6 +699,16 @@ function UIController:Initialize()
 
 	Net:LocalFolder():GetAttributeChangedSignal("Hero"):Connect(function()
 		selectedHero = Net:LocalFolder():GetAttribute("Hero")
+		if not displayedHero then
+			displayedHero = selectedHero
+		end
+	end)
+
+	Net:LocalFolder():GetAttributeChangedSignal("Skin"):Connect(function()
+		selectedSkin = Net:LocalFolder():GetAttribute("Skin")
+		if not displayedSkin then
+			displayedSkin = selectedSkin
+		end
 	end)
 end
 

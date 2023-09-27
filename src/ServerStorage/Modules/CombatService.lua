@@ -378,14 +378,6 @@ function handleClientExplosionHit(
 	end
 end
 
-function CombatService:GetModelFromName(heroName: string, skinName: string?)
-	if not skinName then
-		skinName = HeroDetails[heroName].DefaultSkin
-	end
-
-	return ReplicatedStorage.Assets.CharacterModels:FindFirstChild(heroName):FindFirstChild(skinName)
-end
-
 function CombatService:GetCombatPlayerForPlayer(player: Player): CombatPlayer.CombatPlayer?
 	self = self :: CombatService
 
@@ -417,7 +409,8 @@ function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 
 	return Red.Promise.new(function(resolve)
 		local profile = DataService.GetProfileData(player):Await() :: DataService.ProfileData
-		PlayersInCombat[player] = { HeroName = profile.SelectedHero, SkinName = profile.SelectedSkin }
+		local hero = profile.SelectedHero
+		PlayersInCombat[player] = { HeroName = hero, SkinName = profile.OwnedHeroes[hero].SelectedSkin }
 
 		resolve(self:SpawnCharacter(player, newCFrame):Await())
 	end)
@@ -528,7 +521,7 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 		local details = PlayersInCombat[player]
 
 		if details then
-			self:LoadCharacterWithModel(player, CombatService:GetModelFromName(details.HeroName, details.SkinName))
+			self:LoadCharacterWithModel(player, HeroDetails.GetModelFromName(details.HeroName, details.SkinName))
 		else
 			self:LoadCharacterWithModel(player)
 		end

@@ -8,13 +8,34 @@ local Red = require(ReplicatedStorage.Packages.Red)
 
 local Net = Red.Client("game")
 
+local loaded = false
+
 DataController.ownedHeroData = {} :: { [string]: Types.HeroStats }
 
 DataController.updatedSignal = Red.Signal.new()
 
+function DataController.HasLoadedDataPromise()
+	return Red.Promise.new(function(resolve)
+		while not loaded do
+			task.wait()
+		end
+		resolve()
+	end)
+end
+
+function DataController.SelectHero(hero: string)
+	Net:Fire("SelectHero", hero)
+end
+
+function DataController.SelectSkin(hero: string, skin: string)
+	Net:Fire("SelectSkin", hero, skin)
+	DataController.ownedHeroData[hero].SelectedSkin = skin
+end
+
 Net:On("HeroData", function(data)
 	print("Updating hero data", data)
 	DataController.ownedHeroData = data
+	loaded = true
 	DataController.updatedSignal:Fire()
 end)
 

@@ -4,7 +4,7 @@ local DataService = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
+local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails).HeroDetails
 local LoadedService = require(script.Parent.LoadedService)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local ProfileService = require(script.ProfileService)
@@ -12,11 +12,11 @@ local Red = require(ReplicatedStorage.Packages.Red)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local Promise = Red.Promise
 local Signal = Red.Signal
-local Net = Red.Server("game", { "HeroSelect", "HeroData" })
+local Net = Red.Server("game", { "SelectHero", "HeroData" })
 
 export type HeroData = {}
 
-local STOREPREFIX = "Player2_"
+local STOREPREFIX = "Player3_"
 
 local OwnedHeroTemplate: Types.HeroStats = {
 	Trophies = 0,
@@ -29,7 +29,6 @@ local ProfileTemplate = {
 	Playtime = 0,
 	OwnedHeroes = {} :: { [string]: Types.HeroStats }, -- automatically fills with free heroes and skins
 	SelectedHero = "Frankie",
-	SelectedSkin = HeroDetails.Frankie.DefaultSkin,
 	Version = 1, -- version is for data migration purposes in future
 	Stats = {
 		Kills = 0,
@@ -52,7 +51,7 @@ type Profile = ProfileService.Profile<ProfileData>
 
 DataService.Profiles = {} :: { [Player]: Profile }
 
-DataService.HeroSelectSignal = Signal.new()
+DataService.SelectHeroSignal = Signal.new()
 
 function DataService.SyncPlayerData(player)
 	local profile = DataService.Profiles[player]
@@ -60,9 +59,11 @@ function DataService.SyncPlayerData(player)
 		warn("Tried to get profile for player that didn't have one", player)
 		return
 	end
+	local data = profile.Data :: ProfileData
 
-	Net:Folder(player):SetAttribute("Trophies", profile.Data.Trophies)
-	Net:Folder(player):SetAttribute("Hero", profile.Data.SelectedHero)
+	Net:Folder(player):SetAttribute("Trophies", data.Trophies)
+	Net:Folder(player):SetAttribute("Hero", data.SelectedHero)
+	Net:Folder(player):SetAttribute("Skin", data.OwnedHeroes[data.SelectedHero].SelectedSkin)
 
 	-- Client needs to be loaded to receive the initial request
 	LoadedService.IsClientLoadedPromise(player):Then(function()
@@ -99,6 +100,10 @@ local function reconcile(profile)
 				if skinData.Price == 0 then
 					data.OwnedHeroes[heroName].Skins[skinName] = true
 				end
+			end
+			local skin = data.OwnedHeroes[heroName].SelectedSkin
+			if not heroData.Skins[skin] then
+				data.OwnedHeroes[heroName].SelectedSkin = heroData.DefaultSkin
 			end
 		end
 	end
@@ -157,15 +162,24 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 end)
 
-Net:On("HeroSelect", function(player: Player, hero: string)
+Net:On("SelectHero", function(player: Player, hero: string)
 	DataService.GetProfileData(player):Then(function(data: ProfileData)
 		if data.OwnedHeroes[hero] then
 			data.SelectedHero = hero
-			DataService.HeroSelectSignal:Fire(player, hero)
+			DataService.SelectHeroSignal:Fire(player, hero)
 
 			DataService.SyncPlayerData(player)
 		end
 	end)
+end)
+
+Net:On("SelectSkin", function(player: Player, hero: string, skin: string)
+	local data: ProfileData = DataService.GetProfileData(player):Await()
+	if not data.OwnedHeroes[hero] or not HeroDetails[hero].Skins[skin] or not data.OwnedHeroes[hero].Skins[skin] then
+		return
+	end
+	data.OwnedHeroes[hero].SelectedSkin = skin
+	DataService.SyncPlayerData(player)
 end)
 
 return DataService

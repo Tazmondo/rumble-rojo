@@ -2,6 +2,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Defines hero prices and skin prices
 
+local module = {}
+
 export type Rarity = "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary"
 
 export type Skin = {
@@ -21,7 +23,7 @@ export type Hero = {
 	Skins: { [string]: Skin },
 }
 
-local HeroDetails: { [string]: Hero } = {
+module.HeroDetails = {
 	Taz = {
 		Name = "Taz",
 		Description = "Taz specializes in range spray combat. With a fierce super shell.",
@@ -35,6 +37,12 @@ local HeroDetails: { [string]: Hero } = {
 				Description = "He's red",
 				Price = 0,
 				Rarity = "Common",
+			},
+			Golden = {
+				Name = "Golden",
+				Description = "kingly",
+				Price = 0,
+				Rarity = "Legendary",
 			},
 		},
 	},
@@ -52,16 +60,28 @@ local HeroDetails: { [string]: Hero } = {
 				Price = 0,
 				Rarity = "Common",
 			},
+			Venom = {
+				Name = "Venom",
+				Description = "spiderman",
+				Price = 0,
+				Rarity = "Rare",
+			},
+			VR = {
+				Name = "VR",
+				Description = "Tech guy",
+				Price = 0,
+				Rarity = "Legendary",
+			},
 		},
 	},
-}
+} :: { [string]: Hero }
 
-HeroDetails = table.freeze(HeroDetails)
+module.HeroDetails = table.freeze(module.HeroDetails)
 
 function ValidateData()
 	local characterFolder = ReplicatedStorage.Assets.CharacterModels
 
-	for hero, heroData in pairs(HeroDetails) do
+	for hero, heroData in pairs(module.HeroDetails) do
 		assert(characterFolder[hero], hero .. " did not have folder in character models")
 
 		for skin, skinData in pairs(heroData.Skins) do
@@ -74,4 +94,12 @@ end
 
 ValidateData()
 
-return HeroDetails
+function module.GetModelFromName(heroName: string, skinName: string?)
+	if not skinName then
+		skinName = module.HeroDetails[heroName].DefaultSkin
+	end
+
+	return ReplicatedStorage.Assets.CharacterModels:FindFirstChild(heroName):FindFirstChild(skinName)
+end
+
+return module
