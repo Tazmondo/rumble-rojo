@@ -107,12 +107,15 @@ function HideAll()
 	end
 end
 
-function RenderTrophies()
+function RenderStats()
 	MainUI.Enabled = true
 	MainUI.Interface.Inventory.Visible = true
 
 	local trophies = Net:LocalFolder():GetAttribute("Trophies") or 0
 	MainUI.Interface.Inventory.Trophies.TrophyCount.Text = trophies
+
+	local money = Net:LocalFolder():GetAttribute("Money") or 0
+	MainUI.Interface.Inventory["G Bucks"].GBucksCount.Text = money
 end
 
 local prevHero = nil
@@ -144,7 +147,7 @@ function NotEnoughPlayersRender(changed)
 		MainUI.Enabled = true
 	end
 
-	RenderTrophies()
+	RenderStats()
 	UpdateQueueButtons()
 	RenderHeroIcon()
 end
@@ -157,7 +160,7 @@ function IntermissionRender(changed)
 		ArenaUI.Interface.TopBar.Visible = true
 	end
 
-	RenderTrophies()
+	RenderStats()
 	UpdateQueueButtons()
 	RenderHeroIcon()
 	TopText.Visible = true
@@ -203,7 +206,7 @@ function BattleStartingRender(changed)
 		end
 		prevCountdown = countdown
 	elseif not ready then
-		RenderTrophies()
+		RenderStats()
 		RenderHeroIcon()
 	end
 
@@ -242,7 +245,7 @@ function BattleRender(changed)
 	end
 
 	if not ready then
-		RenderTrophies()
+		RenderStats()
 		RenderHeroIcon()
 	end
 
@@ -264,7 +267,7 @@ function BattleEndedRender(changed)
 	end
 
 	if not ready then
-		RenderTrophies()
+		RenderStats()
 		RenderHeroIcon()
 	end
 
