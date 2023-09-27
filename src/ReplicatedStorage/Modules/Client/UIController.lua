@@ -20,6 +20,7 @@ local TopText = ArenaUI.Interface.TopBar.TopText.Text
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local DataController = require(script.Parent.DataController)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
@@ -31,6 +32,7 @@ local Net = Red.Client("game")
 
 local ready = false
 local heroSelectOpen = false
+local skinSelectOpen = false
 local displayedHero: string? = nil
 local selectedHero: string? = Net:LocalFolder():GetAttribute("Hero")
 local shouldTryHide = false
@@ -296,7 +298,7 @@ end
 local prevOpen = false
 function RenderHeroSelectScreen()
 	HeroSelect.Enabled = true
-	local frame = HeroSelect.Frame :: Frame
+	local frame = HeroSelect.Frame.Select :: Frame
 	local details = frame.Information:FindFirstChild("2-Details")
 
 	if prevOpen ~= heroSelectOpen then
@@ -363,16 +365,6 @@ function RenderHeroSelectScreen()
 	end
 
 	frame.Stats:FindFirstChild("3-Super").Details.SuperTitle.Text = heroData.Super.Name
-
-	for _, v in pairs(frame.Character:GetChildren()) do
-		if v:IsA("ImageLabel") then
-			if v.Name == currentHeroName then
-				v.Visible = true
-			else
-				v.Visible = false
-			end
-		end
-	end
 end
 
 function ResetRoundVariables()
@@ -403,7 +395,7 @@ function UIController:RenderAllUI()
 		HideAll()
 	end
 
-	if heroSelectOpen then
+	if heroSelectOpen and not (ready and state ~= "NotEnoughPlayers" and state ~= "Intermission") then
 		RenderHeroSelectScreen()
 	else
 		if state == "NotEnoughPlayers" then
@@ -476,27 +468,103 @@ function UIController:Initialize()
 		shouldTryHide = true
 	end)
 
-	HeroSelect.Frame.Exit.Activated:Connect(function(input: InputObject)
+	HeroSelect.Frame.Select.Exit.Activated:Connect(function(input: InputObject)
 		heroSelectOpen = false
 		shouldTryHide = true
 	end)
 
-	HeroSelect.Frame.Stats.Select.Activated:Connect(function()
-		heroSelectOpen = false
-		shouldTryHide = true
-		Net:Fire("HeroSelect", displayedHero)
-		selectedHero = displayedHero
-	end)
+	-- HeroSelect.Frame.Select.Stats.Select.Activated:Connect(function()
+	-- 	heroSelectOpen = false
+	-- 	shouldTryHide = true
+	-- 	Net:Fire("HeroSelect", displayedHero)
+	-- 	selectedHero = displayedHero
+	-- end)
 
-	for _, heroButton in pairs(HeroSelect.Frame:FindFirstChild("Character Select"):GetChildren()) do
-		if not heroButton:IsA("ImageButton") then
-			continue
+	local TRANSITIONTIME = 0.5
+	local STYLE = Enum.EasingStyle.Quad
+	local transitioning = false
+	local outSize = UDim2.fromScale(1.2, 1)
+	local inSize = UDim2.fromScale(0.7, 0.7)
+	-- local outSize = UDim2.fromScale(1, 1)
+	-- local inSize = UDim2.fromScale(1, 1)
+
+	HeroSelect.Frame.Select.Stats.ChangeOutfit.Activated:Connect(function()
+		if transitioning then
+			return
 		end
-		heroButton.Activated:Connect(function()
-			-- todo: check if owned
-			displayedHero = heroButton.Name
+
+		transitioning = true
+
+		skinSelectOpen = true
+		HeroSelect.Frame.Skin.Visible = true
+
+		HeroSelect.Frame.Select.GroupTransparency = 0
+		HeroSelect.Frame.Select.Size = UDim2.fromScale(1, 1)
+
+		TweenService:Create(
+			HeroSelect.Frame.Select,
+			TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out),
+			{ GroupTransparency = 1, Size = outSize }
+		):Play()
+
+		HeroSelect.Frame.Skin.GroupTransparency = 1
+		HeroSelect.Frame.Skin.Size = UDim2.fromScale(1, 1)
+
+		TweenService:Create(
+			HeroSelect.Frame.Skin,
+			TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out),
+			{ GroupTransparency = 0 }
+		):Play()
+
+		task.delay(TRANSITIONTIME, function()
+			transitioning = false
+			HeroSelect.Frame.Select.Visible = false
 		end)
-	end
+	end)
+
+	HeroSelect.Frame.Skin.Back.Exit.Activated:Connect(function()
+		if transitioning then
+			return
+		end
+
+		transitioning = true
+
+		skinSelectOpen = false
+		HeroSelect.Frame.Select.Visible = true
+
+		HeroSelect.Frame.Select.GroupTransparency = 1
+		HeroSelect.Frame.Select.Size = outSize
+
+		TweenService:Create(
+			HeroSelect.Frame.Select,
+			TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out),
+			{ GroupTransparency = 0, Size = UDim2.fromScale(1, 1) }
+		):Play()
+
+		HeroSelect.Frame.Skin.GroupTransparency = 0
+		HeroSelect.Frame.Skin.Size = UDim2.fromScale(1, 1)
+
+		TweenService:Create(
+			HeroSelect.Frame.Skin,
+			TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out),
+			{ GroupTransparency = 1 }
+		):Play()
+
+		task.delay(TRANSITIONTIME, function()
+			transitioning = false
+			HeroSelect.Frame.Skin.Visible = false
+		end)
+	end)
+
+	-- for _, heroButton in pairs(HeroSelect.Frame:FindFirstChild("Character Select"):GetChildren()) do
+	-- 	if not heroButton:IsA("ImageButton") then
+	-- 		continue
+	-- 	end
+	-- 	heroButton.Activated:Connect(function()
+	-- 		-- todo: check if owned
+	-- 		displayedHero = heroButton.Name
+	-- 	end)
+	-- end
 
 	Net:On("PlayerDied", function()
 		died = true
