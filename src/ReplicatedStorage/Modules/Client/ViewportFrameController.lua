@@ -34,7 +34,15 @@ local animationFolder = ReplicatedStorage.Assets.Animations
 function ViewportFrameController.NewHeadButton(model: Model)
 	local button = headButtonTemplate:Clone()
 	local newModel = model:Clone()
-	newModel.Parent = button:FindFirstChild("ViewportFrame")
+	local viewport = button:FindFirstChild("ViewportFrame") :: ViewportFrame
+
+	-- Destroy model from template
+	local badModel = viewport:FindFirstChildOfClass("Model")
+	if badModel then
+		badModel:Destroy()
+	end
+
+	newModel.Parent = viewport
 	newModel:PivotTo(MODELCFRAME)
 
 	return button

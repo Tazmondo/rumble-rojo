@@ -46,6 +46,9 @@ local displayedSkin = selectedSkin
 local shouldTryHide = false
 local UIState = ""
 
+local shouldReRenderCharacterSelectButtons = true
+local shouldReRenderSkinSelectButtons = true
+
 function PositionCameraToModel(viewportFrame: ViewportFrame, camera: Camera, model: Model)
 	local fovDeg = camera.FieldOfView
 	local aspectRatio = viewportFrame.AbsoluteSize.X / viewportFrame.AbsoluteSize.Y
@@ -112,17 +115,26 @@ function RenderTrophies()
 	MainUI.Interface.Inventory.Trophies.TrophyCount.Text = trophies
 end
 
+local prevHero = nil
+local prevSkin = nil
 function RenderHeroIcon()
 	MainUI.Enabled = true
 	MainUI.Interface.MenuBar.Visible = true
-	for i, v in pairs(MainUI.Interface.MenuBar:FindFirstChild("Current Character"):GetChildren()) do
-		if v:IsA("ImageLabel") then
-			if v.Name == selectedHero then
-				v.Visible = true
-			else
-				v.Visible = false
-			end
-		end
+
+	if prevHero ~= selectedHero or prevSkin ~= selectedSkin then
+		prevHero = selectedHero
+		prevSkin = selectedSkin
+
+		local frame = MainUI.Interface.MenuBar:FindFirstChild("Current Character") :: Frame
+		frame:ClearAllChildren()
+
+		local button = ViewportFrameController.NewHeadButton(HeroDetails.GetModelFromName(selectedHero, selectedSkin))
+		button.Size = UDim2.fromScale(1, 1)
+		button.Activated:Connect(function()
+			heroSelectOpen = true
+			shouldTryHide = true
+		end)
+		button.Parent = frame
 	end
 end
 
@@ -491,9 +503,6 @@ function UIController:ExitClick()
 	UpdateQueueButtons()
 end
 
-local shouldReRenderCharacterSelectButtons = true
-local shouldReRenderSkinSelectButtons = true
-
 function RenderCharacterSelectButtons()
 	if not shouldReRenderCharacterSelectButtons then
 		return
@@ -587,11 +596,6 @@ function UIController:Initialize()
 	end)
 	MainUI.Queue.Exit.MouseButton1Down:Connect(function()
 		self:ExitClick()
-	end)
-
-	MainUI.Interface.MenuBar:FindFirstChild("Current Character").Button.Activated:Connect(function(input: InputObject)
-		heroSelectOpen = true
-		shouldTryHide = true
 	end)
 
 	HeroSelect.Frame.Select.Exit.Activated:Connect(function(input: InputObject)
