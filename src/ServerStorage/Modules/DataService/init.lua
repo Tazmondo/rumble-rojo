@@ -26,6 +26,7 @@ local OwnedHeroTemplate: Types.HeroStats = {
 
 local ProfileTemplate = {
 	Trophies = 0,
+	Money = 0,
 	Playtime = 0,
 	OwnedHeroes = {} :: { [string]: Types.HeroStats }, -- automatically fills with free heroes and skins
 	SelectedHero = "Frankie",
@@ -62,6 +63,7 @@ function DataService.SyncPlayerData(player)
 	local data = profile.Data :: ProfileData
 
 	Net:Folder(player):SetAttribute("Trophies", data.Trophies)
+	Net:Folder(player):SetAttribute("Money", data.Money)
 	Net:Folder(player):SetAttribute("Hero", data.SelectedHero)
 	Net:Folder(player):SetAttribute("Skin", data.OwnedHeroes[data.SelectedHero].SelectedSkin)
 

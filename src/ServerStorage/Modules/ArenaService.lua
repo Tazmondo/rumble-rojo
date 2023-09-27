@@ -40,8 +40,11 @@ function ArenaService.HandleResults(player)
 		trophies -= Config.TrophyDeath
 	end
 
+	local money = battleData.Kills * Config.MoneyKill
+
 	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)
 		data.Trophies += trophies
+		data.Money += money
 		data.OwnedHeroes[battleData.Hero].Trophies += trophies
 
 		data.Stats.Kills += battleData.Kills
@@ -61,7 +64,6 @@ function ArenaService.HandleResults(player)
 	end)
 
 	Net:Fire(player, "MatchResults", trophies, battleData)
-	print("Fired matchresults")
 	Net:Folder(player):SetAttribute("InMatch", false)
 	registeredPlayers[player] = nil
 end

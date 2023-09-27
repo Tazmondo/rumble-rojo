@@ -41,6 +41,9 @@ local Config = {
 	TrophyKill = 2,
 	TrophyDeath = -2,
 
+	-- Money values
+	MoneyKill = 25,
+
 	-- booster modifier multipliers
 	BoosterHealth = 1.1,
 	BoosterDamage = 1.1,
