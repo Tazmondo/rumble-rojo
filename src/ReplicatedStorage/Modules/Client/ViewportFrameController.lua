@@ -60,6 +60,7 @@ function ViewportFrameController.get(frame: ViewportFrame)
 	self.model = nil :: Model?
 
 	self.animationRig = nil :: Model?
+	self.track = nil :: AnimationTrack?
 
 	self.renderConnection = RunService.RenderStepped:Connect(function()
 		self:Render()
@@ -71,7 +72,10 @@ function ViewportFrameController.get(frame: ViewportFrame)
 end
 
 function ViewportFrameController.UpdateModel(self: ViewportFrameController, model: Model)
-	if self.animationRig then
+	local timePosition = 0
+
+	if self.animationRig and self.track then
+		timePosition = self.track.TimePosition
 		self.animationRig:Destroy()
 	end
 	local oldModel = self.model
@@ -88,8 +92,11 @@ function ViewportFrameController.UpdateModel(self: ViewportFrameController, mode
 
 	local track = animator:LoadAnimation(animationFolder.Idle)
 
+	self.track = track
+
 	track.Looped = true
 	track:Play(0, 1, 1)
+	track.TimePosition = timePosition
 
 	task.delay(0.05, function()
 		self.animationRig = newAnimationModel

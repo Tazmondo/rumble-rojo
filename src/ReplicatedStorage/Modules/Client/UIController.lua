@@ -341,7 +341,7 @@ function RenderHeroSelectScreen()
 
 	local inactiveCount = 0
 	local activeCount = 0
-	for i, v in pairs(frame.Stats:FindFirstChild("1-Offence").Details.Meter:GetChildren()) do
+	for i, v in pairs(frame.Stats.Frame:FindFirstChild("1-Offence").Details.Meter:GetChildren()) do
 		if not v:IsA("ImageLabel") then
 			continue
 		end
@@ -358,7 +358,7 @@ function RenderHeroSelectScreen()
 
 	inactiveCount = 0
 	activeCount = 0
-	for i, v in pairs(frame.Stats:FindFirstChild("2-Defence").Details.Meter:GetChildren()) do
+	for i, v in pairs(frame.Stats.Frame:FindFirstChild("2-Defence").Details.Meter:GetChildren()) do
 		if not v:IsA("ImageLabel") then
 			continue
 		end
@@ -373,9 +373,9 @@ function RenderHeroSelectScreen()
 		end
 	end
 
-	frame.Stats:FindFirstChild("3-Super").Details.SuperTitle.Text = combatData.Super.Name
-	frame.Stats.Unlock.Cost.Text = heroData.Price
-	frame.Stats.Unlock.Visible = if heroStats then true else false
+	frame.Stats.Frame:FindFirstChild("3-Super").Details.SuperTitle.Text = combatData.Super.Name
+	frame.Stats.Frame.Unlock.Cost.Text = heroData.Price
+	frame.Stats.Frame.Unlock.Visible = if heroStats then true else false
 
 	-- RENDERING SKIN SELECT
 	RenderSkinSelectButtons()
@@ -622,7 +622,7 @@ function UIController:Initialize()
 	-- local outSize = UDim2.fromScale(1, 1)
 	-- local inSize = UDim2.fromScale(1, 1)
 
-	HeroSelect.Frame.Select.Stats.ChangeOutfit.Activated:Connect(function()
+	HeroSelect.Frame.Select.Stats.Frame.ChangeOutfit.Activated:Connect(function()
 		if transitioning then
 			return
 		end
