@@ -37,7 +37,7 @@ function ArenaService.HandleResults(player)
 	if battleData.Won then
 		trophies += Config.TrophyWin
 	elseif battleData.Died then
-		trophies -= Config.TrophyDeath
+		trophies += Config.TrophyDeath
 	end
 
 	local money = battleData.Kills * Config.MoneyKill
