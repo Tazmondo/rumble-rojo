@@ -1,10 +1,11 @@
+--!nolint LocalShadow
 --!strict
 local DataService = {}
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails).HeroDetails
+local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local LoadedService = require(script.Parent.LoadedService)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local ProfileService = require(script.ProfileService)
@@ -12,7 +13,7 @@ local Red = require(ReplicatedStorage.Packages.Red)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local Promise = Red.Promise
 local Signal = Red.Signal
-local Net = Red.Server("game", { "SelectHero", "HeroData" })
+local Net = Red.Server("game", { "SelectHero", "HeroData", "PurchaseHero", "PurchaseSkin" })
 
 export type HeroData = {}
 
@@ -26,7 +27,7 @@ local OwnedHeroTemplate: Types.HeroStats = {
 
 local ProfileTemplate = {
 	Trophies = 0,
-	Money = 0,
+	Money = 1000, -- TODO: set me to 0
 	Playtime = 0,
 	OwnedHeroes = {} :: { [string]: Types.HeroStats }, -- automatically fills with free heroes and skins
 	SelectedHero = "Frankie",
@@ -42,6 +43,26 @@ local ProfileTemplate = {
 		DamageDealt = 0,
 	},
 }
+
+-- makes sure the owned hero table is valid, or creates it if not
+function CorrectOwnedHero(heroData: HeroDetails.Hero, ownedHero: Types.HeroStats?)
+	if not ownedHero then
+		ownedHero = TableUtil.Copy(OwnedHeroTemplate, true)
+	end
+	local ownedHero = ownedHero :: Types.HeroStats
+
+	for skinName, skinData in pairs(heroData.Skins) do
+		if skinData.Price == 0 then
+			ownedHero.Skins[skinName] = true
+		end
+	end
+	local skin = ownedHero.SelectedSkin
+	if not heroData.Skins[skin] then
+		ownedHero.SelectedSkin = heroData.DefaultSkin
+	end
+
+	return ownedHero
+end
 
 export type ProfileData = typeof(ProfileTemplate)
 
@@ -92,21 +113,13 @@ local function reconcile(profile)
 		TableUtil.Reconcile(heroData, OwnedHeroTemplate)
 	end
 
-	for heroName, heroData in pairs(HeroDetails) do
+	for heroName, heroData in pairs(HeroDetails.HeroDetails) do
 		if heroData.Price == 0 and not data.OwnedHeroes[heroName] then
 			data.OwnedHeroes[heroName] = TableUtil.Copy(OwnedHeroTemplate, true)
 		end
 
 		if data.OwnedHeroes[heroName] then
-			for skinName, skinData in pairs(heroData.Skins) do
-				if skinData.Price == 0 then
-					data.OwnedHeroes[heroName].Skins[skinName] = true
-				end
-			end
-			local skin = data.OwnedHeroes[heroName].SelectedSkin
-			if not heroData.Skins[skin] then
-				data.OwnedHeroes[heroName].SelectedSkin = heroData.DefaultSkin
-			end
+			CorrectOwnedHero(heroData, data.OwnedHeroes[heroName])
 		end
 	end
 end
@@ -177,10 +190,56 @@ end)
 
 Net:On("SelectSkin", function(player: Player, hero: string, skin: string)
 	local data: ProfileData = DataService.GetProfileData(player):Await()
-	if not data.OwnedHeroes[hero] or not HeroDetails[hero].Skins[skin] or not data.OwnedHeroes[hero].Skins[skin] then
+	if
+		not data.OwnedHeroes[hero]
+		or not HeroDetails.HeroDetails[hero].Skins[skin]
+		or not data.OwnedHeroes[hero].Skins[skin]
+	then
 		return
 	end
 	data.OwnedHeroes[hero].SelectedSkin = skin
+	DataService.SyncPlayerData(player)
+end)
+
+Net:On("PurchaseHero", function(player: Player, hero: string)
+	local data: ProfileData = DataService.GetProfileData(player):Await()
+	if type(hero) ~= "string" or not HeroDetails.HeroDetails[hero] then
+		return
+	end
+
+	if data.OwnedHeroes[hero] then
+		warn("Bought hero they already own.")
+		return
+	end
+
+	local heroData = HeroDetails.HeroDetails[hero]
+	if data.Money < heroData.Price then
+		return
+	end
+
+	data.Money -= heroData.Price
+	data.OwnedHeroes[hero] = CorrectOwnedHero(heroData)
+	DataService.SyncPlayerData(player)
+end)
+
+Net:On("PurchaseSkin", function(player: Player, hero: string, skin: string)
+	local data: ProfileData = DataService.GetProfileData(player):Await()
+	if type(hero) ~= "string" or type(skin) ~= "string" then
+		return
+	end
+
+	local skinData = HeroDetails.HeroDetails[hero].Skins[skin]
+
+	if not data.OwnedHeroes[hero] or not skinData or data.OwnedHeroes[hero].Skins[skin] then
+		return
+	end
+
+	if data.Money < skinData.Price then
+		return
+	end
+
+	data.Money -= skinData.Price
+	data.OwnedHeroes[hero].Skins[skin] = true
 	DataService.SyncPlayerData(player)
 end)
 

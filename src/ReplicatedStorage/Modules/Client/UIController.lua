@@ -395,31 +395,38 @@ function RenderHeroSelectScreen()
 	end
 
 	frame.Stats.Frame:FindFirstChild("3-Super").Details.SuperTitle.Text = combatData.Super.Name
+
 	frame.Stats.Frame.Unlock.Cost.Text = heroData.Price
-	frame.Stats.Frame.Unlock.Visible = if heroStats then true else false
+	frame.Stats.Frame.Unlock.Visible = if heroStats then false else true
+	frame.Stats.Frame.ChangeOutfit.Visible = if heroStats then true else false
 
-	-- RENDERING SKIN SELECT
-	RenderSkinSelectButtons()
-	local skinFrame = HeroSelect.Frame.Skin
-	local skinInfo = skinFrame.Info
+	-- Don't try to render skins if the hero isn't owned
+	if heroStats then
+		-- RENDERING SKIN SELECT
+		RenderSkinSelectButtons()
+		local skinFrame = HeroSelect.Frame.Skin
+		local skinInfo = skinFrame.Info
 
-	local skinData = heroData.Skins[displayedSkin]
-	local rarity = skinData.Rarity
+		local skinData = heroData.Skins[displayedSkin]
+		local rarity = skinData.Rarity
 
-	skinInfo.Common.Visible = rarity == "Common"
-	skinInfo.Uncommon.Visible = rarity == "Uncommon"
-	skinInfo.Rare.Visible = rarity == "Rare"
-	skinInfo.Epic.Visible = rarity == "Epic"
-	skinInfo.Legendary.Visible = rarity == "Legendary"
+		skinInfo.Common.Visible = rarity == "Common"
+		skinInfo.Uncommon.Visible = rarity == "Uncommon"
+		skinInfo.Rare.Visible = rarity == "Rare"
+		skinInfo.Epic.Visible = rarity == "Epic"
+		skinInfo.Legendary.Visible = rarity == "Legendary"
 
-	skinInfo["2-Details"]["2-Name"].Text = skinData.Name
-	skinInfo["2-Details"]["3-Description"].Text = skinData.Description
+		skinInfo["2-Details"]["2-Name"].Text = skinData.Name
+		skinInfo["2-Details"]["3-Description"].Text = skinData.Description
 
-	local owned = heroStats.Skins[displayedSkin] ~= nil
+		local owned = heroStats.Skins[displayedSkin] ~= nil
 
-	skinInfo.Equip.Visible = displayedSkin ~= selectedSkin and owned
-	skinInfo.Equipped.Visible = displayedSkin == selectedSkin and owned
-	skinInfo.Unlock.Visible = not owned
+		skinInfo.Equip.Visible = displayedSkin ~= selectedSkin and owned
+		skinInfo.Equipped.Visible = displayedSkin == selectedSkin and owned
+
+		skinInfo.Unlock.Cost.Text = skinData.Price
+		skinInfo.Unlock.Visible = not owned
+	end
 
 	-- RENDER PREVIEW
 	local model = HeroDetails.GetModelFromName(selectedHero, if skinSelectOpen then displayedSkin else selectedSkin)
@@ -529,8 +536,14 @@ function RenderCharacterSelectButtons()
 		-- Wait for data to be received from server
 		DataController.HasLoadedDataPromise():Await()
 		for hero, heroData in pairs(HeroDetails.HeroDetails) do
-			local model =
-				HeroDetails.GetModelFromName(heroData.Name, assert(DataController.ownedHeroData[hero].SelectedSkin))
+			local owned = DataController.ownedHeroData[hero] ~= nil
+
+			local skinName = if owned
+				then assert(DataController.ownedHeroData[hero].SelectedSkin)
+				else HeroDetails.HeroDetails[heroData.Name].DefaultSkin
+
+			local model = HeroDetails.GetModelFromName(heroData.Name, skinName)
+
 			local button = ViewportFrameController.NewHeadButton(model)
 			button.Parent = characterSelect
 			button.Name = hero
@@ -550,7 +563,12 @@ function RenderCharacterSelectButtons()
 
 				displayedHero = selectedHero
 
-				selectedSkin = DataController.ownedHeroData[hero].SelectedSkin
+				local data = DataController.ownedHeroData[hero]
+				if data then
+					selectedSkin = data.SelectedSkin
+				else
+					selectedSkin = HeroDetails.HeroDetails[hero].DefaultSkin
+				end
 				displayedSkin = selectedSkin
 			end)
 		end
@@ -701,6 +719,14 @@ function UIController:Initialize()
 			transitioning = false
 			HeroSelect.Frame.Skin.Visible = false
 		end)
+	end)
+
+	HeroSelect.Frame.Select.Stats.Frame.Unlock.Activated:Connect(function()
+		DataController.PurchaseHero(displayedHero)
+	end)
+
+	HeroSelect.Frame.Skin.Info.Unlock.Activated:Connect(function()
+		DataController.PurchaseSkin(displayedHero, displayedSkin)
 	end)
 
 	Net:On("PlayerDied", function()

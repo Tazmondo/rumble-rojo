@@ -32,6 +32,15 @@ function DataController.SelectSkin(hero: string, skin: string)
 	DataController.ownedHeroData[hero].SelectedSkin = skin
 end
 
+function DataController.PurchaseHero(hero: string)
+	Net:Fire("PurchaseHero", hero)
+end
+
+function DataController.PurchaseSkin(hero: string, skin: string)
+	Net:Fire("PurchaseSkin", hero, skin)
+	DataController.ownedHeroData[hero].Skins[skin] = true
+end
+
 Net:On("HeroData", function(data)
 	print("Updating hero data", data)
 	DataController.ownedHeroData = data

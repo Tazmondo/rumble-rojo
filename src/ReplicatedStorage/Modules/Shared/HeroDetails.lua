@@ -27,7 +27,7 @@ module.HeroDetails = {
 	Taz = {
 		Name = "Taz",
 		Description = "Taz specializes in range spray combat. With a fierce super shell.",
-		Price = 0,
+		Price = 500,
 		Offence = 4,
 		Defence = 2,
 		DefaultSkin = "Apple",
@@ -41,7 +41,7 @@ module.HeroDetails = {
 			Golden = {
 				Name = "Golden",
 				Description = "kingly",
-				Price = 0,
+				Price = 500,
 				Rarity = "Legendary",
 			},
 		},
