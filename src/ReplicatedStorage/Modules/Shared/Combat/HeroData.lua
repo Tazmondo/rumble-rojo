@@ -7,9 +7,6 @@ export type HeroData = {
 	Name: string,
 	Health: number,
 	MovementSpeed: number,
-	Description: string,
-	Offence: number,
-	Defence: number,
 	Attack: AttackData,
 	Super: SuperData,
 }
@@ -64,11 +61,8 @@ export type AbilityData = AttackData | SuperData
 -- to keep the system simple, chests are fully fledged combat players, they just can't attack and won't move.
 local ChestData: HeroData = {
 	Name = "Chest",
-	Health = 1,
+	Health = 1, -- Not used for the actual health.
 	MovementSpeed = 0,
-	Description = "",
-	Offence = 0,
-	Defence = 0,
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
 		Name = "",
@@ -101,9 +95,6 @@ local HeroData: { [string]: HeroData } = {
 		Name = "Taz",
 		Health = 3600,
 		MovementSpeed = Enums.MovementSpeed.Normal,
-		Description = "Taz specializes in range spray combat. With a fierce super shell.",
-		Offence = 4,
-		Defence = 2,
 		Attack = {
 			AbilityType = "Attack" :: "Attack",
 			Name = "Buckshot",
@@ -136,9 +127,6 @@ local HeroData: { [string]: HeroData } = {
 		Name = "Frankie",
 		Health = 4000,
 		MovementSpeed = Enums.MovementSpeed.Normal,
-		Description = "Frankie is a boss *****. Guy tosses mad water balloons and mushrooms.",
-		Offence = 2,
-		Defence = 4,
 		Attack = {
 			AbilityType = "Attack" :: "Attack",
 			Name = "Energy Ball",

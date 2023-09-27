@@ -25,12 +25,18 @@ local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
+local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Red = require(ReplicatedStorage.Packages.Red)
 local Net = Red.Server("game", { "CombatPlayerInitialize", "CombatKill", "PlayerKill" })
 
+type PlayerCombatDetails = {
+	HeroName: string,
+	SkinName: string,
+}
+
 -- Only for players currently fighting.
 local CombatPlayerData: { [Model]: CombatPlayer.CombatPlayer } = {}
-local PlayersInCombat: { [Player]: string } = {}
+local PlayersInCombat: { [Player]: PlayerCombatDetails } = {}
 
 local function getAllCombatPlayerCharacters()
 	local out = {}
@@ -372,6 +378,14 @@ function handleClientExplosionHit(
 	end
 end
 
+function CombatService:GetModelFromName(heroName: string, skinName: string?)
+	if not skinName then
+		skinName = HeroDetails[heroName].DefaultSkin
+	end
+
+	return ReplicatedStorage.Assets.CharacterModels:FindFirstChild(heroName):FindFirstChild(skinName)
+end
+
 function CombatService:GetCombatPlayerForPlayer(player: Player): CombatPlayer.CombatPlayer?
 	self = self :: CombatService
 
@@ -398,11 +412,15 @@ function CombatService:InitializeNameTag(character: Model, combatPlayer: CombatP
 	end)
 end
 
-function CombatService:EnterPlayerCombat(player: Player, heroName: string, newCFrame: CFrame?)
+function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 	self = self :: CombatService
 
-	PlayersInCombat[player] = heroName
-	return self:SpawnCharacter(player, newCFrame)
+	return Red.Promise.new(function(resolve)
+		local profile = DataService.GetProfileData(player):Await() :: DataService.ProfileData
+		PlayersInCombat[player] = { HeroName = profile.SelectedHero, SkinName = profile.SelectedSkin }
+
+		resolve(self:SpawnCharacter(player, newCFrame):Await())
+	end)
 end
 
 function CombatService:ExitPlayerCombat(player: Player)
@@ -430,18 +448,18 @@ function CombatService:HandlePlayerDeath(player: Player, data: KillData?)
 	self:ExitPlayerCombat(player)
 end
 
-function CombatService:SetupCombatPlayer(player: Player, heroName: string)
+function CombatService:SetupCombatPlayer(player: Player, details: PlayerCombatDetails)
 	self = self :: CombatService
-	print("Setting up", player.Name, "as", heroName)
+	print("Setting up", player.Name, "as", details.HeroName)
 	local char = assert(player.Character, "no character")
 
-	local combatPlayer = CombatPlayer.new(heroName, char, player) :: CombatPlayer.CombatPlayer
+	local combatPlayer = CombatPlayer.new(details.HeroName, char, player) :: CombatPlayer.CombatPlayer
 	CombatPlayerData[char] = combatPlayer
 
 	self:InitializeNameTag(char, combatPlayer, player)
 
 	print("Asking client to initialize combat player")
-	Net:Fire(player, "CombatPlayerInitialize", heroName)
+	Net:Fire(player, "CombatPlayerInitialize", details.HeroName)
 end
 
 function CombatService:LoadCharacterWithModel(player: Player, characterModel: Model?)
@@ -451,6 +469,7 @@ function CombatService:LoadCharacterWithModel(player: Player, characterModel: Mo
 		local starterChar = characterModel:Clone()
 		starterChar.Name = "StarterCharacter"
 		starterChar.Parent = game.StarterPlayer
+		starterChar.PrimaryPart = starterChar:FindFirstChild("HumanoidRootPart") :: BasePart
 		player:LoadCharacter()
 		starterChar:Destroy()
 	else
@@ -506,9 +525,13 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 		end)
 		print(player, "Loading char")
 
-		local heroName = PlayersInCombat[player] or ""
+		local details = PlayersInCombat[player]
 
-		self:LoadCharacterWithModel(player, ReplicatedStorage.Assets.CharacterModels:FindFirstChild(heroName))
+		if details then
+			self:LoadCharacterWithModel(player, CombatService:GetModelFromName(details.HeroName, details.SkinName))
+		else
+			self:LoadCharacterWithModel(player)
+		end
 	end)
 end
 
@@ -559,7 +582,8 @@ function CombatService:PlayerAdded(player: Player)
 	self:LoadPlayerGuis(player)
 
 	if RunService:IsStudio() and ServerScriptService:GetAttribute("combat") then
-		PlayersInCombat[player] = ServerScriptService:GetAttribute("hero")
+		PlayersInCombat[player] =
+			{ HeroName = ServerScriptService:GetAttribute("hero"), SkinName = ServerScriptService:GetAttribute("skin") }
 	end
 
 	DataService.PromiseLoad(player):Then(function(resolve)

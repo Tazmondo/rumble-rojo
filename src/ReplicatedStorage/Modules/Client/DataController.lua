@@ -13,7 +13,7 @@ DataController.ownedHeroData = {} :: { [string]: Types.HeroStats }
 DataController.updatedSignal = Red.Signal.new()
 
 Net:On("HeroData", function(data)
-	print("Updating hero data")
+	print("Updating hero data", data)
 	DataController.ownedHeroData = data
 	DataController.updatedSignal:Fire()
 end)

@@ -166,7 +166,7 @@ function ArenaService.StartMatch()
 		data.Hero = playerData.SelectedHero
 		assert(data.Hero, "Player did not have a selected character.")
 		Net:Folder(player):SetAttribute("InMatch", true)
-		CombatService:EnterPlayerCombat(player, data.Hero, spawns[spawnCount]):Then(function(char: Model)
+		CombatService:EnterPlayerCombat(player, spawns[spawnCount]):Then(function(char: Model)
 			-- Wait for character position to correct if spawn is slightly off vertically
 			-- task.wait(0) -- UPDATE: use moveto in spawn function so dont need to do this anymore
 			local HRP = char:FindFirstChild("HumanoidRootPart") :: BasePart

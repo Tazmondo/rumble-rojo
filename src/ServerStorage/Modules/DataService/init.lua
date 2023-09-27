@@ -4,6 +4,7 @@ local DataService = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local LoadedService = require(script.Parent.LoadedService)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local ProfileService = require(script.ProfileService)
@@ -17,20 +18,18 @@ export type HeroData = {}
 
 local STOREPREFIX = "Player2_"
 
-local FreeHeroes = {
-	Frankie = true,
-	Taz = true,
-}
-
 local OwnedHeroTemplate: Types.HeroStats = {
 	Trophies = 0,
+	SelectedSkin = "",
+	Skins = {},
 }
 
 local ProfileTemplate = {
 	Trophies = 0,
 	Playtime = 0,
-	OwnedHeroes = {} :: { [string]: Types.HeroStats },
+	OwnedHeroes = {} :: { [string]: Types.HeroStats }, -- automatically fills with free heroes and skins
 	SelectedHero = "Frankie",
+	SelectedSkin = HeroDetails.Frankie.DefaultSkin,
 	Version = 1, -- version is for data migration purposes in future
 	Stats = {
 		Kills = 0,
@@ -90,9 +89,17 @@ local function reconcile(profile)
 		TableUtil.Reconcile(heroData, OwnedHeroTemplate)
 	end
 
-	for heroName, _ in pairs(FreeHeroes) do
-		if not data.OwnedHeroes[heroName] then
+	for heroName, heroData in pairs(HeroDetails) do
+		if heroData.Price == 0 and not data.OwnedHeroes[heroName] then
 			data.OwnedHeroes[heroName] = TableUtil.Copy(OwnedHeroTemplate, true)
+		end
+
+		if data.OwnedHeroes[heroName] then
+			for skinName, skinData in pairs(heroData.Skins) do
+				if skinData.Price == 0 then
+					data.OwnedHeroes[heroName].Skins[skinName] = true
+				end
+			end
 		end
 	end
 end
@@ -152,7 +159,7 @@ end)
 
 Net:On("HeroSelect", function(player: Player, hero: string)
 	DataService.GetProfileData(player):Then(function(data: ProfileData)
-		if data.OwnedHeroes[hero] or FreeHeroes[hero] then
+		if data.OwnedHeroes[hero] then
 			data.SelectedHero = hero
 			DataService.HeroSelectSignal:Fire(player, hero)
 

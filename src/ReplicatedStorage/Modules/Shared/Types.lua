@@ -7,6 +7,8 @@ export type PlayerBattleStats = {
 
 export type HeroStats = {
 	Trophies: number,
+	SelectedSkin: string,
+	Skins: { [string]: boolean },
 }
 
 return {}
