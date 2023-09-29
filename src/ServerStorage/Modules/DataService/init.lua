@@ -27,10 +27,10 @@ local OwnedHeroTemplate: Types.HeroStats = {
 
 local ProfileTemplate = {
 	Trophies = 0,
-	Money = 1000, -- TODO: set me to 0
+	Money = 9000, -- TODO: set me to 0
 	Playtime = 0,
 	OwnedHeroes = {} :: { [string]: Types.HeroStats }, -- automatically fills with free heroes and skins
-	SelectedHero = "Frankie",
+	SelectedHero = "Taz",
 	Version = 1, -- version is for data migration purposes in future
 	Stats = {
 		Kills = 0,
