@@ -110,8 +110,8 @@ function RenderStats()
 	MainUI.Enabled = true
 	MainUI.Interface.Inventory.Visible = true
 
-	local trophies = Net:LocalFolder():GetAttribute("Trophies") or 0
-	local money = Net:LocalFolder():GetAttribute("Money") or 0
+	local trophies = DataController.GetTrophies()
+	local money = DataController.GetMoney()
 
 	MainUI.Interface.Inventory.Trophies.TrophyCount.Text = trophies
 	MainUI.Interface.Inventory["G Bucks"].GBucksCount.Text = money
@@ -344,7 +344,7 @@ function RenderHeroSelectScreen()
 	end
 	prevOpen = heroSelectOpen
 
-	local currentHeroName = selectedHero or Net:LocalFolder():GetAttribute("Hero")
+	local currentHeroName = displayedHero or Net:LocalFolder():GetAttribute("Hero")
 	if not currentHeroName then
 		warn("Could not find a selected hero!")
 		return
@@ -412,6 +412,9 @@ function RenderHeroSelectScreen()
 		local skinInfo = skinFrame.Info
 
 		local skinData = heroData.Skins[displayedSkin]
+		if not skinData then
+			warn("Could not find skinData", displayedSkin, selectedHero, displayedHero)
+		end
 		local rarity = skinData.Rarity
 
 		skinInfo.Common.Visible = rarity == "Common"
@@ -433,7 +436,7 @@ function RenderHeroSelectScreen()
 	end
 
 	-- RENDER PREVIEW
-	local model = HeroDetails.GetModelFromName(selectedHero, if skinSelectOpen then displayedSkin else selectedSkin)
+	local model = HeroDetails.GetModelFromName(displayedHero, if skinSelectOpen then displayedSkin else selectedSkin)
 	if model == prevModel then
 		return
 	end
@@ -558,19 +561,19 @@ function RenderCharacterSelectButtons()
 				button.ViewportFrame.Equipped.Visible = false
 			end
 			button.Activated:Connect(function()
-				DataController.SelectHero(hero)
 				shouldReRenderSkinSelectButtons = true
-				characterSelect[selectedHero].ViewportFrame.Equipped.Visible = false
 
-				selectedHero = hero
-
-				characterSelect[selectedHero].ViewportFrame.Equipped.Visible = true
-
-				displayedHero = selectedHero
+				displayedHero = hero
 
 				local data = DataController.ownedHeroData[hero]
 				if data then
 					selectedSkin = data.SelectedSkin
+					DataController.SelectHero(hero)
+					characterSelect[selectedHero].ViewportFrame.Equipped.Visible = false
+
+					selectedHero = hero
+
+					characterSelect[selectedHero].ViewportFrame.Equipped.Visible = true
 				else
 					selectedSkin = HeroDetails.HeroDetails[hero].DefaultSkin
 				end
@@ -704,10 +707,26 @@ function UIController:Initialize()
 	end)
 
 	HeroSelect.Frame.Select.Stats.Frame.Unlock.Activated:Connect(function()
+		if not DataController.CanAffordHero(displayedHero) then
+			return
+		end
+
 		DataController.PurchaseHero(displayedHero)
+		shouldReRenderSkinSelectButtons = true
+		DataController.SelectHero(displayedHero)
+
+		local characterSelect = HeroSelect.Frame.Select["Character Select"]
+		characterSelect[selectedHero].ViewportFrame.Equipped.Visible = false
+
+		selectedHero = displayedHero
+
+		characterSelect[selectedHero].ViewportFrame.Equipped.Visible = true
 	end)
 
 	HeroSelect.Frame.Skin.Info.Unlock.Activated:Connect(function()
+		if not DataController.CanAffordSkin(displayedHero, displayedSkin) then
+			return
+		end
 		DataController.PurchaseSkin(displayedHero, displayedSkin)
 	end)
 
