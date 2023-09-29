@@ -71,7 +71,7 @@ function InitializeHitboxParams(raycastHitbox, raycastParams: RaycastParams): ni
 	-- raycastHitbox.DebugLog = RunService:IsStudio()
 
 	-- PartMode, trigger OnHit when any part is hit, not just humanoids. We need this so we can delete projectiles when they hit walls.
-	raycastHitbox.DetectionMode = RaycastHitbox.DetectionMode.PartMode
+	raycastHitbox.DetectionMode = RaycastHitbox.DetectionMode.Bypass
 
 	return
 end
@@ -117,8 +117,10 @@ function CreateAttackProjectile(
 	InitializeHitboxParams(hitbox, GetRaycastParams(player.Character))
 	hitbox:HitStart()
 
-	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult)
-		pelletPart:Destroy()
+	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult, group: string)
+		if group ~= "nocollide" or CombatPlayer.GetAncestorWhichIsACombatPlayer(hitPart) then
+			pelletPart:Destroy()
+		end
 		if onHit then
 			onHit(hitPart, result.Position, id)
 		end
