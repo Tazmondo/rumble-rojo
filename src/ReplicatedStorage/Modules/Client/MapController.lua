@@ -7,11 +7,28 @@ local MapController = {}
 
 local Net = Red.Client("Map")
 
+local scheduleMove = {}
+
 local Add, Cleanup
 
-function MoveMap(map: Model, newCF: CFrame, oldCF: CFrame, tweenTime: number)
+function MoveMap(map: Model, descendantCount: number, newCF: CFrame, oldCF: CFrame, tweenTime: number)
 	Add, Cleanup = Red.Bin()
 
+	local unique = {}
+	scheduleMove = unique
+
+	-- Allow map to fully load before trying to move/tween it
+	while #map:GetDescendants() < descendantCount do
+		task.wait()
+	end
+
+	-- Took too long to load, so don't overwrite the map position.
+	if scheduleMove ~= unique then
+		warn("Took too long to load map!")
+		return
+	end
+
+	map:PivotTo(oldCF)
 	local mapStart = map:GetPivot()
 
 	local easingStyle = Enum.EasingStyle.Quad
@@ -25,6 +42,7 @@ function MoveMap(map: Model, newCF: CFrame, oldCF: CFrame, tweenTime: number)
 		)
 		if os.clock() - start > tweenTime then
 			Cleanup()
+			Cleanup = nil
 			map:PivotTo(newCF)
 		end
 	end))
@@ -32,13 +50,16 @@ end
 
 function ForceMoveMap(map: Model, newCF: CFrame)
 	if Cleanup then
+		warn("Took a long time to load map, skipping animation")
 		Cleanup()
 	end
+	scheduleMove = {}
 	map:PivotTo(newCF)
 end
 
 function MapController:Initialize()
 	Net:On("MoveMap", MoveMap)
+	Net:On("ForceMoveMap", ForceMoveMap)
 end
 
 MapController:Initialize()

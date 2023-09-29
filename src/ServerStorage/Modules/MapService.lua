@@ -2,7 +2,6 @@
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatService = require(script.Parent.CombatService)
-local ItemService = require(script.Parent.ItemService)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local ServerConfig = require(script.Parent.ServerConfig)
 local Red = require(ReplicatedStorage.Packages.Red)
@@ -10,25 +9,20 @@ local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
 local MapService = {}
 
-local Net = Red.Server("Map", { "MoveMap" })
+local Net = Red.Server("Map", { "MoveMap", "ForceMoveMap" })
 
 local arena = workspace.Arena
 local activeMapFolder = arena.Map
-local mapFolder = workspace.Maps
+local mapFolder = ReplicatedStorage.Assets.Maps
 local lobby = workspace.Lobby :: Model
 local pivotPoint = assert(lobby:FindFirstChild("MapPivotPoint"), "Lobby did not have a MapPivotPoint.") :: BasePart
 
 local MAPTRANSITIONTIME = 4
 
--- Here we position the map slightly above the door centre
 local activeMapCFrame = pivotPoint.CFrame
 local inactiveMapCFrame = activeMapCFrame * CFrame.new(0, -50, 0)
 
-local loadedFolder = nil
-local map = nil
-
-local savedChests: { [Model]: Instance } = {}
-local temporaryChests: { Model } = {}
+local map: Model? = nil
 local chestFolder = Instance.new("Folder", ReplicatedStorage)
 chestFolder.Name = "ChestFolder"
 
@@ -48,21 +42,25 @@ local function GetRandomMap(): Model
 		end
 	end
 
-	return validMaps[math.random(1, #validMaps)]
+	local newMap = validMaps[math.random(1, #validMaps)]:Clone()
+	return newMap
 end
 
 local function MoveMapUp()
 	return Red.Promise.new(function(resolve)
-		Net:FireAll("MoveMap", map, activeMapCFrame, inactiveMapCFrame, MAPTRANSITIONTIME)
-		task.wait(MAPTRANSITIONTIME + 0.5)
+		assert(map)
+		Net:FireAll("MoveMap", map, #map:GetDescendants(), activeMapCFrame, inactiveMapCFrame, MAPTRANSITIONTIME)
+		task.wait(MAPTRANSITIONTIME + 5) -- Allow 5 seconds for map loading
 		map:PivotTo(activeMapCFrame)
+		Net:FireAll("ForceMoveMap", map, activeMapCFrame)
 		resolve()
 	end)
 end
 
 function MoveMapDown()
 	return Red.Promise.new(function(resolve)
-		Net:FireAll("MoveMap", map, inactiveMapCFrame, activeMapCFrame, MAPTRANSITIONTIME)
+		assert(map)
+		Net:FireAll("MoveMap", map, #map:GetDescendants(), inactiveMapCFrame, activeMapCFrame, MAPTRANSITIONTIME)
 		task.wait(MAPTRANSITIONTIME + 0.5)
 		map:PivotTo(inactiveMapCFrame)
 		resolve()
@@ -74,48 +72,29 @@ function RegisterChests()
 		warn("Tried to register chests without a map")
 		return
 	end
+
 	local chests = CollectionService:GetTagged(Config.ChestTag)
+	assert(map)
 	for i, chest: Model in ipairs(chests) do
 		if chest:IsDescendantOf(map) then
-			savedChests[chest] = assert(chest.Parent)
-
-			local newChest = chest:Clone()
-			newChest.Parent = chest.Parent
-			CombatService.RegisterChest(newChest)
-			table.insert(temporaryChests, newChest)
-
-			chest.Parent = chestFolder
+			CombatService.RegisterChest(chest)
 		end
 	end
 end
 
-function RestoreChests()
-	for i, chest in ipairs(temporaryChests) do
-		chest:Destroy()
-	end
-	for chest, parent in pairs(savedChests) do
-		chest.Parent = parent
-	end
-	temporaryChests = {}
-	savedChests = {}
-end
-
 function LoadMap(storedMap: Model)
 	map = storedMap
+	assert(map)
 	map:PivotTo(inactiveMapCFrame)
-	RegisterChests()
-
-	loadedFolder = map.Parent
 
 	map.Parent = activeMapFolder
+	RegisterChests()
 end
 
 function UnloadMap()
-	map.Parent = loadedFolder
-	map:PivotTo(inactiveMapCFrame)
-	RestoreChests()
-
-	loadedFolder = nil
+	if map then
+		map:Destroy()
+	end
 	map = nil
 end
 
@@ -133,7 +112,9 @@ function MapService:IsLoaded()
 end
 
 function MapService:GetMapSpawns()
-	return TableUtil.Shuffle(TableUtil.Map(map.Spawns:GetChildren(), function(spawn)
+	assert(map)
+	return TableUtil.Shuffle(TableUtil.Map((map:FindFirstChild("Spawns") :: Folder):GetChildren(), function(spawn)
+		local spawn = spawn :: BasePart
 		return spawn.CFrame
 	end))
 end
