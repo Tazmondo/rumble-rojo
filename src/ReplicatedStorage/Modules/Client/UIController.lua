@@ -527,15 +527,14 @@ function UIController:ExitClick()
 end
 
 function RenderCharacterSelectButtons()
-	if not shouldReRenderCharacterSelectButtons then
-		return
-	end
-	shouldReRenderCharacterSelectButtons = false
-
 	local characterSelect = HeroSelect.Frame.Select["Character Select"]
-	for i, v in pairs(characterSelect:GetChildren()) do
-		if v:IsA("TextButton") then
-			v:Destroy()
+	if shouldReRenderCharacterSelectButtons then
+		shouldReRenderCharacterSelectButtons = false
+
+		for i, v in pairs(characterSelect:GetChildren()) do
+			if v:IsA("TextButton") then
+				v:Destroy()
+			end
 		end
 	end
 
@@ -545,54 +544,70 @@ function RenderCharacterSelectButtons()
 		for hero, heroData in pairs(HeroDetails.HeroDetails) do
 			local owned = DataController.ownedHeroData[hero] ~= nil
 
-			local skinName = if owned
-				then assert(DataController.ownedHeroData[hero].SelectedSkin)
-				else HeroDetails.HeroDetails[heroData.Name].DefaultSkin
+			local button = characterSelect:FindFirstChild(hero)
 
-			local model = HeroDetails.GetModelFromName(heroData.Name, skinName)
+			if not button then
+				local skinName = if owned
+					then assert(DataController.ownedHeroData[hero].SelectedSkin)
+					else HeroDetails.HeroDetails[heroData.Name].DefaultSkin
+				local model = HeroDetails.GetModelFromName(heroData.Name, skinName)
 
-			local button = ViewportFrameController.NewHeadButton(model)
-			button.Parent = characterSelect
-			button.Name = hero
-			button.LayoutOrder = heroData.Order
+				button = ViewportFrameController.NewHeadButton(model)
+				button.Parent = characterSelect
+				button.Name = hero
+				button.LayoutOrder = heroData.Order
+				button.Activated:Connect(function()
+					shouldReRenderSkinSelectButtons = true
+
+					displayedHero = hero
+
+					local data = DataController.ownedHeroData[hero]
+					if data then
+						selectedSkin = data.SelectedSkin
+						DataController.SelectHero(hero)
+						characterSelect[selectedHero].ViewportFrame.Equipped.Visible = false
+
+						selectedHero = hero
+
+						characterSelect[selectedHero].ViewportFrame.Equipped.Visible = true
+					else
+						selectedSkin = HeroDetails.HeroDetails[hero].DefaultSkin
+					end
+					displayedSkin = selectedSkin
+				end)
+			end
+
 			if selectedHero == hero then
 				button.ViewportFrame.Equipped.Visible = true
 			else
 				button.ViewportFrame.Equipped.Visible = false
 			end
-			button.Activated:Connect(function()
-				shouldReRenderSkinSelectButtons = true
+			if displayedHero == hero then
+				button.UIScale.Scale = 1.2
+			else
+				button.UIScale.Scale = 1
+			end
 
-				displayedHero = hero
-
-				local data = DataController.ownedHeroData[hero]
-				if data then
-					selectedSkin = data.SelectedSkin
-					DataController.SelectHero(hero)
-					characterSelect[selectedHero].ViewportFrame.Equipped.Visible = false
-
-					selectedHero = hero
-
-					characterSelect[selectedHero].ViewportFrame.Equipped.Visible = true
-				else
-					selectedSkin = HeroDetails.HeroDetails[hero].DefaultSkin
-				end
-				displayedSkin = selectedSkin
-			end)
+			if not owned then
+				button.BackgroundTransparency = 0.7
+				button.ViewportFrame.ImageTransparency = 0.7
+			else
+				button.BackgroundTransparency = 0
+				button.ViewportFrame.ImageTransparency = 0
+			end
 		end
 	end)
 end
 
 function RenderSkinSelectButtons()
-	if not shouldReRenderSkinSelectButtons then
-		return
-	end
-	shouldReRenderSkinSelectButtons = false
-
 	local skinSelect = HeroSelect.Frame.Skin.SkinSelect
-	for i, v in pairs(skinSelect:GetChildren()) do
-		if v:IsA("TextButton") then
-			v:Destroy()
+
+	if shouldReRenderSkinSelectButtons then
+		shouldReRenderSkinSelectButtons = false
+		for i, v in pairs(skinSelect:GetChildren()) do
+			if v:IsA("TextButton") then
+				v:Destroy()
+			end
 		end
 	end
 
@@ -600,20 +615,38 @@ function RenderSkinSelectButtons()
 		-- Wait for data to be received from server
 		DataController.HasLoadedDataPromise():Await()
 		for skin, skinData in pairs(HeroDetails.HeroDetails[selectedHero].Skins) do
-			local model = HeroDetails.GetModelFromName(selectedHero, skin)
-			local button = ViewportFrameController.NewHeadButton(model)
-			button.Parent = skinSelect
-			button.Name = skin
-			button.LayoutOrder = skinData.Order
+			local owned = DataController.ownedHeroData[displayedHero].Skins[skin] ~= nil
+			local button = skinSelect:FindFirstChild(skin)
+			if not button then
+				local model = HeroDetails.GetModelFromName(displayedHero, skin)
+				button = ViewportFrameController.NewHeadButton(model)
+				button.Parent = skinSelect
+				button.Name = skin
+				button.LayoutOrder = skinData.Order
+				button.Activated:Connect(function()
+					displayedSkin = skin
+				end)
+			end
+
 			if selectedSkin == skin then
 				button.ViewportFrame.Equipped.Visible = true
 			else
 				button.ViewportFrame.Equipped.Visible = false
 			end
 
-			button.Activated:Connect(function()
-				displayedSkin = skin
-			end)
+			if displayedSkin == skin then
+				button.UIScale.Scale = 1.2
+			else
+				button.UIScale.Scale = 1
+			end
+
+			if not owned then
+				button.BackgroundTransparency = 0.7
+				button.ViewportFrame.ImageTransparency = 0.7
+			else
+				button.BackgroundTransparency = 0
+				button.ViewportFrame.ImageTransparency = 0
+			end
 		end
 	end)
 end
