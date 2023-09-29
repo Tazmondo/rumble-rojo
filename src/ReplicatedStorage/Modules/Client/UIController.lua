@@ -70,10 +70,15 @@ function PositionCameraToModel(viewportFrame: ViewportFrame, camera: Camera, mod
 end
 
 -- functions
+
 function UIController:IsAlive()
 	return Player
 		and Player.Character
 		and (Player.Character:FindFirstChild("Humanoid") and Player.Character.Humanoid.Health > 0)
+end
+
+function ShowBuyBucks()
+	BuyBucksUI.Enabled = true
 end
 
 function UpdateQueueButtons()
@@ -488,6 +493,7 @@ function UIController:RenderAllUI()
 			BattleStartingRender(changed)
 			if ready then
 				BuyBucksUI.Enabled = false
+				heroSelectOpen = false
 			end
 		elseif state == "Battle" then
 			BattleRender(changed)
@@ -747,6 +753,7 @@ function UIController:Initialize()
 
 	HeroSelect.Frame.Select.Stats.Frame.Unlock.Activated:Connect(function()
 		if not DataController.CanAffordHero(displayedHero) then
+			ShowBuyBucks()
 			return
 		end
 
@@ -764,17 +771,18 @@ function UIController:Initialize()
 
 	HeroSelect.Frame.Skin.Info.Unlock.Activated:Connect(function()
 		if not DataController.CanAffordSkin(displayedHero, displayedSkin) then
+			ShowBuyBucks()
 			return
 		end
 		DataController.PurchaseSkin(displayedHero, displayedSkin)
 	end)
 
 	MainUI.Interface.Inventory["G Bucks"].Activated:Connect(function()
-		BuyBucksUI.Enabled = true
+		ShowBuyBucks()
 	end)
 
 	HeroSelect.Frame.Inventory["G Bucks"].Activated:Connect(function()
-		BuyBucksUI.Enabled = true
+		ShowBuyBucks()
 	end)
 
 	BuyBucksUI.Frame.ImageLabel.Header.Title.Exit.Activated:Connect(function()
