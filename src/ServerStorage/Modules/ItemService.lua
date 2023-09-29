@@ -6,7 +6,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LoadedService = require(script.Parent.LoadedService)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
-local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
 local Red = require(ReplicatedStorage.Packages.Red)
 local Net = Red.Server("Items", { "SpawnItem", "DestroyItem", "RegisterItem", "CollectItem", "BeginAbsorb" })
 
@@ -55,7 +54,7 @@ function ItemService.ExplodeBoosters(position: Vector3, count: number)
 end
 
 function ItemService.CleanUp()
-	for i, item in ipairs(spawnedItems) do
+	for i, item in pairs(spawnedItems) do
 		Net:FireAll("DestroyItem", item.Id)
 	end
 	spawnedItems = {}

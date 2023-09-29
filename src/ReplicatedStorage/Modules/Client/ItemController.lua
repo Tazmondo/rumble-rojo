@@ -61,6 +61,7 @@ function SpawnItem(type: string, id: number, origin: Vector3, position: Vector3)
 end
 
 function RegisterItem(id: number, position: Vector3, disabled: boolean?)
+	print("Registering item", id)
 	if spawnedItems[id] then
 		spawnedItems[id].Item:Destroy()
 	end
@@ -78,6 +79,7 @@ function RegisterItem(id: number, position: Vector3, disabled: boolean?)
 end
 
 function DestroyItem(id: number)
+	print("Destroying item", id)
 	if spawnedItems[id] then
 		spawnedItems[id].Item:Destroy()
 		spawnedItems[id] = nil
