@@ -149,6 +149,14 @@ function CombatPlayer.GetAllCombatPlayerCharacters(): { Model }
 	return models
 end
 
+function CombatPlayer.CombatPlayerAdded()
+	return CollectionService:GetInstanceAddedSignal(Config.CombatPlayerTag)
+end
+
+function CombatPlayer.CombatPlayerRemoved()
+	return CollectionService:GetInstanceRemovedSignal(Config.CombatPlayerTag)
+end
+
 function CombatPlayer.Sync(self: CombatPlayer, funcName, ...)
 	if RunService:IsServer() and self.player then
 		NetServer:Fire(self.player, SYNCEVENT, funcName, ...)

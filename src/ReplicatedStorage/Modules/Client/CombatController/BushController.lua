@@ -1,3 +1,4 @@
+--!strict
 local BushController = {}
 
 local CollectionService = game:GetService("CollectionService")
@@ -8,67 +9,90 @@ local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlaye
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 
 local BUSHTAG = Config.BushTag
+local TRANSITIONTIME = 0.3
 
 local player = Players.LocalPlayer
 
-local registeredBushes: { [BasePart]: boolean } = {}
-local transparencies: { [Model]: { [BasePart]: number | boolean } } = {}
+type CharacterData = {
+	BaseTransparency: { [BasePart]: number },
+	Transitioning: boolean,
+	LastOpacity: number?,
+	Hidden: boolean,
+}
+
+local characterData: { [Model]: CharacterData } = {}
+
 local arenaFolder = workspace:WaitForChild("Arena") :: Folder
 
 local inCombat = false
 
 local forceVisibleDistance = 6
 
-function RegisterBush(bush: BasePart)
-	assert(bush:IsA("BasePart"), "Bush was tagged that is not a basepart!", bush:GetFullName())
-	registeredBushes[bush] = true
-end
-
-function UnregisterBush(bush: BasePart)
-	registeredBushes[bush] = nil
-end
-
-function RestoreTransparency(character: Model)
+function SetVisible(character: Model)
 	-- already restored
-	if not transparencies[character] then
+	if not characterData[character] then
+		warn("Called setvisible without baseTransparencies existing.")
 		return
 	end
 
-	for part, value in pairs(transparencies[character]) do
-		if part:IsA("BasePart") then
-			part.Transparency = value
-		elseif part:IsA("BillboardGui") then
-			part.Enabled = value
-		end
-	end
-	transparencies[character] = nil
+	SetOpacity(character, 1)
 end
 
-function ModifyTransparency(character: Model, newValue: number)
-	local save = false
-	if not transparencies[character] then
-		save = true
-		transparencies[character] = {}
+-- Multiply opacity by this number (e.g. 0.2 is 80% transparent)
+-- I use opacity as it makes it easy to deal with already transparent parts
+function SetOpacity(character: Model, opacityModifier: number)
+	if not characterData[character] then
+		warn("Set transparency called on a non-combat player")
 	end
+	local data = characterData[character]
 
-	for _, part in pairs(character:GetDescendants()) do
-		if part:IsA("BasePart") then -- Don't affect invisible parts like HRP
-			if part.Transparency == 0 or transparencies[character][part] ~= nil then
-				if save then
-					transparencies[character][part] = part.Transparency
-				end
-				part.Transparency = newValue
-			end
+	-- Don't reset the animation when setting opacity to the same value
+	if data.Transitioning and opacityModifier == data.LastOpacity then
+		return
+	end
+	data.LastOpacity = opacityModifier
 
-			-- for hiding nametag
-			local billboard = part:FindFirstChildOfClass("BillboardGui")
-			if billboard then
-				if save then
-					transparencies[character][billboard] = billboard.Enabled
+	for part, transparency in pairs(data.BaseTransparency) do
+		local startOpacity = 1 - part.Transparency
+		local endOpacity = (1 - transparency) * opacityModifier
+
+		if startOpacity ~= endOpacity then
+			local start = os.clock()
+			data.Transitioning = true
+			task.spawn(function()
+				while os.clock() - start < TRANSITIONTIME and characterData[character] and data.Transitioning do
+					local progress = math.clamp((os.clock() - start) / TRANSITIONTIME, 0, 1)
+					local currentOpacity = (endOpacity - startOpacity) * progress + startOpacity
+
+					part.Transparency = 1 - currentOpacity
+					task.wait()
 				end
-				billboard.Enabled = false
-			end
+				data.Transitioning = false
+			end)
 		end
+	end
+end
+
+function SetInvisible(character: Model)
+	local data = characterData[character]
+	if not data then
+		warn("Tried to make non-combat character invisible")
+		return
+	end
+	if data.LastOpacity ~= 0 then
+		SetOpacity(character, 0)
+	elseif not data.Transitioning then
+		-- If the character has finished transitioning to invisible, teleport them far away to stop VFX from rendering
+		local oldPivot = character:GetPivot()
+		character:PivotTo(CFrame.new(1000, 1000, 1000))
+
+		-- make sure to teleport them back before the hitbox code runs
+		-- hitbox code runs after physics simulation, this will run before, so ordering isn't an issue
+		-- this is SUPER hacky, TODO: BETTER METHOD
+		task.spawn(function()
+			RunService.PreSimulation:Wait()
+			character:PivotTo(oldPivot)
+		end)
 	end
 end
 
@@ -84,26 +108,24 @@ end
 
 function Render(dt: number)
 	debug.profilebegin("BushRender")
-	local characters = CombatPlayer.GetAllCombatPlayerCharacters()
-
 	local bushReset = {}
+	local bushes = CollectionService:GetTagged(BUSHTAG)
 
-	for _, character in ipairs(characters) do
+	for character, data in pairs(characterData) do
 		local inBush = false
 		local isPlayerCharacter = character == player.Character
+		local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
+		if not HRP then
+			continue
+		end
 
-		for bush, data in pairs(registeredBushes) do
-			if not bush:IsDescendantOf(arenaFolder) then
-				-- Bushes that aren't active can be skipped
-				continue
-			end
+		for i, bush in ipairs(bushes) do
+			-- if not bush:IsDescendantOf(arenaFolder) then
+			-- 	-- Bushes that aren't active can be skipped
+			-- 	continue
+			-- end
 			if bushReset[bush] == nil then
 				bushReset[bush] = true
-			end
-
-			local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
-			if not HRP then
-				continue
 			end
 
 			-- Make sure middle of HRP is inside the bush
@@ -114,18 +136,18 @@ function Render(dt: number)
 					or not inCombat
 					or (clientHRP and (clientHRP.Position - HRP.Position).Magnitude <= forceVisibleDistance) -- when too close, bushes dont hide you
 				then
-					ModifyTransparency(character, 0.2)
+					SetOpacity(character, 0.8)
 					bush.Transparency = 0.8
 					bushReset[bush] = false
 				else
-					ModifyTransparency(character, 1)
+					SetInvisible(character)
 				end
 				inBush = true
 				break
 			end
 		end
 		if not inBush then
-			RestoreTransparency(character)
+			SetVisible(character)
 		end
 	end
 
@@ -137,27 +159,50 @@ function Render(dt: number)
 	debug.profileend()
 end
 
-function BushController.IsCharacterHidden(character: Model)
-	return transparencies[character] ~= nil
-end
-
 function BushController.SetCombatStatus(status: boolean)
 	inCombat = status
 end
 
-function BushController.Initialize()
-	local bushes = CollectionService:GetTagged(BUSHTAG)
-	for _, bush in pairs(bushes) do
-		RegisterBush(bush)
+function CombatCharacterAdded(character: Model)
+	if characterData[character] then
+		warn("Combat character added twice without being removed!")
+		return
+	end
+	local baseTransparencies = {}
+	for i, v in pairs(character:GetDescendants()) do
+		if v:IsA("BasePart") then
+			baseTransparencies[v] = v.Transparency
+		end
 	end
 
-	CollectionService:GetInstanceAddedSignal(BUSHTAG):Connect(function(bush)
-		RegisterBush(bush)
-	end)
+	characterData[character] = {
+		BaseTransparency = baseTransparencies,
+		Transitioning = false,
+		Hidden = false,
+	}
+end
 
-	CollectionService:GetInstanceRemovedSignal(BUSHTAG):Connect(function(bush)
-		UnregisterBush(bush)
-	end)
+function CombatCharacterRemoved(character: Model)
+	if not characterData[character] then
+		warn("Combatcharacter removed without ever being added!")
+		return
+	end
+
+	for part, transparency in pairs(characterData[character].BaseTransparency) do
+		part.Transparency = transparency
+	end
+
+	characterData[character] = nil
+
+	return
+end
+
+function BushController.Initialize()
+	for i, v in pairs(CombatPlayer.GetAllCombatPlayerCharacters()) do
+		CombatCharacterAdded(v)
+	end
+	CombatPlayer.CombatPlayerAdded():Connect(CombatCharacterAdded)
+	CombatPlayer.CombatPlayerRemoved():Connect(CombatCharacterRemoved)
 
 	RunService.PreRender:Connect(Render)
 end
