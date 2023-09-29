@@ -122,10 +122,7 @@ function CombatClient.Destroy(self: CombatClient)
 end
 
 function CombatClient.RayHit(self: CombatClient, instance: Instance, position: Vector3, id: number)
-	local character = CombatPlayer.GetAncestorWhichIsACombatPlayer(instance)
-	if character then
-		Net:Fire("Hit", instance, position, id)
-	end
+	Net:Fire("Hit", instance, position, id)
 end
 
 function CombatClient.ExplosionHit(

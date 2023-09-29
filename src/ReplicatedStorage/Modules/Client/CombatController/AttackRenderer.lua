@@ -23,24 +23,31 @@ partFolder.Name = "Part Folder"
 local arenaFolder = assert(workspace:FindFirstChild("Arena"), "Could not find arena folder")
 local cylinderTemplate = assert(ReplicatedStorage.Assets.Cylinder, "Could not find cylinder hitbox part!") :: BasePart
 
--- function AttackRenderer.GenerateLengthChangedFunction(attackData: HeroData.AttackData)
--- 	-- TODO: Implement VFX
--- 	return function(
--- 		activeCast,
--- 		lastPoint: Vector3,
--- 		rayDir: Vector3,
--- 		displacement: number,
--- 		velocity: Vector3,
--- 		bullet: BasePart?
--- 	)
--- 		if bullet == nil then
--- 			warn("LengthChanged without a bullet", debug.traceback())
--- 			return
--- 		end
--- 		local projectilePoint = lastPoint + rayDir * displacement
--- 		bullet.CFrame = CFrame.lookAt(projectilePoint, projectilePoint + rayDir)
--- 	end
--- end
+local VALIDPARTS = {
+	Head = true,
+	LeftFoot = true,
+	LeftHand = true,
+	LeftLowerArm = true,
+	LeftLowerLeg = true,
+	LeftUpperArm = true,
+	LeftUpperLeg = true,
+	LowerTorso = true,
+	RightFoot = true,
+	RightHand = true,
+	RightLowerArm = true,
+	RightLowerLeg = true,
+	RightUpperArm = true,
+	RightUpperLeg = true,
+	UpperTorso = true,
+	HumanoidRootPart = true,
+}
+
+function AttackRenderer.GetCombatPlayerFromValidPart(part: BasePart): Model?
+	if VALIDPARTS[part.Name] then
+		return CombatPlayer.GetAncestorWhichIsACombatPlayer(part)
+	end
+	return nil
+end
 
 function GetRaycastParams(excludeCharacter: Model?)
 	local raycastParams = RaycastParams.new()
@@ -118,7 +125,8 @@ function CreateAttackProjectile(
 	hitbox:HitStart()
 
 	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult, group: string)
-		if group ~= "nocollide" or CombatPlayer.GetAncestorWhichIsACombatPlayer(hitPart) then
+		local character = AttackRenderer.GetCombatPlayerFromValidPart(hitPart)
+		if group ~= "nocollide" or character then
 			pelletPart:Destroy()
 		end
 		if onHit then
@@ -207,7 +215,7 @@ function CreateArcedAttack(
 			local hitCharacters = {}
 			local hitRegisters = {}
 			for _, part in ipairs(explosionParts) do
-				local character = CombatPlayer.GetAncestorWhichIsACombatPlayer(part)
+				local character = AttackRenderer.GetCombatPlayerFromValidPart(part)
 				if character and not hitCharacters[character] then
 					print("hit", character)
 					hitCharacters[character] = true
