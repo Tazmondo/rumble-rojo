@@ -27,7 +27,6 @@ local DataController = require(script.Parent.DataController)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Red = require(ReplicatedStorage.Packages.Red)
-local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local SoundController = require(script.Parent.SoundController)
 local ViewportFrameController = require(script.Parent.ViewportFrameController)
 
@@ -648,10 +647,10 @@ function UIController:Initialize()
 	local TRANSITIONTIME = 0.5
 	local STYLE = Enum.EasingStyle.Quad
 	local transitioning = false
-	local outSize = UDim2.fromScale(1.2, 1)
-	-- local inSize = UDim2.fromScale(0.7, 0.7)
-	-- local outSize = UDim2.fromScale(1, 1)
-	-- local inSize = UDim2.fromScale(1, 1)
+	local inScale = 0.9
+	local outScale = 1 / inScale
+
+	local tweenInfo = TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out)
 
 	HeroSelect.Frame.Select.Stats.Frame.ChangeOutfit.Activated:Connect(function()
 		if transitioning then
@@ -663,23 +662,11 @@ function UIController:Initialize()
 		skinSelectOpen = true
 		HeroSelect.Frame.Skin.Visible = true
 
-		HeroSelect.Frame.Select.GroupTransparency = 0
-		HeroSelect.Frame.Select.Size = UDim2.fromScale(1, 1)
+		HeroSelect.Frame.Select.UIScale.Scale = 1
+		TweenService:Create(HeroSelect.Frame.Select.UIScale, tweenInfo, { Scale = outScale }):Play()
 
-		TweenService:Create(
-			HeroSelect.Frame.Select,
-			TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out),
-			{ GroupTransparency = 1, Size = outSize }
-		):Play()
-
-		HeroSelect.Frame.Skin.GroupTransparency = 1
-		HeroSelect.Frame.Skin.Size = UDim2.fromScale(1, 1)
-
-		TweenService:Create(
-			HeroSelect.Frame.Skin,
-			TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out),
-			{ GroupTransparency = 0 }
-		):Play()
+		HeroSelect.Frame.Skin.UIScale.Scale = inScale
+		TweenService:Create(HeroSelect.Frame.Skin.UIScale, tweenInfo, { Scale = 1 }):Play()
 
 		task.delay(TRANSITIONTIME, function()
 			transitioning = false
@@ -697,23 +684,11 @@ function UIController:Initialize()
 		skinSelectOpen = false
 		HeroSelect.Frame.Select.Visible = true
 
-		HeroSelect.Frame.Select.GroupTransparency = 1
-		HeroSelect.Frame.Select.Size = outSize
+		HeroSelect.Frame.Select.UIScale.Scale = outScale
+		TweenService:Create(HeroSelect.Frame.Select.UIScale, tweenInfo, { Scale = 1 }):Play()
 
-		TweenService:Create(
-			HeroSelect.Frame.Select,
-			TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out),
-			{ GroupTransparency = 0, Size = UDim2.fromScale(1, 1) }
-		):Play()
-
-		HeroSelect.Frame.Skin.GroupTransparency = 0
-		HeroSelect.Frame.Skin.Size = UDim2.fromScale(1, 1)
-
-		TweenService:Create(
-			HeroSelect.Frame.Skin,
-			TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out),
-			{ GroupTransparency = 1 }
-		):Play()
+		HeroSelect.Frame.Skin.UIScale.Scale = 1
+		TweenService:Create(HeroSelect.Frame.Skin.UIScale, tweenInfo, { Scale = inScale }):Play()
 
 		task.delay(TRANSITIONTIME, function()
 			transitioning = false
