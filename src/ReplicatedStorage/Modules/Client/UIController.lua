@@ -111,10 +111,13 @@ function RenderStats()
 	MainUI.Interface.Inventory.Visible = true
 
 	local trophies = Net:LocalFolder():GetAttribute("Trophies") or 0
-	MainUI.Interface.Inventory.Trophies.TrophyCount.Text = trophies
-
 	local money = Net:LocalFolder():GetAttribute("Money") or 0
+
+	MainUI.Interface.Inventory.Trophies.TrophyCount.Text = trophies
 	MainUI.Interface.Inventory["G Bucks"].GBucksCount.Text = money
+
+	HeroSelect.Frame.Inventory.Trophies.TrophyCount.Text = trophies
+	HeroSelect.Frame.Inventory["G Bucks"].GBucksCount.Text = money
 end
 
 local prevHero = nil
@@ -327,6 +330,8 @@ local prevOpen = false
 local prevModel = nil
 function RenderHeroSelectScreen()
 	HeroSelect.Enabled = true
+
+	RenderStats()
 
 	-- RENDERING HERO SELECT
 	RenderCharacterSelectButtons()
@@ -624,7 +629,7 @@ function UIController:Initialize()
 		self:ExitClick()
 	end)
 
-	HeroSelect.Frame.Select.Exit.Activated:Connect(function(input: InputObject)
+	HeroSelect.Frame.Exit.Activated:Connect(function(input: InputObject)
 		heroSelectOpen = false
 		shouldTryHide = true
 	end)
@@ -644,7 +649,7 @@ function UIController:Initialize()
 		skinSelect[selectedSkin].ViewportFrame.Equipped.Visible = true
 	end)
 
-	local TRANSITIONTIME = 0.5
+	local TRANSITIONTIME = 0
 	local STYLE = Enum.EasingStyle.Quad
 	local transitioning = false
 	local inScale = 0.9
