@@ -69,7 +69,7 @@ export type ProfileData = typeof(ProfileTemplate)
 local ProfileStore =
 	assert(ProfileService.GetProfileStore("PlayerData", ProfileTemplate), "Failed to load profile store")
 
-type Profile = ProfileService.Profile<ProfileData>
+export type Profile = ProfileService.Profile<ProfileData>
 
 DataService.Profiles = {} :: { [Player]: Profile }
 
@@ -151,13 +151,20 @@ end
 
 function DataService.GetProfileData(player: Player)
 	return Promise.new(function(resolve, reject)
+		local profile = DataService.GetProfile(player):Await()
+		resolve(profile.Data)
+	end)
+end
+
+function DataService.GetProfile(player: Player)
+	return Promise.new(function(resolve, reject)
 		while not DataService.Profiles[player] do
 			if player.Parent == nil then
 				reject("Player left!")
 			end
 			task.wait()
 		end
-		resolve(DataService.Profiles[player].Data)
+		resolve(DataService.Profiles[player])
 	end)
 end
 
