@@ -551,6 +551,7 @@ function RenderCharacterSelectButtons()
 			local button = ViewportFrameController.NewHeadButton(model)
 			button.Parent = characterSelect
 			button.Name = hero
+			button.LayoutOrder = heroData.Order
 			if selectedHero == hero then
 				button.ViewportFrame.Equipped.Visible = true
 			else
@@ -600,6 +601,7 @@ function RenderSkinSelectButtons()
 			local button = ViewportFrameController.NewHeadButton(model)
 			button.Parent = skinSelect
 			button.Name = skin
+			button.LayoutOrder = skinData.Order
 			if selectedSkin == skin then
 				button.ViewportFrame.Equipped.Visible = true
 			else
