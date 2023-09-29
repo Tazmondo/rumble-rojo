@@ -108,6 +108,7 @@ end
 function GrantPurchaseCallback(player: Player, profile: DataService.ProfileData, buyFunction: BuyFunction)
 	return function()
 		buyFunction(player, profile)
+		DataService.SyncPlayerData(player)
 	end
 end
 
@@ -136,7 +137,7 @@ function ProcessReceipt(receipt_info)
 			player,
 			profile,
 			receipt_info.PurchaseId,
-			GrantPurchaseCallback(player, profile, product.BuyFunction)
+			GrantPurchaseCallback(player, profile.Data, product.BuyFunction)
 		)
 	else
 		return Enum.ProductPurchaseDecision.NotProcessedYet
@@ -144,8 +145,6 @@ function ProcessReceipt(receipt_info)
 end
 
 MarketplaceService.ProcessReceipt = ProcessReceipt
-
-function HandlePurchaseRequest(player: Player, id: number) end
 
 function PlayerAdded(player: Player)
 	LoadedService.IsClientLoadedPromise(player):Then(function() end)
@@ -156,8 +155,6 @@ function Initialize()
 	for i, player in pairs(Players:GetPlayers()) do
 		PlayerAdded(player)
 	end
-
-	-- Net:On("Purchase", HandlePurchaseRequest)
 end
 
 Initialize()

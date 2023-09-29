@@ -14,6 +14,8 @@ local MainUI = PlayerGui:WaitForChild("MainUI") :: ScreenGui
 local ArenaUI = PlayerGui:WaitForChild("ArenaUI") :: ScreenGui
 local ResultsUI = PlayerGui:WaitForChild("ResultsUI") :: ScreenGui
 local HeroSelect = PlayerGui:WaitForChild("HeroSelectUI") :: ScreenGui
+local BuyBucksUI = PlayerGui:WaitForChild("BuyBucksUI") :: ScreenGui
+
 local TopText = ArenaUI.Interface.TopBar.TopText.Text
 
 -- services
@@ -24,6 +26,7 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local DataController = require(script.Parent.DataController)
+local PurchaseController = require(script.Parent.PurchaseController)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Red = require(ReplicatedStorage.Packages.Red)
@@ -483,6 +486,9 @@ function UIController:RenderAllUI()
 			IntermissionRender(changed)
 		elseif state == "BattleStarting" then
 			BattleStartingRender(changed)
+			if ready then
+				BuyBucksUI.Enabled = false
+			end
 		elseif state == "Battle" then
 			BattleRender(changed)
 		elseif state == "Ended" then
@@ -667,7 +673,7 @@ function UIController:Initialize()
 		self:ExitClick()
 	end)
 
-	HeroSelect.Frame.Exit.Activated:Connect(function(input: InputObject)
+	HeroSelect.Frame.Inventory.Exit.Activated:Connect(function(input: InputObject)
 		heroSelectOpen = false
 		shouldTryHide = true
 	end)
@@ -762,6 +768,32 @@ function UIController:Initialize()
 		end
 		DataController.PurchaseSkin(displayedHero, displayedSkin)
 	end)
+
+	MainUI.Interface.Inventory["G Bucks"].Activated:Connect(function()
+		BuyBucksUI.Enabled = true
+	end)
+
+	HeroSelect.Frame.Inventory["G Bucks"].Activated:Connect(function()
+		BuyBucksUI.Enabled = true
+	end)
+
+	BuyBucksUI.Frame.ImageLabel.Header.Title.Exit.Activated:Connect(function()
+		BuyBucksUI.Enabled = false
+	end)
+
+	for i, button in pairs(BuyBucksUI.Frame.ImageLabel.BuyButtons:GetChildren()) do
+		if not button:IsA("ImageButton") then
+			continue
+		end
+		local idNum = tonumber(button.Name)
+		if not idNum then
+			warn("could not convert name to id", button:GetFullName())
+			return
+		end
+		button.Activated:Connect(function()
+			PurchaseController.Purchase(idNum)
+		end)
+	end
 
 	Net:On("PlayerDied", function()
 		died = true
