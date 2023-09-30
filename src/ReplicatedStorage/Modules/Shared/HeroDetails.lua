@@ -1,6 +1,7 @@
 --!strict
 --!nolint LocalShadow
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 -- Defines hero prices and skin prices
 
 local module = {}
@@ -206,7 +207,7 @@ end
 
 module.HeroDetails = heros :: { [string]: Hero }
 
-module.HeroDetails = table.freeze(module.HeroDetails)
+TableUtil.Lock(module.HeroDetails)
 
 print(module.HeroDetails)
 

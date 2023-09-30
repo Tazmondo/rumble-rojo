@@ -1,6 +1,8 @@
 --!strict
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Defines hero abilities and attacks
 -- We need to typecast the string literals due to a bug in luau :(
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local Enums = require(script.Parent.Enums)
 
 export type HeroData = {
@@ -157,6 +159,6 @@ local HeroData: { [string]: HeroData } = {
 }
 
 -- Ensures we dont accidentally change any of the data in the table, as this would be a bug.
-HeroData = table.freeze(HeroData)
+TableUtil.Lock(HeroData)
 
 return { HeroData = HeroData, ChestData = ChestData }
