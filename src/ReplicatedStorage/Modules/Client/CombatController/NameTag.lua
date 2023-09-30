@@ -1,8 +1,9 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local CombatPlayer = require(script.Parent.CombatPlayer)
-local Enums = require(script.Parent.Enums)
+local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
+local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
+
 local NameTag = {}
 
 local combatGUITemplate: BillboardGui = ReplicatedStorage.Assets.CombatGUI

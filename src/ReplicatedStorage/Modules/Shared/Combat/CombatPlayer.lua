@@ -16,10 +16,11 @@ end
 local Red = require(ReplicatedStorage.Packages.Red)
 
 local SYNCEVENT = "CombatPlayerSync"
+
 local NetServer
 local NetClient
 if RunService:IsServer() then
-	NetServer = Red.Server("game", { SYNCEVENT })
+	NetServer = Red.Server("game", { SYNCEVENT, "CombatPlayerUpdate" })
 else
 	NetClient = Red.Client("game")
 end
@@ -33,6 +34,15 @@ local Config = require(script.Parent.Config)
 local VFX = require(script.Parent.VFX)
 
 export type State = "Idle" | "Dead"
+
+export type UpdateData = {
+	health: number,
+	maxHealth: number,
+	superAvailable: boolean,
+	aimingSuper: boolean,
+	isObject: boolean,
+	character: Model,
+}
 
 -- On the server, when processing certain things we want to allow for some latency, so laggy players don't have a bad experience
 -- But too much will give leeway for exploiters
@@ -161,6 +171,27 @@ function CombatPlayer.Sync(self: CombatPlayer, funcName, ...)
 	if RunService:IsServer() and self.player then
 		NetServer:Fire(self.player, SYNCEVENT, funcName, ...)
 	end
+end
+
+function CombatPlayer.Update(self: CombatPlayer)
+	if RunService:IsServer() then
+		if self.player then
+			NetServer:FireAllExcept(self.player, "CombatPlayerUpdate", self:AsUpdateData())
+		else
+			NetServer:FireAll("CombatPlayerUpdate", self:AsUpdateData())
+		end
+	end
+end
+
+function CombatPlayer.AsUpdateData(self: CombatPlayer): UpdateData
+	return {
+		health = self.health,
+		maxHealth = self.maxHealth,
+		isObject = self.isObject,
+		aimingSuper = self.aiming == "Super",
+		superAvailable = self.superCharge >= self.requiredSuperCharge,
+		character = self.character,
+	}
 end
 
 function CombatPlayer.GetState(self: CombatPlayer)
@@ -328,6 +359,8 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 		self:ChangeState("Dead")
 		self.DiedSignal:Fire()
 	end
+
+	self:Update()
 end
 
 function CombatPlayer.Heal(self: CombatPlayer, amount: number)
@@ -337,6 +370,7 @@ function CombatPlayer.Heal(self: CombatPlayer, amount: number)
 
 	self.health = math.round(math.clamp(self.health + amount, 0, self.maxHealth))
 	self:Sync("Heal", amount)
+	self:Update()
 end
 
 function CombatPlayer.CanTakeDamage(self: CombatPlayer)
@@ -353,6 +387,7 @@ function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
 	self:ScheduleRegen(Config.InitialRegenTime)
 
 	self:Sync("SetMaxHealth", newMaxHealth)
+	self:Update()
 end
 
 function CombatPlayer.ChargeSuper(self: CombatPlayer, amount: number)
@@ -365,6 +400,7 @@ function CombatPlayer.ChargeSuper(self: CombatPlayer, amount: number)
 	end
 
 	self:Sync("ChargeSuper", amount)
+	self:Update()
 end
 
 function CombatPlayer.CanGiveSuperCharge(self: CombatPlayer)
@@ -380,6 +416,7 @@ end
 
 function CombatPlayer.SuperAttack(self: CombatPlayer)
 	self.superCharge = 0
+	self:Update()
 end
 
 function CombatPlayer.DealDamage(self: CombatPlayer, damage: number, targetCharacter: Model?)
@@ -395,6 +432,7 @@ end
 -- aim is an attacktype enum
 function CombatPlayer.SetAiming(self: CombatPlayer, aim: string?)
 	self.aiming = aim
+	self:Update()
 end
 
 function CombatPlayer.AddBooster(self: CombatPlayer, count: number)
