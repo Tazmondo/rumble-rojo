@@ -7,7 +7,7 @@ local CONFIG = {
 	HeroSelection = 10, -- 15
 	RoundLength = 400,
 
-	MinPlayers = 2,
+	MinPlayers = 3,
 	MaxPlayers = 6,
 }
 
