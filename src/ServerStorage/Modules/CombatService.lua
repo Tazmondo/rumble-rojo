@@ -259,6 +259,7 @@ function processHit(
 		local victimHRP = (
 			victimCharacter:FindFirstChild("box") or victimCharacter:FindFirstChild("HumanoidRootPart")
 		) :: BasePart
+		print("exploding...")
 		ItemService.ExplodeBoosters(victimHRP.Position, victimCombatPlayer.boosterCount + 1)
 	end
 end
@@ -439,8 +440,9 @@ function CombatService:HandlePlayerDeath(player: Player, data: KillData?)
 		Net:FireAll("PlayerKill", data)
 	end
 
-	task.wait(3)
-	self:ExitPlayerCombat(player)
+	task.delay(3, function()
+		self:ExitPlayerCombat(player)
+	end)
 end
 
 function CombatService:SetupCombatPlayer(player: Player, details: PlayerCombatDetails)
