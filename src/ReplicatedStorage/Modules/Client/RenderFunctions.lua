@@ -7,7 +7,7 @@ function RenderFunctions.RenderArc(
 	height: number,
 	alpha: number,
 	bounce: boolean?
-)
+): CFrame
 	local bounceAlpha = if bounce
 		then TweenService:GetValue(alpha, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out)
 		else alpha

@@ -121,6 +121,7 @@ function CombatClient.Destroy(self: CombatClient)
 	self.destroyed = true
 end
 
+-- we already check if the hit is a combatplayer before this function is called
 function CombatClient.RayHit(self: CombatClient, instance: Instance, position: Vector3, id: number)
 	Net:Fire("Hit", instance, position, id)
 end

@@ -199,6 +199,7 @@ function CombatCharacterAdded(character: Model)
 			return
 		end
 
+		-- because collectionservice is silly and runs before the character is loaded
 		for part, boolean in pairs(VALIDPARTS) do
 			character:WaitForChild(part)
 		end
@@ -216,8 +217,6 @@ function CombatCharacterAdded(character: Model)
 
 		characterData[character] = {
 			BaseTransparency = baseTransparencies,
-			Transitioning = false,
-			Hidden = false,
 			LastHit = 0,
 			CurrentOpacity = 1,
 			TargetOpacity = 1,
