@@ -112,15 +112,15 @@ local HeroData: { [string]: HeroData } = {
 		Super = {
 			AbilityType = "Super" :: "Super",
 			Name = "Super Shell",
-			Charge = 10,
-			Damage = 300,
+			Charge = 14,
+			Damage = 280,
 			Range = Enums.AttackRange.Short,
 			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
 
 			AttackType = "Shotgun" :: "Shotgun",
-			ShotCount = 15,
+			ShotCount = 10,
 			Angle = 15,
-			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
 		},
 	},
 	Frankie = {
