@@ -17,7 +17,7 @@ local Net = Red.Server("game", { "SelectHero", "HeroData", "PurchaseHero", "Purc
 
 export type HeroData = {}
 
-local STOREPREFIX = "Player3_"
+local STOREPREFIX = "Player4_"
 
 local OwnedHeroTemplate: Types.HeroStats = {
 	Trophies = 0,
@@ -27,7 +27,7 @@ local OwnedHeroTemplate: Types.HeroStats = {
 
 local ProfileTemplate = {
 	Trophies = 0,
-	Money = 9000, -- TODO: set me to 0
+	Money = 0,
 	Playtime = 0,
 	OwnedHeroes = {} :: { [string]: Types.HeroStats }, -- automatically fills with free heroes and skins
 	SelectedHero = "Taz",
