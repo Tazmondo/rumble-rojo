@@ -254,6 +254,7 @@ end
 
 function ArenaService.Initialize()
 	Net:Folder():SetAttribute("GameState", "NotEnoughPlayers")
+	Net:Folder():SetAttribute("MaxPlayers", ServerConfig.MaxPlayers)
 
 	task.spawn(function()
 		ArenaService.StartIntermission()

@@ -91,7 +91,8 @@ function UpdateQueueButtons()
 		MainUI.Queue.Exit.Visible = false
 	end
 	local playerCount = Net:Folder():GetAttribute("QueuedCount") or 0
-	MainUI.Queue.Frame.Title.Text = "Players Ready: " .. playerCount .. "/10"
+	local maxPlayers = Net:Folder():GetAttribute("MaxPlayers") or 6
+	MainUI.Queue.Frame.Title.Text = "Players Ready: " .. playerCount .. "/" .. maxPlayers
 end
 
 function HideAll()
