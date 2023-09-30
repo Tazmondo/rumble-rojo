@@ -86,8 +86,6 @@ function CombatClient.new(heroName: string): CombatClient
 
 	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer, self.character))
 
-	self.nameTag = NameTag.Init(self.character, self.combatPlayer)
-
 	Net:On("CombatKill", function()
 		SoundController:PlayGeneralSound("KO")
 	end)

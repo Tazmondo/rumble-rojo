@@ -7,7 +7,6 @@ local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local NameTag = {}
 
 local combatGUITemplate: BillboardGui = ReplicatedStorage.Assets.CombatGUI
-local lobbyNameTagTemplate: BillboardGui = ReplicatedStorage.Assets.LobbyNameTag
 local haloTemplate: Part = ReplicatedStorage.Assets.VFX.General.Halo
 
 local SPINSPEED = 1.5 -- Seconds for full rotation
@@ -129,20 +128,6 @@ function NameTag.Init(
 		halo:Destroy()
 	end)
 	return nameTagHolder
-end
-
-function NameTag.LobbyInit(player: Player, character: Model, trophies: number)
-	local nameTag = lobbyNameTagTemplate:Clone() :: BillboardGui
-
-	local hum = assert(character:FindFirstChildOfClass("Humanoid"))
-	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-
-	nameTag.name.name.PlayerName.Text = player.DisplayName
-	nameTag.Trophies.TrophyCount.Text = trophies
-
-	nameTag.ExtentsOffset = Vector3.zero
-	nameTag.ExtentsOffsetWorldSpace = Vector3.new(0, 3, 0)
-	nameTag.Parent = assert(character:FindFirstChild("HumanoidRootPart"), "Character did not have HRP")
 end
 
 return NameTag

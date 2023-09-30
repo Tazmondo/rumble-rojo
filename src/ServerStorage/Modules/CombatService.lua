@@ -16,6 +16,7 @@ local StarterGui = game:GetService("StarterGui")
 
 local DataService = require(script.Parent.DataService)
 local ItemService = require(script.Parent.ItemService)
+local LobbyNameTagService = require(script.Parent.LobbyNameTagService)
 local SoundService = require(script.Parent.SoundService)
 
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
@@ -396,12 +397,12 @@ end
 function CombatService:InitializeNameTag(character: Model, combatPlayer: CombatPlayer.CombatPlayer, player: Player?)
 	self = self :: CombatService
 
-	local nameTag = NameTag.Init(character, combatPlayer, player)
+	-- local nameTag = NameTag.Init(character, combatPlayer, player)
 	task.spawn(function()
 		while character and CombatPlayerData[character] do
 			task.wait()
 		end
-		nameTag:Destroy()
+		-- nameTag:Destroy()
 	end)
 end
 
@@ -497,7 +498,7 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 			else
 				DataService.GetProfileData(player)
 					:Then(function(profile: DataService.ProfileData)
-						NameTag.LobbyInit(player, char, profile.Trophies)
+						LobbyNameTagService.New(player, char, profile.Trophies)
 					end)
 					:Catch(function(msg)
 						warn(msg)
@@ -543,10 +544,7 @@ function CombatService.RegisterChest(chest: Model)
 	local combatPlayer = CombatPlayer.newChest(2000, chest)
 	CombatPlayerData[chest] = combatPlayer
 
-	local nameTag = NameTag.Init(chest, combatPlayer, nil, lid, true)
-
 	combatPlayer.DiedSignal:Connect(function()
-		nameTag:Destroy()
 		combatPlayer:Destroy()
 		lid.Anchored = false
 		lid:SetNetworkOwner(nil)
