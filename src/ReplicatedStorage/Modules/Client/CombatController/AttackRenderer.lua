@@ -3,6 +3,7 @@
 -- This will be more fleshed out when we have more attacks
 local AttackRenderer = {}
 
+local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -10,6 +11,7 @@ local RunService = game:GetService("RunService")
 local SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
+local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local RaycastHitbox = require(ReplicatedStorage.Packages.RaycastHitbox)
 
@@ -43,8 +45,9 @@ local VALIDPARTS = {
 }
 
 function AttackRenderer.GetCombatPlayerFromValidPart(part: BasePart): Model?
-	if VALIDPARTS[part.Name] then
-		return CombatPlayer.GetAncestorWhichIsACombatPlayer(part)
+	local combatPlayer = CombatPlayer.GetAncestorWhichIsACombatPlayer(part)
+	if VALIDPARTS[part.Name] or CollectionService:HasTag(combatPlayer, Config.ChestTag) then
+		return combatPlayer
 	end
 	return nil
 end
