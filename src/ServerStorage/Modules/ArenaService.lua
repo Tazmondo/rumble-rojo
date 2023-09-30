@@ -200,10 +200,6 @@ function ArenaService.StartMatch()
 	local winner = nil
 
 	while RoundTime < CONFIG.RoundLength and not winner and ArenaService.GetRegisteredPlayersLength() > 0 do
-		-- if RoundTime < 60 then -- half way through
-		-- 	self:OpenQueue()
-		-- end
-
 		-- determine winner stuff
 		if ArenaService.GetRegisteredPlayersLength() == 1 then
 			winner = next(registeredPlayers)
@@ -248,6 +244,9 @@ function ArenaService.EndMatch(winner: Player?)
 	ItemService.CleanUp()
 	MapService:UnloadCurrentMap():Await()
 
+	-- Disable autoqueue
+	playerQueueStatus = {}
+
 	ArenaService.StartIntermission()
 	return
 end
@@ -279,6 +278,10 @@ function ArenaService.Initialize()
 	end)
 
 	CombatService.KillSignal:Connect(function(data: CombatService.KillData)
+		if ArenaService.GetRegisteredPlayersLength() < 2 then
+			-- Don't handle kills that are a result of ties.
+			return
+		end
 		-- If there was no killer, treat it as a suicide
 		local killer = data.Killer or data.Victim
 

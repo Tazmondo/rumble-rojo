@@ -457,8 +457,7 @@ function RenderHeroSelectScreen()
 end
 
 function ResetRoundVariables()
-	-- We do not set ready to false because your ready status carries between rounds
-	-- ready = false
+	ready = false
 	UpdateQueueButtons()
 end
 
