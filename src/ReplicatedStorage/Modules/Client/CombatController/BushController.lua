@@ -7,9 +7,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local Red = require(ReplicatedStorage.Packages.Red)
+
+local Net = Red.Client("game")
 
 local BUSHTAG = Config.BushTag
-local TRANSITIONTIME = 0.3
+local TRANSITIONTIME = 0.5
+local PARTIALOPACITY = 0.8
+local HITREVEALTIME = 0.5
 
 local player = Players.LocalPlayer
 
@@ -17,6 +22,7 @@ type CharacterData = {
 	BaseTransparency: { [BasePart]: number },
 	Transitioning: boolean,
 	LastOpacity: number?,
+	LastHit: number,
 	Hidden: boolean,
 }
 
@@ -40,14 +46,14 @@ end
 
 -- Multiply opacity by this number (e.g. 0.2 is 80% transparent)
 -- I use opacity as it makes it easy to deal with already transparent parts
-function SetOpacity(character: Model, opacityModifier: number)
+function SetOpacity(character: Model, opacityModifier: number, force: boolean?)
 	if not characterData[character] then
 		warn("Set transparency called on a non-combat player")
 	end
 	local data = characterData[character]
 
 	-- Don't reset the animation when setting opacity to the same value
-	if data.Transitioning and opacityModifier == data.LastOpacity then
+	if opacityModifier == data.LastOpacity and not force then
 		return
 	end
 	data.LastOpacity = opacityModifier
@@ -56,14 +62,18 @@ function SetOpacity(character: Model, opacityModifier: number)
 		local startOpacity = 1 - part.Transparency
 		local endOpacity = (1 - transparency) * opacityModifier
 
+		if force then
+			part.Transparency = 1 - endOpacity
+			continue
+		end
+
 		if startOpacity ~= endOpacity then
 			local start = os.clock()
-			data.Transitioning = true
 			task.spawn(function()
+				data.Transitioning = true
 				while os.clock() - start < TRANSITIONTIME and characterData[character] and data.Transitioning do
 					local progress = math.clamp((os.clock() - start) / TRANSITIONTIME, 0, 1)
 					local currentOpacity = (endOpacity - startOpacity) * progress + startOpacity
-
 					part.Transparency = 1 - currentOpacity
 					task.wait()
 				end
@@ -119,6 +129,10 @@ function Render(dt: number)
 			continue
 		end
 
+		if os.clock() - data.LastHit < HITREVEALTIME then
+			continue
+		end
+
 		for i, bush in ipairs(bushes) do
 			-- if not bush:IsDescendantOf(arenaFolder) then
 			-- 	-- Bushes that aren't active can be skipped
@@ -136,7 +150,7 @@ function Render(dt: number)
 					or not inCombat
 					or (clientHRP and (clientHRP.Position - HRP.Position).Magnitude <= forceVisibleDistance) -- when too close, bushes dont hide you
 				then
-					SetOpacity(character, 0.8)
+					SetOpacity(character, PARTIALOPACITY)
 					bush.Transparency = 0.8
 					bushReset[bush] = false
 				else
@@ -164,22 +178,33 @@ function BushController.SetCombatStatus(status: boolean)
 end
 
 function CombatCharacterAdded(character: Model)
-	if characterData[character] then
-		warn("Combat character added twice without being removed!")
-		return
-	end
-	local baseTransparencies = {}
-	for i, v in pairs(character:GetDescendants()) do
-		if v:IsA("BasePart") then
-			baseTransparencies[v] = v.Transparency
+	task.defer(function()
+		-- since this can be called before body parts have loaded, we need to wait for them to be added
+		local HRP = character:WaitForChild("HumanoidRootPart", 5)
+		if not HRP then
+			-- probably a chest
+			return
 		end
-	end
+		task.wait()
 
-	characterData[character] = {
-		BaseTransparency = baseTransparencies,
-		Transitioning = false,
-		Hidden = false,
-	}
+		if characterData[character] then
+			warn("Combat character added twice without being removed!")
+			return
+		end
+		local baseTransparencies = {}
+		for i, v in pairs(character:GetDescendants()) do
+			if v:IsA("BasePart") then
+				baseTransparencies[v] = v.Transparency
+			end
+		end
+
+		characterData[character] = {
+			BaseTransparency = baseTransparencies,
+			Transitioning = false,
+			Hidden = false,
+			LastHit = 0,
+		}
+	end)
 end
 
 function CombatCharacterRemoved(character: Model)
@@ -197,6 +222,15 @@ function CombatCharacterRemoved(character: Model)
 	return
 end
 
+function HandleDamage(character: Model)
+	local data = characterData[character]
+	if not data then
+		return
+	end
+	SetOpacity(character, PARTIALOPACITY, true)
+	data.LastHit = os.clock()
+end
+
 function BushController.Initialize()
 	for i, v in pairs(CombatPlayer.GetAllCombatPlayerCharacters()) do
 		CombatCharacterAdded(v)
@@ -205,6 +239,8 @@ function BushController.Initialize()
 	CombatPlayer.CombatPlayerRemoved():Connect(CombatCharacterRemoved)
 
 	RunService.PreRender:Connect(Render)
+
+	Net:On("Damaged", HandleDamage)
 end
 
 BushController.Initialize()

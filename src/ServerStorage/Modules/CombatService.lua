@@ -27,7 +27,7 @@ local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local NameTag = require(ReplicatedStorage.Modules.Shared.Combat.NameTag)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Red = require(ReplicatedStorage.Packages.Red)
-local Net = Red.Server("game", { "CombatPlayerInitialize", "CombatKill", "PlayerKill" })
+local Net = Red.Server("game", { "CombatPlayerInitialize", "CombatKill", "PlayerKill", "Damaged" })
 
 type PlayerCombatDetails = {
 	HeroName: string,
@@ -230,6 +230,8 @@ function processHit(
 	end
 	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
 	combatPlayer:DealDamage(attackDetails.Damage, victimCharacter)
+
+	Net:FireAll("Damaged", victimCharacter, attackDetails.Damage)
 
 	-- Update Data
 	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)
