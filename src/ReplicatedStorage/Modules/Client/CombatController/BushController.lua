@@ -34,14 +34,30 @@ local inCombat = false
 
 local forceVisibleDistance = 6
 
+function EnableOverhead(character: Model)
+	local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
+	local combatUI = HRP:FindFirstChild("CombatGUI") :: BillboardGui
+	if combatUI then
+		combatUI.Enabled = true
+	end
+end
+
+function DisableOverhead(character: Model)
+	local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
+	local combatUI = HRP:FindFirstChild("CombatGUI") :: BillboardGui
+	if combatUI then
+		combatUI.Enabled = false
+	end
+end
+
 function SetVisible(character: Model)
 	-- already restored
 	if not characterData[character] then
 		warn("Called setvisible without baseTransparencies existing.")
 		return
 	end
-
 	SetOpacity(character, 1)
+	EnableOverhead(character)
 end
 
 -- Multiply opacity by this number (e.g. 0.2 is 80% transparent)
@@ -64,6 +80,7 @@ function SetOpacity(character: Model, opacityModifier: number, force: boolean?)
 
 		if force then
 			part.Transparency = 1 - endOpacity
+			data.Transitioning = false
 			continue
 		end
 
@@ -92,17 +109,7 @@ function SetInvisible(character: Model)
 	if data.LastOpacity ~= 0 then
 		SetOpacity(character, 0)
 	elseif not data.Transitioning then
-		-- If the character has finished transitioning to invisible, teleport them far away to stop VFX from rendering
-		local oldPivot = character:GetPivot()
-		character:PivotTo(CFrame.new(1000, 1000, 1000))
-
-		-- make sure to teleport them back before the hitbox code runs
-		-- hitbox code runs after physics simulation, this will run before, so ordering isn't an issue
-		-- this is SUPER hacky, TODO: BETTER METHOD
-		task.spawn(function()
-			RunService.PreSimulation:Wait()
-			character:PivotTo(oldPivot)
-		end)
+		DisableOverhead(character)
 	end
 end
 
@@ -228,6 +235,7 @@ function HandleDamage(character: Model)
 		return
 	end
 	SetOpacity(character, PARTIALOPACITY, true)
+	EnableOverhead(character)
 	data.LastHit = os.clock()
 end
 
