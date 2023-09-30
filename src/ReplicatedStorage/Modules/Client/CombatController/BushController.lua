@@ -12,23 +12,40 @@ local Red = require(ReplicatedStorage.Packages.Red)
 local Net = Red.Client("game")
 
 local BUSHTAG = Config.BushTag
-local TRANSITIONTIME = 0.5
 local PARTIALOPACITY = 0.8
 local HITREVEALTIME = 0.5
+
+local VALIDPARTS = {
+	Head = true,
+	LeftFoot = true,
+	LeftHand = true,
+	LeftLowerArm = true,
+	LeftLowerLeg = true,
+	LeftUpperArm = true,
+	LeftUpperLeg = true,
+	LowerTorso = true,
+	RightFoot = true,
+	RightHand = true,
+	RightLowerArm = true,
+	RightLowerLeg = true,
+	RightUpperArm = true,
+	RightUpperLeg = true,
+	UpperTorso = true,
+	HumanoidRootPart = true,
+}
 
 local player = Players.LocalPlayer
 
 type CharacterData = {
 	BaseTransparency: { [BasePart]: number },
 	Transitioning: boolean,
-	LastOpacity: number?,
+	CurrentOpacity: number,
+	TargetOpacity: number,
 	LastHit: number,
 	Hidden: boolean,
 }
 
 local characterData: { [Model]: CharacterData } = {}
-
-local arenaFolder = workspace:WaitForChild("Arena") :: Folder
 
 local inCombat = false
 
@@ -50,66 +67,39 @@ function DisableOverhead(character: Model)
 	end
 end
 
-function SetVisible(character: Model)
-	-- already restored
-	if not characterData[character] then
-		warn("Called setvisible without baseTransparencies existing.")
-		return
-	end
-	SetOpacity(character, 1)
-	EnableOverhead(character)
-end
-
 -- Multiply opacity by this number (e.g. 0.2 is 80% transparent)
 -- I use opacity as it makes it easy to deal with already transparent parts
-function SetOpacity(character: Model, opacityModifier: number, force: boolean?)
+function SetOpacity(character: Model, opacityModifier: number)
 	if not characterData[character] then
 		warn("Set transparency called on a non-combat player")
 	end
 	local data = characterData[character]
 
-	-- Don't reset the animation when setting opacity to the same value
-	if opacityModifier == data.LastOpacity and not force then
-		return
-	end
-	data.LastOpacity = opacityModifier
-
-	for part, transparency in pairs(data.BaseTransparency) do
-		local startOpacity = 1 - part.Transparency
-		local endOpacity = (1 - transparency) * opacityModifier
-
-		if force then
-			part.Transparency = 1 - endOpacity
-			data.Transitioning = false
-			continue
-		end
-
-		if startOpacity ~= endOpacity then
-			local start = os.clock()
-			task.spawn(function()
-				data.Transitioning = true
-				while os.clock() - start < TRANSITIONTIME and characterData[character] and data.Transitioning do
-					local progress = math.clamp((os.clock() - start) / TRANSITIONTIME, 0, 1)
-					local currentOpacity = (endOpacity - startOpacity) * progress + startOpacity
-					part.Transparency = 1 - currentOpacity
-					task.wait()
-				end
-				data.Transitioning = false
-			end)
-		end
-	end
+	data.TargetOpacity = opacityModifier
 end
 
-function SetInvisible(character: Model)
+function UpdateOpacity(character: Model, instant: boolean?)
 	local data = characterData[character]
 	if not data then
-		warn("Tried to make non-combat character invisible")
-		return
+		warn("Update transparency called on a non-combat player")
 	end
-	if data.LastOpacity ~= 0 then
-		SetOpacity(character, 0)
-	elseif not data.Transitioning then
+
+	data.CurrentOpacity += (data.TargetOpacity - data.CurrentOpacity) * 0.1
+	if math.abs(data.CurrentOpacity - data.TargetOpacity) < 0.05 or instant then
+		data.CurrentOpacity = data.TargetOpacity
+	end
+
+	for part, transparency in pairs(data.BaseTransparency) do
+		local opacity = (1 - transparency) * data.CurrentOpacity
+
+		part.Transparency = 1 - opacity
+	end
+
+	print(data.CurrentOpacity)
+	if data.CurrentOpacity == 0 then
 		DisableOverhead(character)
+	else
+		EnableOverhead(character)
 	end
 end
 
@@ -157,19 +147,21 @@ function Render(dt: number)
 					or not inCombat
 					or (clientHRP and (clientHRP.Position - HRP.Position).Magnitude <= forceVisibleDistance) -- when too close, bushes dont hide you
 				then
-					SetOpacity(character, PARTIALOPACITY)
+					SetOpacity(character, 0)
 					bush.Transparency = 0.8
 					bushReset[bush] = false
 				else
-					SetInvisible(character)
+					SetOpacity(character, 0)
 				end
 				inBush = true
 				break
 			end
 		end
 		if not inBush then
-			SetVisible(character)
+			SetOpacity(character, 1)
 		end
+
+		UpdateOpacity(character)
 	end
 
 	for bush, reset in pairs(bushReset) do
@@ -192,7 +184,11 @@ function CombatCharacterAdded(character: Model)
 			-- probably a chest
 			return
 		end
-		task.wait()
+
+		for part, boolean in pairs(VALIDPARTS) do
+			character:WaitForChild(part)
+			print(part, "loaded")
+		end
 
 		if characterData[character] then
 			warn("Combat character added twice without being removed!")
@@ -210,6 +206,8 @@ function CombatCharacterAdded(character: Model)
 			Transitioning = false,
 			Hidden = false,
 			LastHit = 0,
+			CurrentOpacity = 1,
+			TargetOpacity = 1,
 		}
 	end)
 end
@@ -234,8 +232,8 @@ function HandleDamage(character: Model)
 	if not data then
 		return
 	end
-	SetOpacity(character, PARTIALOPACITY, true)
-	EnableOverhead(character)
+	SetOpacity(character, PARTIALOPACITY)
+	UpdateOpacity(character, true)
 	data.LastHit = os.clock()
 end
 
