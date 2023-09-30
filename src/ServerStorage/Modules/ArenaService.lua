@@ -29,8 +29,8 @@ local playerQueueStatus: { [Player]: boolean } = {}
 local registeredPlayers: { [Player]: Types.PlayerBattleStats } = {} -- boolean before character select, playerstats afterwards
 
 function ArenaService.HandleResults(player)
-	print("Handling results for", player)
 	local battleData = registeredPlayers[player]
+	print("Handling results for", player, battleData)
 	assert(battleData, "HandleResults called on player without battle data!")
 
 	local trophies = battleData.Kills * Config.TrophyKill

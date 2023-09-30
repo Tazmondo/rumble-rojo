@@ -303,7 +303,7 @@ function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
 	blur.Enabled = true
 
 	-- DISPLAY TROPHY COUNT --
-	print("displaying results, trophies:", trophies)
+	print("displaying results", data)
 	local statsFrame = ResultsUI.Frame.ImageLabel.Frame.Stats:FindFirstChild("Stat Lines")
 	statsFrame.Victory.Visible = data.Won
 	LabelRenderTrophyCount(statsFrame.Victory.TrophyCount, Config.TrophyWin)
@@ -317,6 +317,7 @@ function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
 	LabelRenderTrophyCount(statsFrame.Died.TrophyCount, Config.TrophyDeath)
 
 	if data.Kills > 0 then
+		statsFrame.Knockouts.Visible = true
 		statsFrame.Knockouts.Total.Text = if data.Kills > 1 then "Knockouts x " .. data.Kills else "Knockout"
 		LabelRenderTrophyCount(statsFrame.Knockouts.Frame.TrophyCount, data.Kills * Config.TrophyKill)
 		statsFrame.Knockouts.Frame.GBucksCount.Text = "+" .. data.Kills * Config.MoneyKill
