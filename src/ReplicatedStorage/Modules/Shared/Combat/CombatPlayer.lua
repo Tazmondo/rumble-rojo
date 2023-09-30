@@ -315,7 +315,7 @@ end
 -- end
 
 function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
-	self.health = math.clamp(self.health - amount, 0, self.maxHealth)
+	self.health = math.round(math.clamp(self.health - amount, 0, self.maxHealth))
 	self:Sync("TakeDamage", amount)
 	self.TookDamageSignal:Fire(amount)
 
@@ -335,7 +335,7 @@ function CombatPlayer.Heal(self: CombatPlayer, amount: number)
 		return
 	end
 
-	self.health = math.clamp(self.health + amount, 0, self.maxHealth)
+	self.health = math.round(math.clamp(self.health + amount, 0, self.maxHealth))
 	self:Sync("Heal", amount)
 end
 
@@ -348,7 +348,7 @@ function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
 	local previousHealthPercentage = self.health / self.maxHealth
 
 	self.maxHealth = math.round(newMaxHealth) -- prevent decimals
-	self.health = math.clamp(self.maxHealth * previousHealthPercentage, 0, newMaxHealth)
+	self.health = math.round(math.clamp(self.maxHealth * previousHealthPercentage, 0, newMaxHealth))
 
 	self:ScheduleRegen(Config.InitialRegenTime)
 
