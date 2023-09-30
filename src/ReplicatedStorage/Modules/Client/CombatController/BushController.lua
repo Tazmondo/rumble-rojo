@@ -227,7 +227,9 @@ end
 
 function CombatCharacterRemoved(character: Model)
 	if not characterData[character] then
-		warn("Combatcharacter removed without ever being added!")
+		if character.Name ~= "Chest" then
+			warn("Combatcharacter removed without ever being added!", character)
+		end
 		return
 	end
 
