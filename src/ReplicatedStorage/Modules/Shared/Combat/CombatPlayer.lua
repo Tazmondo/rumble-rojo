@@ -416,9 +416,12 @@ function CombatPlayer.Destroy(self: CombatPlayer)
 	-- self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 	self.character:RemoveTag(Config.CombatPlayerTag)
 	if self.humanoid then
-		self.humanoid.MaxHealth, self.humanoid.WalkSpeed, self.humanoid.DisplayDistanceType =
-			table.unpack(self.humanoidData)
-		self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+		-- for some reason this code is shooting the walkspeed to some high number, but prints say it's just at 10 so
+		-- im baffled.
+
+		-- self.humanoid.MaxHealth, self.humanoid.WalkSpeed, self.humanoid.DisplayDistanceType =
+		-- 	table.unpack(self.humanoidData)
+		-- self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
 	end
 end
 
