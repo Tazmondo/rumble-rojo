@@ -14,6 +14,9 @@ local Net = Red.Client("game")
 local BUSHTAG = Config.BushTag
 local PARTIALOPACITY = 0.8
 local HITREVEALTIME = 0.5
+local BUSHREVEALDISTANCE = 14
+local FORCEVISIBLEDISTANCE = 6
+local LERPSPEED = 0.1
 
 local VALIDPARTS = {
 	Head = true,
@@ -47,8 +50,6 @@ local characterData: { [Model]: CharacterData } = {}
 
 local inCombat = false
 
-local forceVisibleDistance = 6
-
 function EnableOverhead(character: Model)
 	local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
 	local combatUI = HRP:FindFirstChild("CombatGUI") :: BillboardGui
@@ -76,16 +77,22 @@ function SetOpacity(character: Model, opacityModifier: number)
 	data.TargetOpacity = opacityModifier
 end
 
+function LerpValue(current: number, target: number, amount: number)
+	local newValue = current + (target - current) * amount
+	if math.abs(target - newValue) < 0.025 then
+		newValue = target
+	end
+
+	return newValue
+end
+
 function UpdateOpacity(character: Model, instant: boolean?)
 	local data = characterData[character]
 	if not data then
 		warn("Update transparency called on a non-combat player")
 	end
 
-	data.CurrentOpacity += (data.TargetOpacity - data.CurrentOpacity) * 0.1
-	if math.abs(data.CurrentOpacity - data.TargetOpacity) < 0.05 or instant then
-		data.CurrentOpacity = data.TargetOpacity
-	end
+	data.CurrentOpacity = LerpValue(data.CurrentOpacity, data.TargetOpacity, LERPSPEED)
 
 	for part, transparency in pairs(data.BaseTransparency) do
 		local opacity = (1 - transparency) * data.CurrentOpacity
@@ -112,12 +119,12 @@ end
 
 function Render(dt: number)
 	debug.profilebegin("BushRender")
-	local bushReset = {}
-	local bushes = CollectionService:GetTagged(BUSHTAG)
+	local bushes = CollectionService:GetTagged(BUSHTAG) :: { BasePart }
 
 	for character, data in pairs(characterData) do
 		local inBush = false
 		local isPlayerCharacter = character == player.Character
+
 		local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
 		if not HRP then
 			continue
@@ -128,25 +135,15 @@ function Render(dt: number)
 		end
 
 		for i, bush in ipairs(bushes) do
-			-- if not bush:IsDescendantOf(arenaFolder) then
-			-- 	-- Bushes that aren't active can be skipped
-			-- 	continue
-			-- end
-			if bushReset[bush] == nil then
-				bushReset[bush] = true
-			end
-
 			-- Make sure middle of HRP is inside the bush
 			if IsPointInVolume(HRP.Position, bush.CFrame, bush.Size) then
 				local clientHRP = player.Character:FindFirstChild("HumanoidRootPart") :: BasePart
 				if
 					isPlayerCharacter
 					or not inCombat
-					or (clientHRP and (clientHRP.Position - HRP.Position).Magnitude <= forceVisibleDistance) -- when too close, bushes dont hide you
+					or (clientHRP and (clientHRP.Position - HRP.Position).Magnitude <= FORCEVISIBLEDISTANCE) -- when too close, bushes dont hide you
 				then
 					SetOpacity(character, PARTIALOPACITY)
-					bush.Transparency = 0.8
-					bushReset[bush] = false
 				else
 					SetOpacity(character, 0)
 				end
@@ -161,11 +158,31 @@ function Render(dt: number)
 		UpdateOpacity(character)
 	end
 
-	for bush, reset in pairs(bushReset) do
-		if reset then
-			bush.Transparency = 0
+	local playerCharacter = player.Character
+	if not playerCharacter then
+		debug.profileend()
+		return
+	end
+
+	local HRP = playerCharacter:FindFirstChild("HumanoidRootPart") :: BasePart
+	if not HRP then
+		debug.profileend()
+		return
+	end
+
+	for i, bush in ipairs(bushes) do
+		if inCombat then
+			local distance = (bush.Position - HRP.Position).Magnitude
+			if distance <= BUSHREVEALDISTANCE then
+				bush.Transparency = LerpValue(bush.Transparency, 0.8, LERPSPEED)
+			else
+				bush.Transparency = LerpValue(bush.Transparency, 0, LERPSPEED)
+			end
+		else
+			bush.Transparency = LerpValue(bush.Transparency, 0.8, LERPSPEED)
 		end
 	end
+
 	debug.profileend()
 end
 
