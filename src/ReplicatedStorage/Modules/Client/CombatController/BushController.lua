@@ -38,11 +38,9 @@ local player = Players.LocalPlayer
 
 type CharacterData = {
 	BaseTransparency: { [BasePart]: number },
-	Transitioning: boolean,
 	CurrentOpacity: number,
 	TargetOpacity: number,
 	LastHit: number,
-	Hidden: boolean,
 }
 
 local characterData: { [Model]: CharacterData } = {}
@@ -95,7 +93,6 @@ function UpdateOpacity(character: Model, instant: boolean?)
 		part.Transparency = 1 - opacity
 	end
 
-	print(data.CurrentOpacity)
 	if data.CurrentOpacity == 0 then
 		DisableOverhead(character)
 	else
@@ -147,7 +144,7 @@ function Render(dt: number)
 					or not inCombat
 					or (clientHRP and (clientHRP.Position - HRP.Position).Magnitude <= forceVisibleDistance) -- when too close, bushes dont hide you
 				then
-					SetOpacity(character, 0)
+					SetOpacity(character, PARTIALOPACITY)
 					bush.Transparency = 0.8
 					bushReset[bush] = false
 				else
@@ -187,7 +184,6 @@ function CombatCharacterAdded(character: Model)
 
 		for part, boolean in pairs(VALIDPARTS) do
 			character:WaitForChild(part)
-			print(part, "loaded")
 		end
 
 		if characterData[character] then
@@ -229,7 +225,7 @@ end
 
 function HandleDamage(character: Model)
 	local data = characterData[character]
-	if not data then
+	if not data or character == player.Character then
 		return
 	end
 	SetOpacity(character, PARTIALOPACITY)
