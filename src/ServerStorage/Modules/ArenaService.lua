@@ -242,7 +242,7 @@ function ArenaService.EndMatch(winner: Player?)
 	MapService:UnloadCurrentMap():Await()
 
 	-- Disable autoqueue
-	playerQueueStatus = {}
+	-- playerQueueStatus = {}
 
 	ArenaService.StartIntermission()
 	return
