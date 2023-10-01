@@ -18,7 +18,7 @@ local Net = Red.Server("game", { "SelectHero", "HeroData", "PurchaseHero", "Purc
 export type HeroData = {}
 
 -- increment this to reset the datastore
-local STOREPREFIX = "Player4_"
+local STOREPREFIX = "Player5_"
 
 local OwnedHeroTemplate: Types.HeroStats = {
 	Trophies = 0,
