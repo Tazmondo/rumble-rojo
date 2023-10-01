@@ -177,11 +177,8 @@ function ArenaService.StartMatch()
 		spawnCount += 1
 	end
 
-	while Net:Folder():GetAttribute("RoundCountdown") > 0 do
-		task.wait(1)
-		roundCountdown -= 1
-		Net:Folder():SetAttribute("RoundCountdown", roundCountdown)
-	end
+	-- Update alive fighters
+	ArenaService.GetRegisteredPlayersLength()
 
 	-- Allow client FIGHT message to disappear before continuing
 	task.wait(1)

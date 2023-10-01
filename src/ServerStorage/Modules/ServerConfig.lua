@@ -13,7 +13,7 @@ local CONFIG = {
 
 -- don't edit this to affect the game, this is just for studio testing
 local studioconfig = {
-	Intermission = 15, -- 30
+	Intermission = 10, -- 30
 	HeroSelection = 5, -- 15
 	RoundLength = 60, -- 2mimnutes
 

@@ -125,6 +125,8 @@ function RenderHeroIcon()
 
 		local button = ViewportFrameController.NewHeadButton(HeroDetails.GetModelFromName(selectedHero, selectedSkin))
 		button.Size = UDim2.fromScale(1, 1)
+		button.ViewportFrame.Equipped.Visible = false
+
 		button.Activated:Connect(function()
 			heroSelectOpen = true
 			shouldTryHide = true
@@ -168,35 +170,19 @@ function BattleStartingRender(changed)
 
 	if ready then
 		if changed then
+			SoundController:PlayGeneralSound("FightStart")
 			gameFrame.StartFight.Position = UDim2.fromScale(0.5, 1.5)
 		end
 
-		local countdown = Net:Folder():GetAttribute("RoundCountdown")
+		gameFrame.StartFight.Visible = true
 
-		local hitZeroNow = countdown == 0 and countdown ~= prevCountdown
-
-		if countdown > 0 then
-			if countdown == 4 then
-				SoundController:PlayGeneralSound("Countdown")
-			end
-			gameFrame.Countdown.Visible = true
-			gameFrame.Countdown.Text = countdown
-		else
-			gameFrame.Countdown.Visible = false
-			gameFrame.StartFight.Visible = true
-
-			if hitZeroNow then
-				SoundController:PlayGeneralSound("FightStart")
-				gameFrame.StartFight:TweenPosition(
-					UDim2.fromScale(0.5, 0.5),
-					Enum.EasingDirection.Out,
-					Enum.EasingStyle.Quad,
-					0.4
-				)
-				-- gameFrame.Countdown:Tween
-			end
-		end
-		prevCountdown = countdown
+		gameFrame.StartFight:TweenPosition(
+			UDim2.fromScale(0.5, 0.5),
+			Enum.EasingDirection.Out,
+			Enum.EasingStyle.Quad,
+			0.4
+		)
+		-- gameFrame.Countdown:Tween
 	elseif not ready then
 		RenderStats()
 		RenderHeroIcon()
@@ -225,15 +211,12 @@ function BattleRender(changed)
 	gameFrame.Visible = true
 
 	if died then
-		gameFrame.Died.Visible = true
 		if not diedHandled then
 			diedHandled = true
 			task.delay(3, function()
 				died = false
 			end)
 		end
-	else
-		gameFrame.Died.Visible = false
 	end
 
 	if not ready then
@@ -248,20 +231,18 @@ end
 function BattleEndedRender(changed)
 	ArenaUI.Enabled = true
 
-	local roundOver = ArenaUI.Interface.Game.RoundOver
-	ArenaUI.Interface.Game.Visible = true
-	if changed and ready then
-		SoundController:PlayGeneralSound("BattleOver")
-		roundOver.Visible = true
-		task.delay(1, function()
-			roundOver.Visible = false
-		end)
-	end
+	-- local roundOver = ArenaUI.Interface.Game.RoundOver
+	-- ArenaUI.Interface.Game.Visible = true
+	-- if changed and ready then
+	-- 	SoundController:PlayGeneralSound("BattleOver")
+	-- 	roundOver.Visible = true
+	-- 	task.delay(1, function()
+	-- 		roundOver.Visible = false
+	-- 	end)
+	-- end
 
-	if not ready then
-		RenderStats()
-		RenderHeroIcon()
-	end
+	RenderStats()
+	RenderHeroIcon()
 
 	TopText.Visible = true
 	TopText.Text = "Battle over!"
@@ -276,10 +257,26 @@ end
 local displayResults = false
 function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
 	displayResults = true
+	HideAll()
+
+	ArenaUI.Enabled = true
+	ArenaUI.Interface.Game.Visible = true
+	local victory = ArenaUI.Interface.Game.Victory
+	local defeat = ArenaUI.Interface.Game.Defeat
 
 	if data.Won then
 		SoundController:PlayGeneralSound("Victory")
+		victory.Visible = true
+	else
+		SoundController:PlayGeneralSound("Died")
+		defeat.Visible = true
 	end
+
+	task.wait(2)
+	ArenaUI.Enabled = false
+	victory.Visible = false
+	defeat.Visible = false
+
 	ResultsUI.Enabled = true
 	local blur = assert(Lighting:FindFirstChild("ResultsBlur"), "Could not find blur effect in lighting.") :: BlurEffect
 	blur.Enabled = true
@@ -455,7 +452,7 @@ function UIController:RenderAllUI()
 	local state = Net:Folder():GetAttribute("GameState")
 
 	if displayResults then
-		HideAll()
+		-- HideAll()
 		return
 	end
 
@@ -725,7 +722,6 @@ function UIController:Initialize()
 
 		transitioning = true
 
-		skinSelectOpen = false
 		HeroSelect.Frame.Select.Visible = true
 
 		HeroSelect.Frame.Select.UIScale.Scale = outScale
