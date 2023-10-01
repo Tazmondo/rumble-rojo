@@ -35,7 +35,7 @@ local ViewportFrameController = require(script.Parent.ViewportFrameController)
 
 local Net = Red.Client("game")
 
-local ready = false
+local ready = true
 local heroSelectOpen = false
 
 local selectedHero: string = assert(Net:LocalFolder():GetAttribute("Hero"))
@@ -110,6 +110,11 @@ function RenderStats()
 	HeroSelect.Frame.Inventory["G Bucks"].GBucksCount.Text = money
 end
 
+function OpenHeroSelect()
+	heroSelectOpen = true
+	shouldTryHide = true
+end
+
 local prevHero = nil
 local prevSkin = nil
 function RenderHeroIcon()
@@ -127,19 +132,20 @@ function RenderHeroIcon()
 		button.Size = UDim2.fromScale(1, 1)
 		button.ViewportFrame.Equipped.Visible = false
 
-		button.Activated:Connect(function()
-			heroSelectOpen = true
-			shouldTryHide = true
-		end)
+		button.Activated:Connect(OpenHeroSelect)
 		button.Parent = frame
 	end
 end
 
 function NotEnoughPlayersRender(changed)
 	if changed then
-		ArenaUI.Enabled = false
+		ArenaUI.Enabled = true
 		MainUI.Enabled = true
 	end
+
+	ArenaUI.Interface.TopBar.Visible = true
+	TopText.Visible = true
+	TopText.Text = "Ready up!"
 
 	RenderStats()
 	UpdateQueueButtons()
@@ -171,17 +177,17 @@ function BattleStartingRender(changed)
 	if ready then
 		if changed then
 			SoundController:PlayGeneralSound("FightStart")
-			gameFrame.StartFight.Position = UDim2.fromScale(0.5, 1.5)
+			gameFrame.StartFight.Position = UDim2.fromScale(0.5, 0.5)
 		end
 
 		gameFrame.StartFight.Visible = true
 
-		gameFrame.StartFight:TweenPosition(
-			UDim2.fromScale(0.5, 0.5),
-			Enum.EasingDirection.Out,
-			Enum.EasingStyle.Quad,
-			0.4
-		)
+		-- gameFrame.StartFight:TweenPosition(
+		-- 	UDim2.fromScale(0.5, 0.5),
+		-- 	Enum.EasingDirection.Out,
+		-- 	Enum.EasingStyle.Quad,
+		-- 	0.4
+		-- )
 		-- gameFrame.Countdown:Tween
 	elseif not ready then
 		RenderStats()
@@ -194,6 +200,8 @@ function BattleStartingRender(changed)
 		fighters = 0
 	end
 	TopText.Text = "Fighters left: " .. fighters
+
+	-- ready = false
 end
 
 local died = false
@@ -440,7 +448,7 @@ function RenderHeroSelectScreen()
 end
 
 function ResetRoundVariables()
-	ready = false
+	-- ready = false
 	UpdateQueueButtons()
 end
 
@@ -478,6 +486,7 @@ function UIController:RenderAllUI()
 			if ready then
 				BuyBucksUI.Enabled = false
 				heroSelectOpen = false
+				-- ready = false
 			end
 		elseif state == "Battle" then
 			BattleRender(changed)
@@ -768,6 +777,10 @@ function UIController:Initialize()
 
 	HeroSelect.Frame.Inventory["G Bucks"].Activated:Connect(function()
 		ShowBuyBucks()
+	end)
+
+	MainUI.Interface.Inventory.Shop.Activated:Connect(function()
+		OpenHeroSelect()
 	end)
 
 	BuyBucksUI.Frame.ImageLabel.Header.Title.Exit.Activated:Connect(function()

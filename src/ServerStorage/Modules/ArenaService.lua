@@ -248,6 +248,15 @@ function ArenaService.EndMatch(winner: Player?)
 	return
 end
 
+function HandleQueue(player, isJoining)
+	if isJoining and ArenaService.GetQueuedPlayersLength() >= CONFIG.MaxPlayers then
+		return playerQueueStatus[player]
+	end
+	playerQueueStatus[player] = isJoining
+	Net:Folder():SetAttribute("QueuedCount", ArenaService.GetQueuedPlayersLength())
+	return isJoining
+end
+
 function ArenaService.Initialize()
 	Net:Folder():SetAttribute("GameState", "NotEnoughPlayers")
 	Net:Folder():SetAttribute("MaxPlayers", ServerConfig.MaxPlayers)
@@ -260,7 +269,8 @@ function ArenaService.Initialize()
 		playerQueueStatus[player] = false
 
 		DataService.PromiseLoad(player):Then(function()
-			-- Do something here?
+			-- autoqueue players when they join
+			HandleQueue(player, true)
 		end)
 	end
 
@@ -296,14 +306,7 @@ function ArenaService.Initialize()
 		end
 	end)
 
-	Net:On("Queue", function(player, isJoining)
-		if isJoining and ArenaService.GetQueuedPlayersLength() >= CONFIG.MaxPlayers then
-			return playerQueueStatus[player]
-		end
-		playerQueueStatus[player] = isJoining
-		Net:Folder():SetAttribute("QueuedCount", ArenaService.GetQueuedPlayersLength())
-		return isJoining
-	end)
+	Net:On("Queue", HandleQueue)
 end
 
 ArenaService.Initialize()

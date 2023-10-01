@@ -14,7 +14,6 @@ local Net = Red.Client("game")
 local combatPlayers: { [Model]: CombatPlayer.UpdateData } = {}
 
 function MakeNewCombatPlayer(data: CombatPlayer.UpdateData)
-	print("Making new combat player", data.Character)
 	if combatPlayers[data.Character] then
 		warn("Overwriting combat player with new data")
 		return
@@ -40,7 +39,6 @@ end
 
 function HandleUpdate(data: CombatPlayer.UpdateData)
 	task.spawn(function()
-		print("Updated!", data)
 		if data.Character == Players.LocalPlayer.Character then
 			return
 		end
