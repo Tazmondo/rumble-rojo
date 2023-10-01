@@ -186,10 +186,6 @@ function Render(dt: number)
 	debug.profileend()
 end
 
-function BushController.SetCombatStatus(status: boolean)
-	inCombat = status
-end
-
 function CombatCharacterAdded(character: Model)
 	task.defer(function()
 		-- since this can be called before body parts have loaded, we need to wait for them to be added
@@ -249,6 +245,19 @@ function HandleDamage(character: Model)
 	SetOpacity(character, PARTIALOPACITY)
 	UpdateOpacity(character, true)
 	data.LastHit = os.clock()
+end
+
+function BushController.SetCombatStatus(status: boolean)
+	inCombat = status
+end
+
+function BushController.IsCharacterHidden(character: Model)
+	local characterData = characterData[character]
+	if not characterData then
+		return false
+	end
+
+	return characterData.TargetOpacity == 0
 end
 
 function BushController.Initialize()

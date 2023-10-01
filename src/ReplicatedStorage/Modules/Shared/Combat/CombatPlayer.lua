@@ -15,6 +15,12 @@ if RunService:IsClient() then
 end
 local Red = require(ReplicatedStorage.Packages.Red)
 
+local VFXService
+if RunService:IsServer() then
+	local ServerStorage = game:GetService("ServerStorage")
+	VFXService = require(ServerStorage.Modules.VFXService)
+end
+
 local SYNCEVENT = "CombatPlayerSync"
 
 local NetServer
@@ -31,7 +37,6 @@ CombatPlayer.__index = CombatPlayer
 
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
-local VFX = require(script.Parent.VFX)
 
 export type State = "Idle" | "Dead"
 
@@ -238,7 +243,10 @@ function CombatPlayer.Regen(self: CombatPlayer)
 
 	local regenAmount = self.maxHealth * Config.RegenAmount
 	self:Heal(regenAmount)
-	VFX.Regen(self.character)
+
+	if VFXService then
+		VFXService.Regen(self.character)
+	end
 
 	if self.health < self.maxHealth then
 		self:ScheduleRegen(Config.RegenCooldown)
