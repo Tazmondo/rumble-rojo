@@ -9,125 +9,200 @@ local NameTag = {}
 local combatGUITemplate: BillboardGui = ReplicatedStorage.Assets.CombatGUI
 local haloTemplate: Part = ReplicatedStorage.Assets.VFX.General.Halo
 
+local HaloFolder = Instance.new("Folder", workspace)
+HaloFolder.Name = "Halo Folder"
+
 local SPINSPEED = 1.5 -- Seconds for full rotation
 
-function NameTag.Init(
-	character: Model,
-	combatPlayer: CombatPlayer.CombatPlayer,
-	hide: Player?,
-	anchor: BasePart?,
-	isObject: boolean?
-)
-	local nameTagHolder = combatGUITemplate:Clone()
-	local nameTag
-
-	if isObject then
-		nameTag = nameTagHolder:FindFirstChild("ObjectNameTag") :: Frame
-	elseif RunService:IsClient() then
-		nameTag = nameTagHolder:FindFirstChild("FriendlyNameTag") :: Frame
-	else
-		nameTagHolder.PlayerToHideFrom = hide
-		nameTag = nameTagHolder:FindFirstChild("EnemyNameTag") :: Frame
+function NameTag.InitFriendly(combatPlayer: CombatPlayer.CombatPlayer)
+	local character = combatPlayer.character
+	local HRP = character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character:FindFirstChild("Humanoid")
+	if not HRP or not humanoid then
+		warn("No HRP/humanoid", HRP, humanoid)
+		return
 	end
 
-	nameTag.Visible = true
+	local gui = HRP:FindFirstChild("CombatGUI")
+	if not gui then
+		gui = combatGUITemplate:Clone()
+		gui.DamagePopup.Visible = false
+
+		gui.EnemyNameTag.Visible = false
+		gui.ObjectNameTag.Visible = false
+		gui.FriendlyNameTag.Visible = true
+
+		gui.Parent = HRP
+	end
+
+	local nameTag = gui.FriendlyNameTag
 
 	local halo = haloTemplate:Clone()
+
+	halo.Parent = HaloFolder
+
 	assert(character.Parent, "Character has not been parented to workspace yet!")
 
-	if RunService:IsClient() then
-		nameTag.name.nametag.PlayerName.Text = "You"
-	elseif not isObject then
-		nameTag.name.nametag.PlayerName.Text = character.Name
+	nameTag.name.nametag.PlayerName.Text = "You"
+	-- roblox are stupid and made studsoffsetworldspace relative to the object and not the world
+	gui.StudsOffsetWorldSpace = gui.Parent.CFrame.Rotation:VectorToObjectSpace(gui.StudsOffsetWorldSpace)
+
+	local run: RBXScriptConnection
+	run = RunService.RenderStepped:Connect(function(dt)
+		if character.Parent == nil or gui.Parent == nil then
+			run:Disconnect()
+			halo:Destroy()
+			return
+		end
+
+		for i = 1, 3 do
+			local individualAmmoBar = nameTag.stats.ammo:FindFirstChild("Ammo" .. i)
+
+			if individualAmmoBar then
+				individualAmmoBar.Visible = i <= combatPlayer.ammo
+			end
+		end
+
+		nameTag.stats.healthnumber.Text = combatPlayer.health
+
+		local healthRatio = combatPlayer.health / combatPlayer.maxHealth
+
+		-- Size the smaller bar as a percentage of the size of the parent bar, based off player health percentage
+		local healthBar = nameTag.stats.healthbar.HealthBar
+		healthBar.Size = UDim2.new(healthRatio, 0, 1, 0)
+
+		healthBar.Visible = combatPlayer.health > 0
+
+		local colour1 = Color3.fromHSV(healthRatio * 100 / 255, 206 / 255, 1)
+		local colour2 = Color3.fromHSV(healthRatio * 88 / 255, 197 / 255, 158 / 255)
+		healthBar.UIGradient.Color = ColorSequence.new(colour1, colour2)
+
+		local superAvailable = combatPlayer:CanSuperAttack()
+		local aiming = combatPlayer.aiming
+		if not superAvailable then
+			halo.Decal.Transparency = 1
+		else
+			halo.Decal.Transparency = 0
+			if aiming == Enums.AbilityType.Super then
+				halo.Decal.Color3 = Color3.fromHex("#ebb800")
+			else
+				halo.Decal.Color3 = Color3.fromHex("#619cf5")
+			end
+		end
+
+		halo.CFrame = CFrame.new(HRP.Position)
+			* CFrame.new(0, -humanoid.HipHeight - HRP.Size.Y / 2 + 0.2, 0)
+			* halo.CFrame.Rotation
+			* CFrame.Angles(0, math.pi * 2 * dt / SPINSPEED, 0)
+	end)
+end
+
+function NameTag.Test()
+	warn("oweihfwei98ufhwiuafhiuewafhweaiu")
+end
+
+function NameTag.InitEnemy(data: CombatPlayer.UpdateData)
+	local character = data.Character
+
+	assert(character.Parent, "Character has not been parented to workspace yet!")
+
+	local lid
+	local HRP
+	local humanoid
+	if data.IsObject then
+		lid = character:WaitForChild("lid", 5)
+		if not lid then
+			warn("Chest did not have lid!")
+			return
+		end
+	else
+		HRP = character:WaitForChild("HumanoidRootPart", 5)
+		humanoid = character:FindFirstChild("Humanoid")
+		if not HRP or not humanoid then
+			warn("No HRP/humanoid", character, HRP, humanoid)
+			return
+		end
 	end
 
-	task.spawn(function()
-		nameTagHolder.Parent = anchor or character:WaitForChild("HumanoidRootPart") :: BasePart
+	local anchor = HRP or lid
+	if not anchor then
+		warn("no anchor found, object:", data.IsObject)
+		return
+	end
 
-		-- roblox are stupid and made studsoffsetworldspace relative to the object and not the world
-		nameTagHolder.StudsOffsetWorldSpace =
-			nameTagHolder.Parent.CFrame.Rotation:VectorToObjectSpace(nameTagHolder.StudsOffsetWorldSpace)
+	local gui = anchor:FindFirstChild("CombatGUI")
+	if not gui then
+		gui = combatGUITemplate:Clone()
+		gui.DamagePopup.Visible = false
 
-		halo.Parent = workspace
-		if RunService:IsServer() then
-			halo.Name = character.Name .. "ServerHalo"
+		gui.EnemyNameTag.Visible = false
+		gui.ObjectNameTag.Visible = false
+		gui.FriendlyNameTag.Visible = false
 
-			-- Hide ammo bar from other players, only yours is visible
-		else
-			nameTag.stats.ammo.Visible = true
+		gui.Parent = anchor
+	end
+
+	local nameTag = if data.IsObject then gui.ObjectNameTag else gui.EnemyNameTag
+	nameTag.Visible = true
+
+	local halo
+	if not data.IsObject then
+		halo = haloTemplate:Clone()
+
+		halo.Parent = HaloFolder
+	end
+
+	if not data.IsObject then
+		nameTag.name.nametag.PlayerName.Text = data.Name
+	end
+	-- roblox are stupid and made studsoffsetworldspace relative to the object and not the world
+	gui.StudsOffsetWorldSpace = gui.Parent.CFrame.Rotation:VectorToObjectSpace(gui.StudsOffsetWorldSpace)
+
+	local run: RBXScriptConnection
+	run = RunService.RenderStepped:Connect(function(dt)
+		if character.Parent == nil or gui.Parent == nil then
+			run:Disconnect()
+			if halo then
+				halo:Destroy()
+			end
+			return
 		end
 
-		while true do
-			local dt = task.wait()
-			if character.Parent == nil or nameTagHolder.Parent == nil then
-				break
-			end
+		if not data.IsObject then
+			nameTag.stats.healthnumber.Text = data.Health
+		end
 
-			if RunService:IsClient() then
-				for i = 1, 3 do
-					local individualAmmoBar = nameTag.stats.ammo:FindFirstChild("Ammo" .. i)
+		local healthRatio = data.Health / data.MaxHealth
 
-					if individualAmmoBar then
-						individualAmmoBar.Visible = i <= combatPlayer.ammo
-					end
-				end
-			end
+		-- Size the smaller bar as a percentage of the size of the parent bar, based off player health percentage
+		local healthBar = nameTag.stats.healthbar.HealthBar
+		healthBar.Size = UDim2.new(healthRatio, 0, 1, 0)
 
-			if not isObject then
-				nameTag.stats.healthnumber.Text = combatPlayer.health
-			end
+		healthBar.Visible = data.Health > 0
 
-			local healthRatio = combatPlayer.health / combatPlayer.maxHealth
+		-- only render colour gradients for local character
+		healthBar.UIGradient.Color = ColorSequence.new(Color3.fromHex("#f6266e"), Color3.fromHex("#a80050"))
 
-			-- Size the smaller bar as a percentage of the size of the parent bar, based off player health percentage
-			local healthBar = nameTag.stats.healthbar.HealthBar
-			healthBar.Size = UDim2.new(healthRatio, 0, 1, 0)
-
-			healthBar.Visible = combatPlayer.health > 0
-
-			-- only render colour gradients for local character
-			if RunService:IsClient() and character == Players.LocalPlayer.Character then
-				local colour1 = Color3.fromHSV(healthRatio * 100 / 255, 206 / 255, 1)
-				local colour2 = Color3.fromHSV(healthRatio * 88 / 255, 197 / 255, 158 / 255)
-				healthBar.UIGradient.Color = ColorSequence.new(colour1, colour2)
+		if not data.IsObject then
+			if not data.SuperAvailable then
+				halo.Decal.Transparency = 1
 			else
-				healthBar.UIGradient.Color = ColorSequence.new(Color3.fromHex("#f6266e"), Color3.fromHex("#a80050"))
-			end
-
-			if not isObject then
-				if RunService:IsClient() then
-					local serverHalo = workspace:FindFirstChild(character.Name .. "ServerHalo")
-					if serverHalo then
-						serverHalo:Destroy()
-					end
-				end
-
-				local superAvailable = combatPlayer:CanSuperAttack()
-				local aiming = combatPlayer.aiming
-				if not superAvailable then
-					halo.Decal.Transparency = 1
+				halo.Decal.Transparency = 0
+				if data.AimingSuper then
+					halo.Decal.Color3 = Color3.fromHex("#ebb800")
 				else
-					halo.Decal.Transparency = 0
-					if aiming == Enums.AbilityType.Super then
-						halo.Decal.Color3 = Color3.fromHex("#ebb800")
-					else
-						halo.Decal.Color3 = Color3.fromHex("#619cf5")
-					end
+					halo.Decal.Color3 = Color3.fromHex("#619cf5")
 				end
-				local HRP = character:FindFirstChild("HumanoidRootPart")
-				local humanoid = character:FindFirstChild("Humanoid")
-
-				halo.CFrame = CFrame.new(HRP.Position)
-					* CFrame.new(0, -humanoid.HipHeight - HRP.Size.Y / 2 + 0.2, 0)
-					* halo.CFrame.Rotation
-					* CFrame.Angles(0, math.pi * 2 * dt / SPINSPEED, 0)
 			end
-		end
 
-		-- Since it's not parented to the character
-		halo:Destroy()
+			halo.CFrame = CFrame.new(HRP.Position)
+				* CFrame.new(0, -humanoid.HipHeight - HRP.Size.Y / 2 + 0.2, 0)
+				* halo.CFrame.Rotation
+				* CFrame.Angles(0, math.pi * 2 * dt / SPINSPEED, 0)
+		end
 	end)
-	return nameTagHolder
+
+	return true
 end
 
 return NameTag

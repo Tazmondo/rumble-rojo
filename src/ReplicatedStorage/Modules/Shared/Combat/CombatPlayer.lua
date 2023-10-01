@@ -36,12 +36,13 @@ local VFX = require(script.Parent.VFX)
 export type State = "Idle" | "Dead"
 
 export type UpdateData = {
-	health: number,
-	maxHealth: number,
-	superAvailable: boolean,
-	aimingSuper: boolean,
-	isObject: boolean,
-	character: Model,
+	Health: number,
+	MaxHealth: number,
+	SuperAvailable: boolean,
+	AimingSuper: boolean,
+	IsObject: boolean,
+	Character: Model,
+	Name: string,
 }
 
 -- On the server, when processing certain things we want to allow for some latency, so laggy players don't have a bad experience
@@ -132,6 +133,8 @@ function CombatPlayer.new(heroName: string, model: Model, player: Player?): Comb
 		end)
 	end
 
+	self:Update()
+
 	return self :: CombatPlayer
 end
 
@@ -140,6 +143,8 @@ function CombatPlayer.newChest(health: number, model: Model): CombatPlayer
 	local self = InitializeSelf(heroData, model, nil, true)
 	self.maxHealth = health
 	self.health = health
+
+	self:Update()
 
 	return self :: CombatPlayer
 end
@@ -185,12 +190,13 @@ end
 
 function CombatPlayer.AsUpdateData(self: CombatPlayer): UpdateData
 	return {
-		health = self.health,
-		maxHealth = self.maxHealth,
-		isObject = self.isObject,
-		aimingSuper = self.aiming == "Super",
-		superAvailable = self.superCharge >= self.requiredSuperCharge,
-		character = self.character,
+		Health = self.health,
+		MaxHealth = self.maxHealth,
+		IsObject = self.isObject,
+		AimingSuper = self.aiming == "Super",
+		SuperAvailable = self.superCharge >= self.requiredSuperCharge,
+		Character = self.character,
+		Name = if self.player then self.player.DisplayName else self.character.Name,
 	}
 end
 

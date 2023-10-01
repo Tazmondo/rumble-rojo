@@ -562,6 +562,12 @@ function CombatService.RegisterChest(chest: Model)
 	end)
 end
 
+function CombatService:ForceUpdateCombatPlayers()
+	for character, combatPlayer in pairs(CombatPlayerData) do
+		combatPlayer:Update()
+	end
+end
+
 function CombatService:LoadPlayerGuis(player: Player)
 	-- This function is necessary as startergui is only cloned into playergui when character spawns, but we take control of character spawning.
 	for _, gui in pairs(starterGuis) do
@@ -583,6 +589,9 @@ function CombatService:PlayerAdded(player: Player)
 		print("Resolved:", resolve)
 		if resolve then
 			self:SpawnCharacter(player)
+
+			-- ensure nametags appear for combatplayers that already existed
+			CombatService:ForceUpdateCombatPlayers()
 		end
 	end, function(reject)
 		print(reject)

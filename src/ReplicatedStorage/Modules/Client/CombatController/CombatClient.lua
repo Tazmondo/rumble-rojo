@@ -21,6 +21,7 @@ local AimRenderer = require(script.Parent.AimRenderer)
 local AttackRenderer = require(script.Parent.AttackRenderer)
 local CombatCamera = require(script.Parent.CombatCamera)
 local CombatUI = require(script.Parent.CombatUI)
+local NameTag = require(script.Parent.NameTag)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
 local Red = require(ReplicatedStorage.Packages.Red)
 
@@ -83,6 +84,8 @@ function CombatClient.new(heroName: string): CombatClient
 		self.aimRenderer:Update(self.currentMouseDirection :: any, self:GetRealTarget())
 		self.superAimRenderer:Update(self.currentMouseDirection :: any, self:GetRealTarget())
 	end))
+
+	NameTag.InitFriendly(self.combatPlayer)
 
 	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer, self.character))
 

@@ -11,6 +11,7 @@ local Players = game:GetService("Players")
 local AttackRenderer = require(script.AttackRenderer)
 local BushController = require(script.BushController)
 local CombatClient = require(script.CombatClient)
+local CombatPlayerController = require(script.CombatPlayerController)
 local ItemController = require(script.Parent.ItemController)
 local Red = require(ReplicatedStorage.Packages.Red)
 
