@@ -410,8 +410,9 @@ function RenderHeroSelectScreen()
 
 	frame.Stats.Frame:FindFirstChild("3-Super").Details.SuperTitle.Text = combatData.Super.Name
 
+	frame.Stats.Frame.Unavailable.Visible = if heroData.Unavailable and not heroStats then true else false
 	frame.Stats.Frame.Unlock.Cost.Text = heroData.Price
-	frame.Stats.Frame.Unlock.Visible = if heroStats then false else true
+	frame.Stats.Frame.Unlock.Visible = if heroStats or heroData.Unavailable then false else true
 	frame.Stats.Frame.ChangeOutfit.Visible = if heroStats then true else false
 
 	-- Don't try to render skins if the hero isn't owned

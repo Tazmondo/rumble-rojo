@@ -30,6 +30,7 @@ type OrderedHero = {
 	Offence: number,
 	Defence: number,
 	DefaultSkin: string,
+	Unavailable: boolean?,
 	Skins: { OrderedSkin },
 	Order: number?,
 }
@@ -41,6 +42,7 @@ export type Hero = {
 	Offence: number,
 	Defence: number,
 	DefaultSkin: string,
+	Unavailable: boolean?,
 	Skins: { [string]: Skin },
 	Order: number,
 }

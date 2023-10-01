@@ -211,7 +211,7 @@ end)
 
 Net:On("PurchaseHero", function(player: Player, hero: string)
 	local data: ProfileData = DataService.GetProfileData(player):Await()
-	if type(hero) ~= "string" or not HeroDetails.HeroDetails[hero] then
+	if type(hero) ~= "string" or not HeroDetails.HeroDetails[hero] or HeroDetails.HeroDetails[hero].Unavailable then
 		return
 	end
 
@@ -236,7 +236,12 @@ Net:On("PurchaseSkin", function(player: Player, hero: string, skin: string)
 		return
 	end
 
-	local skinData = HeroDetails.HeroDetails[hero].Skins[skin]
+	local heroDetails = HeroDetails.HeroDetails[hero]
+	if not heroDetails or heroDetails.Unavailable then
+		return
+	end
+
+	local skinData = heroDetails.Skins[skin]
 
 	if not data.OwnedHeroes[hero] or not skinData or data.OwnedHeroes[hero].Skins[skin] then
 		return
