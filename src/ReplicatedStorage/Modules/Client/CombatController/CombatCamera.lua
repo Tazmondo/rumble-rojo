@@ -107,6 +107,7 @@ function CombatCamera.Transition(self: CombatCamera, enable: boolean)
 	self.camera.CameraType = Enum.CameraType.Scriptable
 
 	local targetOffset = if enable then CFrame.new(self.cameraOffset) else self.savedCFrame
+	local targetFOV = if enable then self.cameraFOV else self.normalFOV
 
 	local transitionTime = 0.8
 	self.transitioning = true
@@ -115,31 +116,30 @@ function CombatCamera.Transition(self: CombatCamera, enable: boolean)
 	local initialOffset = CFrame.new(HRP.Position):ToObjectSpace(self.camera.CFrame)
 	self.savedCFrame = initialOffset
 
+	local initialFOV = self.camera.FieldOfView
+
 	local startTime
-	self.janitor:Add(
-		RunService.Stepped:Connect(function(t: number)
-			if not startTime then
-				startTime = t
-			end
-			local alpha =
-				TweenService:GetValue((t - startTime) / transitionTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			local newStartPosition = CFrame.new(HRP.Position) * initialOffset
+	local transitionStep = RunService.Stepped:Connect(function(t: number)
+		if not startTime then
+			startTime = t
+		end
+		local alpha =
+			TweenService:GetValue((t - startTime) / transitionTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		local newStartPosition = CFrame.new(HRP.Position) * initialOffset
 
-			local targetCFrame = CFrame.new(HRP.Position) * targetOffset
-			if enable then
-				targetCFrame = self:GetCFrame()
-			end
+		local targetCFrame = CFrame.new(HRP.Position) * targetOffset
+		if enable then
+			targetCFrame = self:GetCFrame()
+		end
 
-			-- local targetCFrame = CFrame.lookAt(targetPosition, HRP.Position)
+		-- local targetCFrame = CFrame.lookAt(targetPosition, HRP.Position)
 
-			self.camera.CFrame = newStartPosition:Lerp(targetCFrame, alpha)
-		end),
-		"Disconnect",
-		"transitionStep"
-	)
+		self.camera.CFrame = newStartPosition:Lerp(targetCFrame, alpha)
+		self.camera.FieldOfView = initialFOV + (targetFOV - initialFOV) * alpha
+	end)
 
 	task.delay(transitionTime, function()
-		self.janitor:Remove("transitionStep")
+		transitionStep:Disconnect()
 		if not self.destroyed then
 			self.transitioning = false
 			if not enable then
@@ -154,7 +154,6 @@ function CombatCamera.Enable(self: CombatCamera)
 		return
 	end
 
-	self.camera.FieldOfView = self.cameraFOV
 	self:Transition(true)
 	self.enabled = true
 end
@@ -164,7 +163,6 @@ function CombatCamera.Disable(self: CombatCamera)
 		return
 	end
 
-	self.camera.FieldOfView = self.normalFOV
 	self:Transition(false)
 	self.enabled = false
 end
