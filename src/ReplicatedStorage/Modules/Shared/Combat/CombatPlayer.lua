@@ -48,6 +48,7 @@ export type UpdateData = {
 	IsObject: boolean,
 	Character: Model,
 	Name: string,
+	State: string,
 }
 
 -- On the server, when processing certain things we want to allow for some latency, so laggy players don't have a bad experience
@@ -202,6 +203,7 @@ function CombatPlayer.AsUpdateData(self: CombatPlayer): UpdateData
 		SuperAvailable = self.superCharge >= self.requiredSuperCharge,
 		Character = self.character,
 		Name = if self.player then self.player.DisplayName else self.character.Name,
+		State = self:GetState(),
 	}
 end
 
@@ -278,7 +280,8 @@ end
 
 function CombatPlayer.ChangeState(self: CombatPlayer, newState: State)
 	self.state = newState
-	self.scheduledChange = {}
+	self.scheduledChange = nil
+	self:Update()
 end
 
 function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, newState: State)
@@ -288,9 +291,7 @@ function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, new
 	task.delay(delay, function()
 		-- Makes sure it hasn't been overriden by another scheduled state change
 		if self.scheduledChange == stateChange then
-			self.scheduledChange = nil
-
-			self.state = newState
+			self:ChangeState(newState)
 		else
 			print("state change was overriden!")
 		end

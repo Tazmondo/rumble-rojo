@@ -8,6 +8,7 @@ local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local CombatPlayerController = require(script.Parent.CombatPlayerController)
 local SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
@@ -17,6 +18,7 @@ local RaycastHitbox = require(ReplicatedStorage.Packages.RaycastHitbox)
 
 local localPlayer = game:GetService("Players").LocalPlayer
 
+local generalVFXFolder = ReplicatedStorage.Assets.VFX.General
 local attackVFXFolder = ReplicatedStorage.Assets.VFX.Attack
 
 local partFolder = Instance.new("Folder", workspace)
@@ -46,8 +48,19 @@ local VALIDPARTS = {
 
 function AttackRenderer.GetCombatPlayerFromValidPart(part: BasePart): Model?
 	local combatPlayer = CombatPlayer.GetAncestorWhichIsACombatPlayer(part)
-	if VALIDPARTS[part.Name] or CollectionService:HasTag(combatPlayer, Config.ChestTag) then
-		return combatPlayer
+
+	if combatPlayer then
+		local dead = false
+
+		local data = CombatPlayerController.GetData(combatPlayer)
+
+		if data then
+			dead = data.State == "Dead"
+		end
+
+		if VALIDPARTS[part.Name] or CollectionService:HasTag(combatPlayer, Config.ChestTag) and not dead then
+			return combatPlayer
+		end
 	end
 	return nil
 end
@@ -96,6 +109,21 @@ function TriggerAllDescendantParticleEmitters(instance: Instance, enable: boolea
 	end
 end
 
+function RenderBulletHit(position: Vector3, projectileSize: number)
+	local template = generalVFXFolder.BulletHit.BulletHit :: Attachment
+	local hit = template:Clone()
+	hit.Parent = workspace.Terrain
+	hit.Position = position
+
+	local emitter = hit:FindFirstChild("explode") :: ParticleEmitter
+	emitter.Size = NumberSequence.new(projectileSize * 1)
+	emitter.TimeScale = Random.new():NextInteger(90, 110) / 100
+
+	emitter:Emit(1)
+
+	Debris:AddItem(hit, 10)
+end
+
 function CreateAttackProjectile(
 	player: Player,
 	attackData: HeroData.AbilityData,
@@ -119,21 +147,36 @@ function CreateAttackProjectile(
 
 	TriggerAllDescendantParticleEmitters(pelletPart, true)
 
+	local projectileSize = pelletPart.Size.Z
 	local projectileTime = (attackData.Range - 1 - pelletPart.Size.Z / 2) / speed
 
+	local destroyed = false
+
+	local function destroyBullet()
+		if not destroyed then
+			destroyed = true
+			RenderBulletHit(pelletPart.Position, projectileSize)
+			pelletPart:Destroy()
+		end
+	end
+
 	-- assumes physics doesnt drop any frames, which could result in range being reduced when laggy
-	Debris:AddItem(pelletPart, projectileTime)
+	task.delay(projectileTime, destroyBullet)
 
 	local hitbox = RaycastHitbox.new(pelletPart)
 	InitializeHitboxParams(hitbox, GetRaycastParams(player.Character))
 	hitbox:HitStart()
 
 	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult, group: string)
+		if destroyed then
+			return
+		end
+
 		local character = AttackRenderer.GetCombatPlayerFromValidPart(hitPart)
 		if group ~= "nocollide" or character then
-			pelletPart:Destroy()
+			destroyBullet()
 		end
-		if onHit then
+		if onHit and character then
 			onHit(hitPart, result.Position, id)
 		end
 	end)

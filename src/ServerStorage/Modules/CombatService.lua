@@ -130,7 +130,7 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails):
 	end
 
 	if not combatPlayer:CanAttack() then
-		warn(player, "Tried to attack when they couldn't")
+		warn(player, "Tried to attack when they couldn't", combatPlayer.ammo, os.clock() - combatPlayer.lastAttackTime)
 		return combatPlayer.attackId
 	end
 
@@ -581,8 +581,9 @@ function CombatService:PlayerAdded(player: Player)
 	self:LoadPlayerGuis(player)
 
 	if RunService:IsStudio() and ServerScriptService:GetAttribute("combat") then
-		PlayersInCombat[player] =
-			{ HeroName = ServerScriptService:GetAttribute("hero"), SkinName = ServerScriptService:GetAttribute("skin") }
+		local hero = ServerScriptService:GetAttribute("hero") or "Taz"
+		local skin = ServerScriptService:GetAttribute("skin") or HeroDetails.HeroDetails[hero].DefaultSkin
+		PlayersInCombat[player] = { HeroName = hero, SkinName = skin }
 	end
 
 	DataService.PromiseLoad(player):Then(function(resolve)

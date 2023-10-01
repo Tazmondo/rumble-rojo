@@ -57,6 +57,10 @@ function HandleUpdate(data: CombatPlayer.UpdateData)
 	end)
 end
 
+function CombatPlayerController.GetData(character: Model): CombatPlayer.UpdateData?
+	return combatPlayers[character]
+end
+
 function CombatPlayerController.Initialize()
 	print("Initializing combatplayercontroller")
 
