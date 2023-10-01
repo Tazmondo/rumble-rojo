@@ -86,11 +86,12 @@ function InitializeHitboxParams(raycastHitbox, raycastParams: RaycastParams): ni
 	return
 end
 
-function TriggerAllDescendantParticleEmitters(instance: Instance)
+function TriggerAllDescendantParticleEmitters(instance: Instance, enable: boolean)
 	for i, v in pairs(instance:GetDescendants()) do
 		if v:IsA("ParticleEmitter") then
-			v:Emit(1)
-			v.Enabled = true
+			local count = v:GetAttribute("EmitCount")
+			v:Emit(count or 1)
+			v.Enabled = enable
 		end
 	end
 end
@@ -116,7 +117,7 @@ function CreateAttackProjectile(
 	linearVelocity.Attachment0 = attachment
 	linearVelocity.VectorVelocity = velocityVector
 
-	TriggerAllDescendantParticleEmitters(pelletPart)
+	TriggerAllDescendantParticleEmitters(pelletPart, true)
 
 	local projectileTime = (attackData.Range - 1 - pelletPart.Size.Z / 2) / speed
 
@@ -179,7 +180,7 @@ function CreateArcedAttack(
 	pelletPart.CFrame = origin * baseRotation
 	pelletPart.Parent = workspace
 
-	TriggerAllDescendantParticleEmitters(pelletPart)
+	TriggerAllDescendantParticleEmitters(pelletPart, true)
 
 	local height = 10
 	local timeTravelled = 0
@@ -203,15 +204,20 @@ function CreateArcedAttack(
 		task.wait(attackData.TimeToDetonate)
 
 		SoundController:PlayGeneralAttackSound("BombBlast", anchor)
-		local explosion = attackVFXFolder.Explosion:Clone()
-		explosion.Position = target + Vector3.new(0, 0, 0)
 
-		explosion.a1.explode.Size = NumberSequence.new(attackData.Radius * 2)
-		explosion.a1.explode.Enabled = false
+		local defaultExplosionRadius = 9
+		local explosionScale = attackData.Radius / defaultExplosionRadius
 
-		explosion.Parent = partFolder
-		explosion.a1.explode:Emit(1)
-		Debris:AddItem(explosion, 5)
+		local explosionModel = attackVFXFolder.Explosion:Clone() :: Model
+		explosionModel:PivotTo(CFrame.new(target + Vector3.new(0, 0, 0)))
+
+		explosionModel:ScaleTo(explosionScale)
+
+		explosionModel.Parent = partFolder
+
+		TriggerAllDescendantParticleEmitters(explosionModel, false)
+
+		Debris:AddItem(explosionModel, 10)
 
 		if onHit then
 			local explosionParts = GetPartsInExplosion(attackData.Radius, target)
