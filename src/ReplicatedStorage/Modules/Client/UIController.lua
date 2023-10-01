@@ -37,7 +37,6 @@ local Net = Red.Client("game")
 
 local ready = false
 local heroSelectOpen = false
-local skinSelectOpen = false
 
 local selectedHero: string = assert(Net:LocalFolder():GetAttribute("Hero"))
 local displayedHero = selectedHero
@@ -50,24 +49,6 @@ local UIState = ""
 
 local shouldReRenderCharacterSelectButtons = true
 local shouldReRenderSkinSelectButtons = true
-
-function PositionCameraToModel(viewportFrame: ViewportFrame, camera: Camera, model: Model)
-	local fovDeg = camera.FieldOfView
-	local aspectRatio = viewportFrame.AbsoluteSize.X / viewportFrame.AbsoluteSize.Y
-
-	local cf, size = model:GetBoundingBox()
-
-	local radius = math.max(size.X, size.Y) / 2
-
-	local halfFov = 0.5 * math.rad(fovDeg)
-	if aspectRatio < 1 then
-		halfFov = math.atan(aspectRatio * math.tan(halfFov))
-	end
-
-	local distance = radius / math.sin(halfFov)
-
-	camera.CFrame = cf * CFrame.new(0, 0, -distance) * CFrame.Angles(0, math.pi, 0)
-end
 
 -- functions
 
@@ -721,7 +702,6 @@ function UIController:Initialize()
 
 		transitioning = true
 
-		skinSelectOpen = true
 		HeroSelect.Frame.Skin.Visible = true
 
 		HeroSelect.Frame.Select.UIScale.Scale = 1
