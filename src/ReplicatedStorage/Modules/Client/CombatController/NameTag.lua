@@ -8,7 +8,8 @@ local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local NameTag = {}
 
 local combatGUITemplate: BillboardGui = ReplicatedStorage.Assets.CombatGUI
-local haloTemplate: Part = ReplicatedStorage.Assets.VFX.General.Halo
+local superHaloTemplate: Part = ReplicatedStorage.Assets.VFX.General.SuperHalo
+local playerHaloTemplate: Part = ReplicatedStorage.Assets.VFX.General.PlayerHalo
 
 local HaloFolder = Instance.new("Folder", workspace)
 HaloFolder.Name = "Halo Folder"
@@ -38,9 +39,13 @@ function NameTag.InitFriendly(combatPlayer: CombatPlayer.CombatPlayer)
 
 	local nameTag = gui.FriendlyNameTag
 
-	local halo = haloTemplate:Clone()
+	local superHalo = superHaloTemplate:Clone()
+	local playerHalo = playerHaloTemplate:Clone()
 
-	halo.Parent = HaloFolder
+	playerHalo.Decal.Color3 = Color3.fromRGB(46, 145, 42)
+
+	playerHalo.Parent = HaloFolder
+	superHalo.Parent = HaloFolder
 
 	assert(character.Parent, "Character has not been parented to workspace yet!")
 
@@ -52,7 +57,8 @@ function NameTag.InitFriendly(combatPlayer: CombatPlayer.CombatPlayer)
 	run = RunService.RenderStepped:Connect(function(dt)
 		if character.Parent == nil or gui.Parent == nil then
 			run:Disconnect()
-			halo:Destroy()
+			playerHalo:Destroy()
+			superHalo:Destroy()
 			return
 		end
 
@@ -81,25 +87,22 @@ function NameTag.InitFriendly(combatPlayer: CombatPlayer.CombatPlayer)
 		local superAvailable = combatPlayer:CanSuperAttack()
 		local aiming = combatPlayer.aiming
 		if not superAvailable then
-			halo.Decal.Transparency = 1
+			superHalo.Decal.Transparency = 1
 		else
-			halo.Decal.Transparency = 0
+			superHalo.Decal.Transparency = 0
 			if aiming == Enums.AbilityType.Super then
-				halo.Decal.Color3 = Color3.fromHex("#ebb800")
+				superHalo.Decal.Color3 = Color3.fromHex("#ebb800")
 			else
-				halo.Decal.Color3 = Color3.fromHex("#619cf5")
+				superHalo.Decal.Color3 = Color3.fromHex("#619cf5")
 			end
 		end
 
-		halo.CFrame = CFrame.new(HRP.Position)
+		superHalo.CFrame = CFrame.new(HRP.Position)
 			* CFrame.new(0, -humanoid.HipHeight - HRP.Size.Y / 2 + 0.2, 0)
-			* halo.CFrame.Rotation
+			* superHalo.CFrame.Rotation
 			* CFrame.Angles(0, math.pi * 2 * dt / SPINSPEED, 0)
+		playerHalo.CFrame = superHalo.CFrame
 	end)
-end
-
-function NameTag.Test()
-	warn("oweihfwei98ufhwiuafhiuewafhweaiu")
 end
 
 function NameTag.InitEnemy(data: CombatPlayer.UpdateData)
@@ -146,11 +149,16 @@ function NameTag.InitEnemy(data: CombatPlayer.UpdateData)
 	local nameTag = if data.IsObject then gui.ObjectNameTag else gui.EnemyNameTag
 	nameTag.Visible = true
 
-	local halo
+	local superHalo
+	local playerHalo
 	if not data.IsObject then
-		halo = haloTemplate:Clone()
+		superHalo = superHaloTemplate:Clone()
+		playerHalo = playerHaloTemplate:Clone()
 
-		halo.Parent = HaloFolder
+		playerHalo.Decal.Color3 = Color3.fromRGB(145, 34, 68)
+
+		superHalo.Parent = HaloFolder
+		playerHalo.Parent = HaloFolder
 	end
 
 	if not data.IsObject then
@@ -163,8 +171,9 @@ function NameTag.InitEnemy(data: CombatPlayer.UpdateData)
 	run = RunService.RenderStepped:Connect(function(dt)
 		if character.Parent == nil or gui.Parent == nil then
 			run:Disconnect()
-			if halo then
-				halo:Destroy()
+			if not data.IsObject then
+				playerHalo:Destroy()
+				superHalo:Destroy()
 			end
 			return
 		end
@@ -186,24 +195,25 @@ function NameTag.InitEnemy(data: CombatPlayer.UpdateData)
 
 		if not data.IsObject then
 			if not data.SuperAvailable then
-				halo.Decal.Transparency = 1
+				superHalo.Decal.Transparency = 1
 			else
-				halo.Decal.Transparency = 0
+				superHalo.Decal.Transparency = 0
 				if data.AimingSuper then
-					halo.Decal.Color3 = Color3.fromHex("#ebb800")
+					superHalo.Decal.Color3 = Color3.fromHex("#ebb800")
 				else
-					halo.Decal.Color3 = Color3.fromHex("#619cf5")
+					superHalo.Decal.Color3 = Color3.fromHex("#619cf5")
 				end
 			end
 
 			if BushController.IsCharacterHidden(character) then
-				halo.CFrame = CFrame.new(1000, 1000, 1000) * halo.CFrame.Rotation
+				superHalo.CFrame = CFrame.new(1000, 1000, 1000) * superHalo.CFrame.Rotation
 			else
-				halo.CFrame = CFrame.new(HRP.Position)
+				superHalo.CFrame = CFrame.new(HRP.Position)
 					* CFrame.new(0, -humanoid.HipHeight - HRP.Size.Y / 2 + 0.2, 0)
-					* halo.CFrame.Rotation
+					* superHalo.CFrame.Rotation
 					* CFrame.Angles(0, math.pi * 2 * dt / SPINSPEED, 0)
 			end
+			playerHalo.CFrame = superHalo.CFrame
 		end
 	end)
 
