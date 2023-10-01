@@ -102,7 +102,7 @@ function HandleItemPickup(combatPlayers: CombatPlayers, player: Player, id: numb
 	end
 
 	local combatPlayer = combatPlayers[player.Character]
-	if not combatPlayer then
+	if not combatPlayer or combatPlayer:IsDead() then
 		return
 	end
 	local HRP = player.Character:FindFirstChild("HumanoidRootPart") :: BasePart

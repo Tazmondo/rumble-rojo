@@ -35,16 +35,25 @@ local function InitializeCombatClient(heroName)
 	localPlayer.Character:WaitForChild("Humanoid") -- Also need to wait for the character to get populated
 	localPlayer.Character:WaitForChild("HumanoidRootPart")
 
-	localPlayer.CharacterRemoving:Once(function()
+	local clean = false
+	local function CleanUp()
+		if clean then
+			return
+		end
+		clean = true
 		print("destroying combat client")
 		BushController.SetCombatStatus(false)
 		ItemController.SetCombatStatus(false)
 		combatClient:Destroy()
-	end)
+	end
+
+	localPlayer.CharacterRemoving:Once(CleanUp)
 
 	BushController.SetCombatStatus(true)
 	ItemController.SetCombatStatus(true)
 	combatClient = CombatClient.new(heroName) :: CombatClient.CombatClient
+
+	combatClient.combatPlayer.DiedSignal:Connect(CleanUp)
 	print("Initialized combat client")
 end
 

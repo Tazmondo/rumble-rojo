@@ -136,16 +136,9 @@ end
 
 function CheckItems()
 	task.spawn(function()
-		while true do
-			task.wait()
-			if not inCombat then
-				return
-			end
-
+		while inCombat and player.Character do
 			local character = player.Character
-			if not character then
-				continue
-			end
+
 			local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
 			if not HRP then
 				continue
@@ -156,6 +149,8 @@ function CheckItems()
 					AbsorbItem(item, HRP)
 				end
 			end
+
+			task.wait()
 		end
 	end)
 end
