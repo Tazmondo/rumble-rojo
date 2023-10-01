@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local AccelTween = require(ReplicatedStorage.Modules.Shared.AccelTween)
+local Spring = require(ReplicatedStorage.Modules.Shared.Spring)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
 
 -- Makes sure combat cameras arent forgotten to be cleaned up, as only one should exist at any time anyway
@@ -36,6 +37,9 @@ function CombatCamera.new()
 	self.normalFOV = 70
 	self.cameraOffset = CFrame.Angles(0, math.rad(-90), 0) * (Vector3.new(0, 120, 80))
 	self.cameraFOV = 25
+
+	self.shakeSpring = Spring.new(1, 60, 5560)
+	self.shakeVelocity = 47.4
 
 	self.savedCFrame = CFrame.new()
 	self.accelTween = AccelTween.new(25)
@@ -81,6 +85,9 @@ function CombatCamera.SetupCamera(self: CombatCamera)
 
 			differenceVector = targetCFrame.Position - currentCFrame.Position
 			self.accelTween.p = -differenceVector.Magnitude
+
+			-- apply camera shake
+			currentCFrame *= CFrame.new(Vector3.new(0, 1, 0).Unit * self.shakeSpring.Offset)
 
 			self.camera.CFrame = currentCFrame
 
@@ -147,6 +154,11 @@ function CombatCamera.Transition(self: CombatCamera, enable: boolean)
 			end
 		end
 	end)
+end
+
+function CombatCamera.Shake(self: CombatCamera)
+	print("Shaking")
+	print(self.shakeSpring:AddVelocity(self.shakeVelocity))
 end
 
 function CombatCamera.Enable(self: CombatCamera)

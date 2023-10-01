@@ -294,6 +294,7 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 
 	self.usingSuper = false
 	self.combatUI:UpdateSuperActive(self.usingSuper)
+	self.combatCamera:Shake()
 
 	while not self.completedRotation do
 		task.wait()

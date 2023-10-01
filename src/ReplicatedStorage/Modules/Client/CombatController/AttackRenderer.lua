@@ -342,7 +342,7 @@ function AttackRenderer.RenderOtherClientAttack(
 end
 
 -- HitPart, Position, Id
-export type HitFunction = (Instance, Vector3, number) -> any
+export type HitFunction = (hitPart: Instance, position: Vector3, id: number) -> any
 export type MultiHit = ({
 	{
 		instance: Instance,
