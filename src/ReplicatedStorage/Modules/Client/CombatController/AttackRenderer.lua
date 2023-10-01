@@ -215,7 +215,8 @@ function CreateArcedAttack(
 	target: Vector3,
 	onHit: MultiHit?
 )
-	local pelletPart: BasePart = attackVFXFolder[attackData.Name]:Clone()
+	local pelletPart: BasePart =
+		assert(attackVFXFolder[attackData.Name], "VFX did not exist for", attackData.Name):Clone()
 	local baseRotation = pelletPart.CFrame.Rotation
 
 	origin = CFrame.new(origin.Position)

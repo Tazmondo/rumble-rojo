@@ -426,7 +426,10 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 	end
 
 	-- calling this after calling the server so the hit does not reach server before the attack start
-	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction)
+	-- need to call it in a new thread because of a bug with Red, where :Await causes this thread to error silently
+	task.spawn(function()
+		AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction)
+	end)
 end
 
 export type CombatClient = typeof(CombatClient.new(...)) & typeof(CombatClient)
