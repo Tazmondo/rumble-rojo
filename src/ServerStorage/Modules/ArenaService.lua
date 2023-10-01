@@ -43,7 +43,7 @@ function ArenaService.HandleResults(player)
 	local money = battleData.Kills * Config.MoneyKill
 
 	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)
-		data.Trophies += trophies
+		data.Trophies = math.max(data.Trophies + trophies, 0)
 		data.Money += money
 		data.OwnedHeroes[battleData.Hero].Trophies += trophies
 

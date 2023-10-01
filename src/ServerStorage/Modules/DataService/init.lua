@@ -123,6 +123,10 @@ local function reconcile(profile)
 			CorrectOwnedHero(heroData, data.OwnedHeroes[heroName])
 		end
 	end
+
+	if data.Trophies < 0 then
+		data.Trophies = 0
+	end
 end
 
 local function PlayerAdded(player: Player)
