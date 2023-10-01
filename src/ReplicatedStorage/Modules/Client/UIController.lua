@@ -446,7 +446,7 @@ function RenderHeroSelectScreen()
 	end
 
 	-- RENDER PREVIEW
-	local model = HeroDetails.GetModelFromName(displayedHero, if skinSelectOpen then displayedSkin else selectedSkin)
+	local model = HeroDetails.GetModelFromName(displayedHero, displayedSkin)
 	if model == prevModel then
 		return
 	end
@@ -583,10 +583,11 @@ function RenderCharacterSelectButtons()
 						selectedHero = hero
 
 						characterSelect[selectedHero].ViewportFrame.Equipped.Visible = true
+
+						displayedSkin = selectedSkin
 					else
-						selectedSkin = HeroDetails.HeroDetails[hero].DefaultSkin
+						displayedSkin = HeroDetails.HeroDetails[hero].DefaultSkin
 					end
-					displayedSkin = selectedSkin
 				end)
 			end
 
@@ -734,6 +735,8 @@ function UIController:Initialize()
 		if transitioning then
 			return
 		end
+
+		displayedSkin = selectedSkin
 
 		transitioning = true
 
