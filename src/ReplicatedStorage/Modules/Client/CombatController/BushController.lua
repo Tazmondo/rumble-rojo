@@ -41,6 +41,7 @@ local player = Players.LocalPlayer
 
 type CharacterData = {
 	BaseTransparency: { [BasePart]: number },
+	Emitters: { [ParticleEmitter]: boolean },
 	CurrentOpacity: number,
 	TargetOpacity: number,
 	LastHit: number,
@@ -50,19 +51,31 @@ local characterData: { [Model]: CharacterData } = {}
 
 local inCombat = false
 
-function EnableOverhead(character: Model)
+function SetOverheadEnabled(character: Model, enabled: boolean)
 	local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
+	if not HRP then
+		return
+	end
+
 	local combatUI = HRP:FindFirstChild("CombatGUI") :: BillboardGui
 	if combatUI then
-		combatUI.Enabled = true
+		combatUI.Enabled = enabled
 	end
 end
 
-function DisableOverhead(character: Model)
-	local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
-	local combatUI = HRP:FindFirstChild("CombatGUI") :: BillboardGui
-	if combatUI then
-		combatUI.Enabled = false
+function SetEmittersEnabled(character: Model, enabled: boolean)
+	local data = characterData[character]
+	if not data then
+		return
+	end
+
+	for emitter, defaultEnabled in pairs(data.Emitters) do
+		if enabled then
+			emitter.Enabled = defaultEnabled
+		else
+			emitter:Clear()
+			emitter.Enabled = false
+		end
 	end
 end
 
@@ -100,11 +113,9 @@ function UpdateOpacity(character: Model, instant: boolean?)
 		part.Transparency = 1 - opacity
 	end
 
-	if data.CurrentOpacity == 0 then
-		DisableOverhead(character)
-	else
-		EnableOverhead(character)
-	end
+	local visible = data.CurrentOpacity > 0
+	SetOverheadEnabled(character, visible)
+	SetEmittersEnabled(character, visible)
 end
 
 function IsPointInVolume(point: Vector3, volumeCenter: CFrame, volumeSize: Vector3): boolean
@@ -205,14 +216,19 @@ function CombatCharacterAdded(character: Model)
 			return
 		end
 		local baseTransparencies = {}
+		local emitters = {}
+
 		for i, v in pairs(character:GetDescendants()) do
 			if v:IsA("BasePart") then
 				baseTransparencies[v] = v.Transparency
+			elseif v:IsA("ParticleEmitter") then
+				emitters[v] = v.Enabled
 			end
 		end
 
 		characterData[character] = {
 			BaseTransparency = baseTransparencies,
+			Emitters = emitters,
 			LastHit = 0,
 			CurrentOpacity = 1,
 			TargetOpacity = 1,
@@ -230,6 +246,10 @@ function CombatCharacterRemoved(character: Model)
 
 	for part, transparency in pairs(characterData[character].BaseTransparency) do
 		part.Transparency = transparency
+	end
+
+	for emitter, enabled in pairs(characterData[character].Emitters) do
+		emitter.Enabled = enabled
 	end
 
 	characterData[character] = nil
@@ -257,7 +277,7 @@ function BushController.IsCharacterHidden(character: Model)
 		return false
 	end
 
-	return characterData.TargetOpacity == 0
+	return characterData.CurrentOpacity == 0
 end
 
 function BushController.Initialize()

@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local BushController = require(script.Parent.BushController)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 
@@ -195,10 +196,14 @@ function NameTag.InitEnemy(data: CombatPlayer.UpdateData)
 				end
 			end
 
-			halo.CFrame = CFrame.new(HRP.Position)
-				* CFrame.new(0, -humanoid.HipHeight - HRP.Size.Y / 2 + 0.2, 0)
-				* halo.CFrame.Rotation
-				* CFrame.Angles(0, math.pi * 2 * dt / SPINSPEED, 0)
+			if BushController.IsCharacterHidden(character) then
+				halo.CFrame = CFrame.new(1000, 1000, 1000) * halo.CFrame.Rotation
+			else
+				halo.CFrame = CFrame.new(HRP.Position)
+					* CFrame.new(0, -humanoid.HipHeight - HRP.Size.Y / 2 + 0.2, 0)
+					* halo.CFrame.Rotation
+					* CFrame.Angles(0, math.pi * 2 * dt / SPINSPEED, 0)
+			end
 		end
 	end)
 
