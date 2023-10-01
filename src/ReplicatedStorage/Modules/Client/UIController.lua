@@ -360,7 +360,6 @@ function RenderHeroSelectScreen()
 		return
 	end
 
-	local combatData = HeroData.HeroData[currentHeroName]
 	local heroData = HeroDetails.HeroDetails[currentHeroName]
 	if not heroData then
 		warn("Tried to get data for hero", currentHeroName, "but it didn't exist!")
@@ -408,7 +407,12 @@ function RenderHeroSelectScreen()
 		end
 	end
 
-	frame.Stats.Frame:FindFirstChild("3-Super").Details.SuperTitle.Text = combatData.Super.Name
+	local combatData = HeroData.HeroData[currentHeroName]
+
+	-- Allow for unavailable heroes to show up in shop
+	local superName = if combatData then combatData.Super.Name else "Coming soon!"
+
+	frame.Stats.Frame:FindFirstChild("3-Super").Details.SuperTitle.Text = superName
 
 	frame.Stats.Frame.Unavailable.Visible = if heroData.Unavailable and not heroStats then true else false
 	frame.Stats.Frame.Unlock.Cost.Text = heroData.Price
