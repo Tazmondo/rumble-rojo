@@ -1,12 +1,11 @@
 local VFXService = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Red = require(ReplicatedStorage.Packages.Red)
 
-local Net = Red.Server("VFX", { "Regen" })
+local RegenVFXEvent = require(ReplicatedStorage.Events.VFX.RegenVFX):Server()
 
 function VFXService.Regen(character: Model)
-	Net:FireAll("Regen", character)
+	RegenVFXEvent:FireAll(character)
 end
 
 return VFXService

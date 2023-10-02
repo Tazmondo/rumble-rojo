@@ -3,10 +3,10 @@ local VFXController = {}
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BushController = require(ReplicatedStorage.Modules.Client.CombatController.BushController)
-local Red = require(ReplicatedStorage.Packages.Red)
+
+local RegenVFXEvent = require(ReplicatedStorage.Events.VFX.RegenVFX):Client()
 
 local VFXFolder = ReplicatedStorage.Assets.VFX
-local Net = Red.Client("VFX")
 
 function Regen(character: Model)
 	if not character or BushController.IsCharacterHidden(character) then
@@ -28,7 +28,7 @@ function Regen(character: Model)
 end
 
 function VFXController.Initialize()
-	Net:On("Regen", Regen)
+	RegenVFXEvent:On(Regen)
 end
 
 VFXController.Initialize()
