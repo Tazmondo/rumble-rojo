@@ -3,13 +3,14 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatService = require(script.Parent.CombatService)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local Future = require(ReplicatedStorage.Packages.Future)
 local ServerConfig = require(script.Parent.ServerConfig)
-local Red = require(ReplicatedStorage.Packages.Red)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
 local MapService = {}
 
-local Net = Red.Server("Map", { "MoveMap", "ForceMoveMap" })
+local ForceMoveMapEvent = require(ReplicatedStorage.Events.Map.ForceMoveMap):Server()
+local MoveMapEvent = require(ReplicatedStorage.Events.Map.MoveMap):Server()
 
 local arena = workspace.Arena
 local activeMapFolder = arena.Map
@@ -47,23 +48,21 @@ local function GetRandomMap(): Model
 end
 
 local function MoveMapUp()
-	return Red.Promise.new(function(resolve)
+	return Future.Try(function()
 		assert(map)
-		Net:FireAll("MoveMap", map, #map:GetDescendants(), activeMapCFrame, inactiveMapCFrame, MAPTRANSITIONTIME)
+		MoveMapEvent:FireAll(map, #map:GetDescendants(), activeMapCFrame, inactiveMapCFrame, MAPTRANSITIONTIME)
 		task.wait(MAPTRANSITIONTIME + 5) -- Allow 5 seconds for map loading
+		ForceMoveMapEvent:FireAll(map, activeMapCFrame)
 		map:PivotTo(activeMapCFrame)
-		Net:FireAll("ForceMoveMap", map, activeMapCFrame)
-		resolve()
 	end)
 end
 
 function MoveMapDown()
-	return Red.Promise.new(function(resolve)
+	return Future.Try(function()
 		assert(map)
-		Net:FireAll("MoveMap", map, #map:GetDescendants(), inactiveMapCFrame, activeMapCFrame, MAPTRANSITIONTIME)
-		task.wait(MAPTRANSITIONTIME + 0.5)
+		MoveMapEvent:FireAll(map, #map:GetDescendants(), inactiveMapCFrame, activeMapCFrame, MAPTRANSITIONTIME)
+		task.wait(MAPTRANSITIONTIME + 1)
 		map:PivotTo(inactiveMapCFrame)
-		resolve()
 	end)
 end
 
@@ -120,19 +119,14 @@ function MapService:GetMapSpawns()
 end
 
 function MapService:UnloadCurrentMap()
-	if not map then
-		warn("Tried to unload map when map did not exist.", debug.traceback())
-		return Red.Promise.new(function(resolve)
-			resolve()
-		end)
-	end
-	return Red.Promise.new(function(resolve)
-		MoveMapDown():Catch(function(msg)
-			warn(debug.traceback(msg))
-		end):Finally(function()
-			UnloadMap()
-			resolve()
-		end)
+	return Future.Try(function()
+		if not map then
+			warn("Tried to unload map when map did not exist.", debug.traceback())
+			return
+		end
+
+		MoveMapDown():Await()
+		UnloadMap()
 	end)
 end
 

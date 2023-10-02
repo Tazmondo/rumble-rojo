@@ -1,18 +1,22 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local Red = require(ReplicatedStorage.Packages.Red)
+local Bin = require(ReplicatedStorage.Packages.Bin)
+
+local ForceMoveMapEvent = require(ReplicatedStorage.Events.Map.ForceMoveMap):Client()
+local MoveMapEvent = require(ReplicatedStorage.Events.Map.MoveMap):Client()
 
 local MapController = {}
 
-local Net = Red.Client("Map")
-
 local scheduleMove = {}
 
-local Add, Cleanup
+local Add: any, Cleanup: any
 
 function MoveMap(map: Model, descendantCount: number, newCF: CFrame, oldCF: CFrame, tweenTime: number)
-	Add, Cleanup = Red.Bin()
+	if Cleanup then
+		Cleanup()
+	end
+	Add, Cleanup = Bin()
 
 	local unique = {}
 	scheduleMove = unique
@@ -58,8 +62,8 @@ function ForceMoveMap(map: Model, newCF: CFrame)
 end
 
 function MapController:Initialize()
-	Net:On("MoveMap", MoveMap)
-	Net:On("ForceMoveMap", ForceMoveMap)
+	MoveMapEvent:On(MoveMap)
+	ForceMoveMapEvent:On(ForceMoveMap)
 end
 
 MapController:Initialize()
