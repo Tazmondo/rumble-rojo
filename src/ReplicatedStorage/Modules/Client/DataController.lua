@@ -1,53 +1,76 @@
 --!strict
 local DataController = {}
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
-local Types = require(ReplicatedStorage.Modules.Shared.Types)
-local Red = require(ReplicatedStorage.Packages.Red)
+local Future = require(ReplicatedStorage.Packages.Future)
+local Signal = require(ReplicatedStorage.Packages.Signal)
 -- Receives data sync from server when the Red folder cannot be used and exposes it to the other client controllers
 
-local Net = Red.Client("game")
+local PrivateDataEvent = require(ReplicatedStorage.Events.Data.PrivateDataEvent):Client()
+local GameDataEvent = require(ReplicatedStorage.Events.Data.GameDataEvent):Client()
+local PublicDataEvent = require(ReplicatedStorage.Events.Data.PublicDataEvent):Client()
+local PurchaseHeroEvent = require(ReplicatedStorage.Events.Data.PurchaseHeroEvent):Client()
+local PurchaseSkinEvent = require(ReplicatedStorage.Events.Data.PurchaseSkinEvent):Client()
+local SelectHeroEvent = require(ReplicatedStorage.Events.Data.SelectHeroEvent):Client()
+local SelectSkinEvent = require(ReplicatedStorage.Events.Data.SelectSkinEvent):Client()
 
-local loaded = false
+local PrivateData: Data.PrivatePlayerData
+local PublicData: Data.PlayersData
+local GameData: Data.GameData
 
-DataController.ownedHeroData = {} :: { [string]: Types.HeroStats }
+export type LocalPlayerData = {
+	Private: Data.PrivatePlayerData,
+	Public: Data.PublicPlayerData,
+}
 
-DataController.updatedSignal = Red.Signal.new()
+local player = Players.LocalPlayer
 
-function DataController.HasLoadedDataPromise()
-	return Red.Promise.new(function(resolve)
-		while not loaded do
+function DataController.HasLoadedData()
+	return Future.new(function()
+		while not PrivateData or not PublicData or not GameData do
 			task.wait()
 		end
-		resolve()
 	end)
 end
 
 function DataController.SelectHero(hero: string)
-	Net:Fire("SelectHero", hero)
+	SelectHeroEvent:Fire(hero)
+
+	local data = DataController.GetLocalData():Await()
+	data.Private.SelectedHero = hero
 end
 
 function DataController.SelectSkin(hero: string, skin: string)
-	Net:Fire("SelectSkin", hero, skin)
-	DataController.ownedHeroData[hero].SelectedSkin = skin
+	SelectSkinEvent:Fire(hero, skin)
+
+	local data = DataController.GetLocalData():Await()
+	data.Private.OwnedHeroes[hero].SelectedSkin = skin
 end
 
-function DataController.PurchaseHero(hero: string)
-	Net:Fire("PurchaseHero", hero)
+function DataController.PurchaseHero(hero: string, select: boolean?)
+	PurchaseHeroEvent:Fire(hero, select)
+	if select then
+		local data = DataController.GetLocalData():Await()
+		data.Private.SelectedHero = hero
+	end
 end
 
 function DataController.PurchaseSkin(hero: string, skin: string)
-	Net:Fire("PurchaseSkin", hero, skin)
-	DataController.ownedHeroData[hero].Skins[skin] = true
+	PurchaseSkinEvent:Fire(hero, skin)
+
+	local data = DataController.GetLocalData():Await()
+	data.Private.OwnedHeroes[hero].Skins[skin] = true
 end
 
 function DataController.GetMoney()
-	return Net:LocalFolder():GetAttribute("Money") or 0
+	return DataController.GetLocalData():Await().Private.Money
 end
 
 function DataController.GetTrophies()
-	return Net:LocalFolder():GetAttribute("Trophies") or 0
+	return DataController.GetLocalData():Await().Private.Trophies
 end
 
 function DataController.CanAffordHero(hero: string)
@@ -66,11 +89,52 @@ function DataController.CanAffordSkin(hero: string, skin: string)
 	return DataController.GetMoney() >= HeroDetails.HeroDetails[hero].Skins[skin].Price
 end
 
-Net:On("HeroData", function(data)
-	print("Updating hero data", data)
-	DataController.ownedHeroData = data
-	loaded = true
-	DataController.updatedSignal:Fire()
-end)
+-- These functions only yield if called very early on.
+function DataController.GetLocalData()
+	return Future.new(function()
+		DataController.HasLoadedData():Await()
+		return {
+			Private = PrivateData,
+			Public = PublicData[player],
+		} :: LocalPlayerData
+	end)
+end
+
+function DataController.GetGameData()
+	return Future.new(function()
+		DataController.HasLoadedData():Await()
+		return GameData
+	end)
+end
+
+function DataController.GetPublicData()
+	return Future.new(function()
+		DataController.HasLoadedData():Await()
+		return PublicData
+	end)
+end
+
+function DataController.Initialize()
+	DataController.GameDataUpdated = Signal()
+	DataController.LocalDataUpdated = Signal()
+	DataController.PublicDataUpdated = Signal()
+
+	GameDataEvent:On(function(data)
+		GameData = data
+		DataController.GameDataUpdated:Fire()
+	end)
+
+	PrivateDataEvent:On(function(data)
+		PrivateData = data
+		DataController.LocalDataUpdated:Fire()
+	end)
+
+	PublicDataEvent:On(function(player, data)
+		PublicData[player] = data
+		DataController.PublicDataUpdated:Fire()
+	end)
+end
+
+DataController.Initialize()
 
 return DataController

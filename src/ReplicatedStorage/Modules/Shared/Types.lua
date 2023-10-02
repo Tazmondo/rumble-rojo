@@ -1,14 +1,8 @@
-export type PlayerBattleStats = {
+export type PlayerBattleResults = {
 	Kills: number,
 	Hero: string,
 	Won: boolean,
 	Died: boolean,
-}
-
-export type HeroStats = {
-	Trophies: number,
-	SelectedSkin: string,
-	Skins: { [string]: boolean },
 }
 
 return {}

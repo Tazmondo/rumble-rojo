@@ -758,9 +758,8 @@ function UIController:Initialize()
 			return
 		end
 
-		DataController.PurchaseHero(displayedHero)
+		DataController.PurchaseHero(displayedHero, true)
 		shouldReRenderSkinSelectButtons = true
-		DataController.SelectHero(displayedHero)
 
 		local characterSelect = HeroSelect.Frame.Select["Character Select"]
 		characterSelect[selectedHero].ViewportFrame.Equipped.Visible = false

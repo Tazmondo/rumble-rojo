@@ -122,7 +122,7 @@ end
 
 function ItemService.Initialize(combatPlayers: CombatPlayers)
 	Players.PlayerAdded:Connect(function(player: Player)
-		local loaded = LoadedService.ClientLoadedFuture(player):Await()
+		local loaded = LoadedService.ClientLoaded(player):Await()
 
 		if loaded then
 			for i, item in pairs(spawnedItems) do

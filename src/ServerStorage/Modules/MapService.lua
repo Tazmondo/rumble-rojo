@@ -3,8 +3,8 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatService = require(script.Parent.CombatService)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local ServerConfig = require(ReplicatedStorage.Modules.Shared.ServerConfig)
 local Future = require(ReplicatedStorage.Packages.Future)
-local ServerConfig = require(script.Parent.ServerConfig)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
 local MapService = {}

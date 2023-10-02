@@ -1,3 +1,4 @@
+--!nocheck
 --[=[
 	Provides a means to, with both a continuous position and velocity,
 	accelerate from its current position to a target position in minimum time

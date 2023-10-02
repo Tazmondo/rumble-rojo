@@ -120,6 +120,9 @@ function ProcessReceipt(receipt_info)
 	end
 
 	local profile = DataService.GetProfile(player):Await() :: DataService.Profile
+	if not profile then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 
 	local product = products[receipt_info.ProductId]
 	if not product then
