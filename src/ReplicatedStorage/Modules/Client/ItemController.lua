@@ -1,4 +1,3 @@
---!strict
 local ItemController = {}
 
 local Players = game:GetService("Players")
@@ -8,9 +7,14 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local RenderFunctions = require(script.Parent.RenderFunctions)
 local SoundController = require(script.Parent.SoundController)
-local Red = require(ReplicatedStorage.Packages.Red)
 
-local Net = Red.Client("Items")
+local SpawnItemEvent = require(ReplicatedStorage.Events.Item.SpawnItem):Client()
+local RegisterItemEvent = require(ReplicatedStorage.Events.Item.RegisterItem):Client()
+local DestroyItemEvent = require(ReplicatedStorage.Events.Item.DestroyItem):Client()
+local ItemCollectedEvent = require(ReplicatedStorage.Events.Item.ItemCollected):Client()
+
+local CollectItemEvent = require(ReplicatedStorage.Events.Item.CollectItem):Client()
+local BeginAbsorbEvent = require(ReplicatedStorage.Events.Item.BeginAbsorb):Client()
 
 local boosterTemplate = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Booster") :: Model
 
@@ -37,13 +41,11 @@ local absorptionTime = 0.25
 function SpawnItem(type: string, id: number, origin: Vector3, position: Vector3)
 	print("Spawning item")
 
-	local item = RegisterItem(id, position)
-	local model = item.Item
-
 	local startCF = CFrame.new(origin)
 	local endCF = CFrame.new(position)
 
-	model:PivotTo(startCF)
+	local item = RegisterItem(type, id, origin)
+	local model = item.Item
 
 	local timeTaken = 0
 	local render = RunService.PreRender:Connect(function(dt)
@@ -60,7 +62,7 @@ function SpawnItem(type: string, id: number, origin: Vector3, position: Vector3)
 	end)
 end
 
-function RegisterItem(id: number, position: Vector3, disabled: boolean?)
+function RegisterItem(type: string, id: number, position: Vector3, disabled: boolean?)
 	print("Registering item", id)
 	if spawnedItems[id] then
 		spawnedItems[id].Item:Destroy()
@@ -68,6 +70,8 @@ function RegisterItem(id: number, position: Vector3, disabled: boolean?)
 
 	local item = boosterTemplate:Clone()
 	item.Parent = itemFolder
+
+	item:PivotTo(CFrame.new(position))
 
 	spawnedItems[id] = {
 		Position = position,
@@ -112,11 +116,11 @@ function AbsorbItem(item: Item, part: BasePart)
 
 	local model = item.Item
 
-	Net:Fire("BeginAbsorb", item.Id)
+	BeginAbsorbEvent:Fire(item.Id)
 
 	task.spawn(function()
 		RenderAbsorption(model, part)
-		Net:Fire("CollectItem", item.Id)
+		CollectItemEvent:Fire(item.Id)
 		model:Destroy()
 		spawnedItems[item.Id] = nil
 	end)
@@ -171,10 +175,11 @@ end
 function ItemController.Initialize()
 	print("Initializing item controller")
 	RunService.PreRender:Connect(Render)
-	Net:On("SpawnItem", SpawnItem)
-	Net:On("RegisterItem", RegisterItem)
-	Net:On("DestroyItem", DestroyItem)
-	Net:On("CollectItem", HandleItemPickup)
+
+	RegisterItemEvent:On(RegisterItem)
+	DestroyItemEvent:On(DestroyItem)
+	SpawnItemEvent:On(SpawnItem)
+	ItemCollectedEvent:On(HandleItemPickup)
 end
 
 ItemController.Initialize()

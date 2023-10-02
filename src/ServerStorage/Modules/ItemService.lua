@@ -6,8 +6,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LoadedService = require(script.Parent.LoadedService)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
-local Red = require(ReplicatedStorage.Packages.Red)
-local Net = Red.Server("Items", { "SpawnItem", "DestroyItem", "RegisterItem", "CollectItem", "BeginAbsorb" })
+
+local SpawnItemEvent = require(ReplicatedStorage.Events.Item.SpawnItem):Server()
+local RegisterItemEvent = require(ReplicatedStorage.Events.Item.RegisterItem):Server()
+local DestroyItemEvent = require(ReplicatedStorage.Events.Item.DestroyItem):Server()
+local ItemCollectedEvent = require(ReplicatedStorage.Events.Item.ItemCollected):Server()
+local CollectItemEvent = require(ReplicatedStorage.Events.Item.CollectItem):Server()
+local BeginAbsorbEvent = require(ReplicatedStorage.Events.Item.BeginAbsorb):Server()
 
 local spawnedItems: { [number]: Item } = {}
 
@@ -48,14 +53,14 @@ function ItemService.ExplodeBoosters(position: Vector3, count: number)
 		end
 
 		id += 1
-		Net:FireAll("SpawnItem", "Booster", id, position, newPosition)
+		SpawnItemEvent:FireAll("Booster", id, position, newPosition)
 		spawnedItems[id] = { Position = newPosition, Id = id }
 	end
 end
 
 function ItemService.CleanUp()
 	for i, item in pairs(spawnedItems) do
-		Net:FireAll("DestroyItem", item.Id)
+		DestroyItemEvent:FireAll(item.Id)
 	end
 	spawnedItems = {}
 end
@@ -80,14 +85,14 @@ function HandleBeginAbsorb(combatPlayers: CombatPlayers, player: Player, id: num
 	if (HRP.Position - item.Position).Magnitude > Config.PickupRadius + 5 then
 		-- since this is likely due to lag, get the client to replace the item again (as it will have assumed it to be picked up)
 		warn(player, "picked up item from too far away")
-		Net:Fire(player, "DestroyItem", item.Id)
-		Net:Fire(player, "RegisterItem", item.Id, item.Position)
+		DestroyItemEvent:Fire(player, item.Id)
+		RegisterItemEvent:Fire(player, "Booster", item.Id, item.Position)
 		return
 	end
 
 	item.Collector = player
 
-	Net:FireAllExcept(player, "CollectItem", id, HRP)
+	ItemCollectedEvent:FireAllExcept(player, id, HRP)
 end
 
 function HandleItemPickup(combatPlayers: CombatPlayers, player: Player, id: number)
@@ -117,23 +122,20 @@ end
 
 function ItemService.Initialize(combatPlayers: CombatPlayers)
 	Players.PlayerAdded:Connect(function(player: Player)
-		-- TODO: register current items
-		LoadedService.IsClientLoadedPromise(player)
-			:Then(function()
-				for i, item in pairs(spawnedItems) do
-					Net:Fire(player, "RegisterItem", item.Id, item.Position)
-				end
-			end)
-			:Catch(function(err)
-				error(err)
-			end)
+		local loaded = LoadedService.ClientLoadedFuture(player):Await()
+
+		if loaded then
+			for i, item in pairs(spawnedItems) do
+				RegisterItemEvent:Fire(player, "Booster", item.Id, item.Position)
+			end
+		end
 	end)
 
-	Net:On("BeginAbsorb", function(...)
+	BeginAbsorbEvent:On(function(...)
 		HandleBeginAbsorb(combatPlayers, ...)
 	end)
 
-	Net:On("CollectItem", function(...)
+	CollectItemEvent:On(function(...)
 		HandleItemPickup(combatPlayers, ...)
 	end)
 end
