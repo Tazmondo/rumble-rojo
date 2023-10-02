@@ -4,10 +4,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
-local Red = require(ReplicatedStorage.Packages.Red)
-local Net = Red.Client("game")
 
 local SoundController = {}
+
+local AttackSoundEvent = require(ReplicatedStorage.Events.Sound.AttackSoundEvent):Client()
 
 local localPlayer = Players.LocalPlayer
 local soundFolder = ReplicatedStorage.Assets.Sounds
@@ -143,7 +143,7 @@ function SoundController:Initialize()
 	Net:LocalFolder():GetAttributeChangedSignal("InMatch"):Connect(SoundController.StateUpdated)
 	SoundController:StateUpdated()
 
-	Net:On("AttackSound", function(...)
+	AttackSoundEvent:On(function(...)
 		SoundController:PlayHeroAttack(...)
 	end)
 
