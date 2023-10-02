@@ -103,7 +103,7 @@ local orderedHeroDetails: { OrderedHero } = {
 	{
 		Name = "Frankie",
 		Description = "Frankie fires damaging energy waves at enemies. He throws a slime bomb for his Super, striking opponents with a powerful blast!",
-		Price = 0,
+		Price = 100,
 		Offence = 2,
 		Defence = 4,
 		DefaultSkin = "Aqua",

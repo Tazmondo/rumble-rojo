@@ -36,7 +36,9 @@ local ViewportFrameController = require(script.Parent.ViewportFrameController)
 local Net = Red.Client("game")
 
 local ready = true
+local inCombat = false
 local heroSelectOpen = false
+local displayResults = false
 
 local selectedHero: string = assert(Net:LocalFolder():GetAttribute("Hero"))
 local displayedHero = selectedHero
@@ -176,6 +178,7 @@ function BattleStartingRender(changed)
 
 	if ready then
 		if changed then
+			inCombat = true
 			SoundController:PlayGeneralSound("FightStart")
 			gameFrame.StartFight.Position = UDim2.fromScale(0.5, 0.5)
 		end
@@ -189,7 +192,7 @@ function BattleStartingRender(changed)
 		-- 	0.4
 		-- )
 		-- gameFrame.Countdown:Tween
-	elseif not ready then
+	elseif not inCombat then
 		RenderStats()
 		RenderHeroIcon()
 	end
@@ -227,7 +230,7 @@ function BattleRender(changed)
 		end
 	end
 
-	if not ready then
+	if not inCombat then
 		RenderStats()
 		RenderHeroIcon()
 	end
@@ -237,6 +240,10 @@ function BattleRender(changed)
 end
 
 function BattleEndedRender(changed)
+	if displayResults then
+		return
+	end
+
 	ArenaUI.Enabled = true
 
 	-- local roundOver = ArenaUI.Interface.Game.RoundOver
@@ -262,8 +269,8 @@ function LabelRenderTrophyCount(label: TextLabel, trophyCount: number)
 	label.TextColor3 = if positive then Color3.fromRGB(67, 179, 69) else Color3.fromRGB(228, 2, 43)
 end
 
-local displayResults = false
 function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
+	inCombat = false
 	displayResults = true
 	HideAll()
 
@@ -474,7 +481,7 @@ function UIController:RenderAllUI()
 		HideAll()
 	end
 
-	if heroSelectOpen and not (ready and state ~= "NotEnoughPlayers" and state ~= "Intermission") then
+	if heroSelectOpen and not (inCombat and state ~= "NotEnoughPlayers" and state ~= "Intermission") then
 		RenderHeroSelectScreen()
 	else
 		if state == "NotEnoughPlayers" then

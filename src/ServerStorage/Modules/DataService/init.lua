@@ -196,6 +196,8 @@ Net:On("SelectHero", function(player: Player, hero: string)
 			DataService.SelectHeroSignal:Fire(player, hero)
 
 			DataService.SyncPlayerData(player)
+		else
+			warn(player, "tried to select hero without owning it", hero)
 		end
 	end)
 end)
@@ -207,6 +209,7 @@ Net:On("SelectSkin", function(player: Player, hero: string, skin: string)
 		or not HeroDetails.HeroDetails[hero].Skins[skin]
 		or not data.OwnedHeroes[hero].Skins[skin]
 	then
+		warn(player, "tried to select skin without owning it.", hero, skin)
 		return
 	end
 	data.OwnedHeroes[hero].SelectedSkin = skin
