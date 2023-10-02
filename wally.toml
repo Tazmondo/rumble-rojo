@@ -6,8 +6,12 @@ realm = "shared"
 
 [dependencies]
 Janitor = "howmanysmall/janitor@^1.15.6"
-Red = "uncontained0/red@^1.0.0"
 Loader = "sleitnick/loader@^2.0.0"
 TableUtil = "sleitnick/table-util@^1.2.0"
 RaycastHitbox = "ulferno/raycasthitbox@^4.0.1"
 Cmdr = "evaera/cmdr@^1.12.0"
+
+Red = "red-blox/red@2.0.0"
+Future = "red-blox/future@^1.0.0"
+Guard = "red-blox/guard@^1.0.0"
+Signal = "red-blox/signal@^2.0.0"
