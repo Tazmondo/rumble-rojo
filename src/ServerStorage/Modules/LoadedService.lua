@@ -1,14 +1,14 @@
+--!strict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Future = require(ReplicatedStorage.Packages.Future)
+
+local LoadedEvent = require(ReplicatedStorage.Events.Loaded):Server()
+
 -- Checks if a player is loaded
 
 local LoadedService = {}
 
-local Red = require(ReplicatedStorage.Packages.Red)
-local Promise = Red.Promise
-
-local Net = Red.Server("LoadedService")
-
-Net:On("Loaded", function(player: Player)
+LoadedEvent:On(function(player: Player)
 	print(player, "Loaded.")
 	player:SetAttribute("LoadedService_Loaded", true)
 end)
@@ -17,20 +17,21 @@ function LoadedService.IsClientLoaded(player: Player)
 	return player:GetAttribute("LoadedService_Loaded") == true
 end
 
-function LoadedService.IsClientLoadedPromise(player: Player)
-	return Promise.new(function(resolve, reject)
-		print("checking client is loaded")
+function LoadedService.ClientLoadedFuture(player: Player)
+	local loaded = Future.Try(function(player: Player)
 		while not LoadedService.IsClientLoaded(player) do
 			if player.Parent == nil then
-				reject("Player left before loading.")
+				return false
 			end
 			-- if os.clock() - start > 10 then
 			-- 	warn(player, "Taking too long to load!")
 			-- end
 			task.wait()
 		end
-		resolve(true)
-	end)
+		return true
+	end, player)
+
+	return loaded
 end
 
 function LoadedService.Initialize() end
