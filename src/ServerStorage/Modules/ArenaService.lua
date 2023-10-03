@@ -15,6 +15,10 @@ local DataService = require(script.Parent.DataService)
 local ItemService = require(script.Parent.ItemService)
 local MapService = require(script.Parent.MapService)
 
+local FighterDiedEvent = require(ReplicatedStorage.Events.Arena.FighterDiedEvent):Server()
+local MatchResultsEvent = require(ReplicatedStorage.Events.Arena.MatchResultsEvent):Server()
+local QueueEvent = require(ReplicatedStorage.Events.Arena.QueueEvent):Server()
+
 local CONFIG = ServerConfig
 
 local playerQueueStatus: { [Player]: boolean } = {}
@@ -38,8 +42,9 @@ function ArenaService.HandleResults(player)
 	local privateData = DataService.GetPrivateData(player):Unwrap()
 	local publicData = DataService.GetPublicData(player):Unwrap()
 	if privateData and publicData then
+		publicData.InCombat = false
+
 		privateData.Trophies = math.max(privateData.Trophies + trophies, 0)
-		publicData.Trophies = privateData.Trophies
 
 		privateData.Money += money
 		privateData.OwnedHeroes[battleData.Hero].Trophies += trophies
@@ -57,11 +62,12 @@ function ArenaService.HandleResults(player)
 			privateData.Stats.WinStreak = 0
 			privateData.Stats.KillStreak = 0
 		end
-		DataService.SyncPlayerData(player)
+	else
+		warn(privateData, publicData, "data was nil during results handling!")
 	end
 
-	Net:Fire(player, "MatchResults", trophies, battleData)
-	Net:Folder(player):SetAttribute("InMatch", false)
+	MatchResultsEvent:Fire(player, trophies, battleData)
+
 	registeredPlayers[player] = nil
 end
 
@@ -75,7 +81,7 @@ function ArenaService.GetRegisteredPlayersLength(): number
 		count += 1
 	end
 
-	Net:Folder():SetAttribute("AliveFighters", count)
+	DataService.GetGameData().NumAlivePlayers = count
 	return count
 end
 
@@ -89,26 +95,27 @@ function ArenaService.GetQueuedPlayersLength(): number
 		end
 	end
 
-	Net:Folder():SetAttribute("QueuedCount", count)
+	DataService.GetGameData().NumQueuedPlayers = count
 	return count
 end
 
 function ArenaService.StartIntermission()
 	-- WAITING FOR PLAYERS
-	Net:Folder():SetAttribute("GameState", "NotEnoughPlayers")
-	Net:Folder():SetAttribute("QueuedCount", 0)
+	local gameData = DataService.GetGameData()
+	gameData.Status = "NotEnoughPlayers"
+	gameData.NumQueuedPlayers = 0
 
 	registeredPlayers = {}
 
 	local intermissionTime = CONFIG.Intermission
-	Net:Folder():SetAttribute("IntermissionTime", intermissionTime)
+	gameData.IntermissionTime = intermissionTime
 
 	while ArenaService.GetQueuedPlayersLength() < CONFIG.MinPlayers do
 		task.wait()
 	end
 
 	-- INTERMISSION
-	Net:Folder():SetAttribute("GameState", "Intermission")
+	gameData.Status = "Intermission"
 
 	-- Since intermission can restart, we don't need to always reload the map.
 	if not MapService:IsLoaded() then
@@ -118,14 +125,14 @@ function ArenaService.StartIntermission()
 	while intermissionTime > 0 do
 		task.wait(1)
 		intermissionTime -= 1
-		Net:Folder():SetAttribute("IntermissionTime", intermissionTime)
+		gameData.IntermissionTime = intermissionTime
 		if ArenaService.GetQueuedPlayersLength() < CONFIG.MinPlayers then
 			ArenaService.StartIntermission()
 			return
 		end
 	end
 
-	Net:Folder():SetAttribute("QueuedCount", ArenaService.GetQueuedPlayersLength())
+	ArenaService.GetQueuedPlayersLength()
 
 	-- BATTLE START
 
@@ -140,10 +147,8 @@ function ArenaService.StartIntermission()
 end
 
 function ArenaService.StartMatch()
-	Net:Folder():SetAttribute("GameState", "BattleStarting")
-
-	local roundCountdown = 5
-	Net:Folder():SetAttribute("RoundCountdown", roundCountdown)
+	local gameData = DataService.GetGameData()
+	gameData.Status = "BattleStarting"
 
 	local spawnCount = 1
 	local spawns = MapService:GetMapSpawns()
@@ -153,7 +158,11 @@ function ArenaService.StartMatch()
 		if player.Parent == nil or not queued then
 			continue
 		end
-		local playerData = DataService.GetProfileData(player):Await()
+		local playerData = DataService.GetPrivateData(player):UnwrapOr(nil)
+		if not playerData then
+			continue
+		end
+
 		local data = {
 			Kills = 0,
 			Won = false,
@@ -164,8 +173,12 @@ function ArenaService.StartMatch()
 
 		data.Hero = playerData.SelectedHero
 		assert(data.Hero, "Player did not have a selected character.")
-		Net:Folder(player):SetAttribute("InMatch", true)
-		CombatService:EnterPlayerCombat(player, spawns[spawnCount]):Then(function(char: Model)
+
+		local publicData = assert(DataService.GetPublicData(player):Unwrap())
+
+		publicData.InCombat = true
+
+		CombatService:EnterPlayerComba(player, spawns[spawnCount]):Then(function(char: Model)
 			-- Wait for character position to correct if spawn is slightly off vertically
 			-- task.wait(0) -- UPDATE: use moveto in spawn function so dont need to do this anymore
 			local HRP = char:FindFirstChild("HumanoidRootPart") :: BasePart
@@ -189,7 +202,7 @@ function ArenaService.StartMatch()
 		end
 	end
 
-	Net:Folder():SetAttribute("GameState", "Battle")
+	gameData.Status = "Battle"
 	local RoundTime = 0
 	local winner = nil
 
@@ -206,7 +219,8 @@ function ArenaService.StartMatch()
 end
 
 function ArenaService.EndMatch(winner: Player?)
-	Net:Folder():SetAttribute("GameState", "Ended")
+	local gameData = DataService.GetGameData()
+	gameData.Status = "BattleEnded"
 
 	-- Allow round ended text to appear for a bit
 	task.wait(2)
@@ -247,16 +261,23 @@ end
 
 function HandleQueue(player, isJoining)
 	if isJoining and ArenaService.GetQueuedPlayersLength() >= CONFIG.MaxPlayers then
-		return playerQueueStatus[player]
+		isJoining = false
 	end
 	playerQueueStatus[player] = isJoining
-	Net:Folder():SetAttribute("QueuedCount", ArenaService.GetQueuedPlayersLength())
+
+	DataService.GetPublicData(player):After(function(data)
+		if data then
+			data.Queued = isJoining
+		end
+	end)
+
+	ArenaService.GetQueuedPlayersLength()
 	return isJoining
 end
 
 function ArenaService.Initialize()
-	Net:Folder():SetAttribute("GameState", "NotEnoughPlayers")
-	Net:Folder():SetAttribute("MaxPlayers", ServerConfig.MaxPlayers)
+	local gameData = DataService.GetGameData()
+	gameData.Status = "NotEnoughPlayers"
 
 	task.spawn(function()
 		ArenaService.StartIntermission()
@@ -265,13 +286,13 @@ function ArenaService.Initialize()
 	local function playerAdded(player: Player)
 		playerQueueStatus[player] = false
 
-		DataService.PromiseLoad(player):Then(function()
-			-- autoqueue players when they join
+		-- Autoqueue player when they join
+		if DataService.PlayerLoaded(player):Await() then
 			HandleQueue(player, true)
-		end)
+		end
 	end
 
-	for _, player in pairs(game.Players:GetPlayers()) do
+	for i, player in ipairs(game.Players:GetPlayers()) do
 		playerAdded(player)
 	end
 
@@ -298,12 +319,12 @@ function ArenaService.Initialize()
 		end
 		if victimData then
 			victimData.Died = true
-			Net:Fire(data.Victim, "PlayerDied")
+			FighterDiedEvent:Fire(data.Victim)
 			ArenaService.HandleResults(data.Victim)
 		end
 	end)
 
-	Net:On("Queue", HandleQueue)
+	QueueEvent:On(HandleQueue)
 end
 
 ArenaService.Initialize()

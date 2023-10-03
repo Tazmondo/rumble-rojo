@@ -122,6 +122,9 @@ end
 
 function DataService.UpdatePublicData(changedPlayer)
 	local data = assert(PublicData[changedPlayer], "Tried to update public data before it existed!")
+	local privateData = assert(PrivateData[changedPlayer])
+
+	Data.ReplicateToPublic(privateData, data)
 
 	-- Client needs to be loaded to receive the initial request
 	for i, v in ipairs(Players:GetPlayers()) do

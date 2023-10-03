@@ -33,16 +33,41 @@ Data.ProfileTemplate = {
 }
 TableUtil.Lock(Data.ProfileTemplate)
 
-export type ProfileData = typeof(Data.ProfileTemplate)
-
 Data.TempPlayerData = {
-	Queued = true,
+	Queued = false,
 	InCombat = false,
 	SelectedHero = "",
 	SelectedSkin = "",
 	Trophies = 0,
 }
 TableUtil.Lock(Data.TempPlayerData)
+
+Data.GameData = {
+	Status = "NotEnoughPlayers" :: GameStatus,
+	NumQueuedPlayers = 0,
+	NumAlivePlayers = 0,
+	MaxPlayers = ServerConfig.MaxPlayers,
+	RoundTime = 0,
+	IntermissionTime = 0,
+}
+TableUtil.Lock(Data.GameData)
+
+-- So we can automatically update the public values when the private ones change
+function Data.ReplicateToPublic(privateData: PrivatePlayerData, publicData: PublicPlayerData)
+	for key, value in pairs(privateData) do
+		if Data.TempPlayerData[key] ~= nil then
+			if typeof(value) == "table" then
+				Data.ReplicateToPublic(privateData[key], publicData[key] or {})
+			else
+				publicData[key] = value
+			end
+		end
+	end
+
+	publicData.SelectedSkin = privateData.OwnedHeroes[privateData.SelectedHero].SelectedSkin
+end
+
+export type ProfileData = typeof(Data.ProfileTemplate)
 
 export type TempPlayerData = typeof(Data.TempPlayerData)
 
@@ -54,15 +79,6 @@ export type PublicPlayerData = TempPlayerData
 export type PlayersData = { [Player]: PublicPlayerData? } -- So that nil can be passed when player leaves
 
 export type GameStatus = "NotEnoughPlayers" | "Intermission" | "BattleStarting" | "Battle" | "BattleEnded"
-
-Data.GameData = {
-	Status = "NotEnoughPlayers" :: GameStatus,
-	NumQueuedPlayers = 0,
-	NumAlivePlayers = 0,
-	MaxPlayers = ServerConfig.MaxPlayers,
-	RoundTime = 0,
-}
-TableUtil.Lock(Data.GameData)
 
 export type GameData = typeof(Data.GameData)
 
