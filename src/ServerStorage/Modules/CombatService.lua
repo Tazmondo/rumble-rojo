@@ -24,6 +24,7 @@ local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
+local ServerConfig = require(ReplicatedStorage.Modules.Shared.ServerConfig)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Signal = require(ReplicatedStorage.Packages.Signal)
@@ -499,13 +500,15 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 
 			task.wait() -- Let it get parented to workspace
 			print(player, "Character initialized to workspace")
+			local humanoid =
+				assert(char:FindFirstChild("Humanoid"), "Humanoid was not found during character spawning.") :: Humanoid
 
 			if PlayersInCombat[player] then
 				self:SetupCombatPlayer(player, PlayersInCombat[player])
+			else
+				-- increase movement speed in lobby
+				humanoid.WalkSpeed = ServerConfig.LobbyMovementSpeed
 			end
-
-			local humanoid =
-				assert(char:FindFirstChild("Humanoid"), "Humanoid was not found during character spawning.") :: Humanoid
 
 			-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
 			humanoid.Died:Once(function()

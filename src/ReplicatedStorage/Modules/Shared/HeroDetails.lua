@@ -245,8 +245,6 @@ module.HeroDetails = heros :: { [string]: Hero }
 
 TableUtil.Lock(module.HeroDetails)
 
-print(module.HeroDetails)
-
 function ValidateData()
 	local characterFolder = ReplicatedStorage.Assets.CharacterModels
 
