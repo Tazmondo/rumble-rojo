@@ -29,22 +29,23 @@ local DataController = require(script.Parent.DataController)
 local PurchaseController = require(script.Parent.PurchaseController)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
-local Red = require(ReplicatedStorage.Packages.Red)
 local SoundController = require(script.Parent.SoundController)
 local ViewportFrameController = require(script.Parent.ViewportFrameController)
 
-local Net = Red.Client("game")
+local QueueEvent = require(ReplicatedStorage.Events.Arena.QueueEvent):Client()
+local FighterDiedEvent = require(ReplicatedStorage.Events.Arena.FighterDiedEvent):Client()
+local MatchResultsEvent = require(ReplicatedStorage.Events.Arena.MatchResultsEvent):Client()
 
 local ready = true
 local inCombat = false
 local heroSelectOpen = false
 local displayResults = false
 
-local selectedHero: string = assert(Net:LocalFolder():GetAttribute("Hero"))
-local displayedHero = selectedHero
+local selectedHero: string
+local displayedHero: string
 
-local selectedSkin: string = assert(Net:LocalFolder():GetAttribute("Skin"))
-local displayedSkin = selectedSkin
+local selectedSkin: string
+local displayedSkin: string
 
 local shouldTryHide = false
 local UIState = ""
@@ -65,6 +66,7 @@ function ShowBuyBucks()
 end
 
 function UpdateQueueButtons()
+	local gameData = DataController.GetGameData():Unwrap()
 	MainUI.Queue.Visible = true
 	if ready then
 		MainUI.Queue.Ready.Visible = false
@@ -73,8 +75,8 @@ function UpdateQueueButtons()
 		MainUI.Queue.Ready.Visible = true
 		MainUI.Queue.Exit.Visible = false
 	end
-	local playerCount = Net:Folder():GetAttribute("QueuedCount") or 0
-	local maxPlayers = Net:Folder():GetAttribute("MaxPlayers") or 6
+	local playerCount = gameData.NumQueuedPlayers
+	local maxPlayers = gameData.MaxPlayers
 	MainUI.Queue.Frame.Title.Text = "Players Ready: " .. playerCount .. "/" .. maxPlayers
 end
 
@@ -155,6 +157,7 @@ function NotEnoughPlayersRender(changed)
 end
 
 function IntermissionRender(changed)
+	local gameData = DataController.GetGameData():Unwrap()
 	if changed then
 		ArenaUI.Enabled = true
 		MainUI.Enabled = true
@@ -166,11 +169,12 @@ function IntermissionRender(changed)
 	UpdateQueueButtons()
 	RenderHeroIcon()
 	TopText.Visible = true
-	TopText.Text = Net:Folder():GetAttribute("IntermissionTime")
+	TopText.Text = gameData.IntermissionTime
 end
 
 local prevCountdown = 0
 function BattleStartingRender(changed)
+	local gameData = DataController.GetGameData():Unwrap()
 	ArenaUI.Enabled = true
 
 	local gameFrame = ArenaUI.Interface.Game
@@ -198,7 +202,7 @@ function BattleStartingRender(changed)
 	end
 
 	TopText.Visible = true
-	local fighters = Net:Folder():GetAttribute("AliveFighters")
+	local fighters = gameData.NumAlivePlayers
 	if fighters == nil then
 		fighters = 0
 	end
@@ -210,6 +214,7 @@ end
 local died = false
 local diedHandled = false
 function BattleRender(changed)
+	local gameData = DataController.GetGameData():Unwrap()
 	-- Combat UI rendering is handled by the combat client
 	ArenaUI.Enabled = true
 
@@ -236,7 +241,7 @@ function BattleRender(changed)
 	end
 
 	TopText.Visible = true
-	TopText.Text = "Fighters left: " .. Net:Folder():GetAttribute("AliveFighters") or 0
+	TopText.Text = "Fighters left: " .. gameData.NumAlivePlayers
 end
 
 function BattleEndedRender(changed)
@@ -269,7 +274,7 @@ function LabelRenderTrophyCount(label: TextLabel, trophyCount: number)
 	label.TextColor3 = if positive then Color3.fromRGB(67, 179, 69) else Color3.fromRGB(228, 2, 43)
 end
 
-function RenderMatchResults(trophies: number, data: Types.PlayerBattleStats)
+function RenderMatchResults(trophies: number, data: Types.PlayerBattleResults)
 	inCombat = false
 	displayResults = true
 	HideAll()
@@ -342,28 +347,25 @@ function RenderHeroSelectScreen()
 	local frame = HeroSelect.Frame.Select :: Frame
 	local details = frame.Information:FindFirstChild("2-Details")
 
+	local data = DataController.GetLocalData():Unwrap()
+	local ownedHeroes = data.Private.OwnedHeroes
+
 	if prevOpen ~= heroSelectOpen then
 		-- tween stuff
 	end
 	prevOpen = heroSelectOpen
 
-	local currentHeroName = displayedHero or Net:LocalFolder():GetAttribute("Hero")
-	if not currentHeroName then
-		warn("Could not find a selected hero!")
-		return
-	end
-
-	local heroData = HeroDetails.HeroDetails[currentHeroName]
+	local heroData = HeroDetails.HeroDetails[displayedHero]
 	if not heroData then
-		warn("Tried to get data for hero", currentHeroName, "but it didn't exist!")
+		warn("Tried to get data for hero", displayedHero, "but it didn't exist!")
 		return
 	end
 
-	local heroStats = DataController.ownedHeroData[currentHeroName]
+	local heroStats = ownedHeroes[displayedHero]
 	local trophyCount = if heroStats then heroStats.Trophies else 0
 
 	details:FindFirstChild("Trophies").TrophyCount.Text = trophyCount
-	details:FindFirstChild("2-Name").Text = string.upper(currentHeroName)
+	details:FindFirstChild("2-Name").Text = string.upper(displayedHero)
 	details:FindFirstChild("3-Description").Text = heroData.Description
 
 	local inactiveCount = 0
@@ -400,7 +402,7 @@ function RenderHeroSelectScreen()
 		end
 	end
 
-	local combatData = HeroData.HeroData[currentHeroName]
+	local combatData = HeroData.HeroData[displayedHero]
 
 	-- Allow for unavailable heroes to show up in shop
 	local superName = if combatData then combatData.Super.Name else "Coming soon!"
@@ -464,7 +466,7 @@ function UIController:RenderAllUI()
 	-- Checking if it's changed also allows us to do tweening.
 	debug.profilebegin("UIControllerRender")
 
-	local state = Net:Folder():GetAttribute("GameState")
+	local state = DataController.GetGameData():Unwrap()
 
 	if displayResults then
 		-- HideAll()
@@ -497,7 +499,7 @@ function UIController:RenderAllUI()
 			end
 		elseif state == "Battle" then
 			BattleRender(changed)
-		elseif state == "Ended" then
+		elseif state == "BattleEnded" then
 			BattleEndedRender(changed)
 		end
 	end
@@ -517,11 +519,9 @@ function UIController:ReadyClick()
 	ready = true
 	UpdateQueueButtons()
 
-	local result = Net:Call("Queue", true)
-	ready = result:Await()
+	QueueEvent:Fire(true)
 
 	SoundController:PlayGeneralSound("JoinQueue")
-	UpdateQueueButtons()
 end
 
 function UIController:ExitClick()
@@ -531,7 +531,7 @@ function UIController:ExitClick()
 	UpdateQueueButtons()
 
 	-- RemoteFunction returns a value indicating if the queue was successful or not
-	local result = Net:Call("Queue", false)
+	local result = QueueEvent:Call("Queue", false)
 	ready = result:Await()
 
 	SoundController:PlayGeneralSound("LeaveQueue")
@@ -552,15 +552,17 @@ function RenderCharacterSelectButtons()
 
 	task.spawn(function()
 		-- Wait for data to be received from server
-		DataController.HasLoadedDataPromise():Await()
+		local data = DataController.GetLocalData():Await()
+		local ownedHeroes = data.Private.OwnedHeroes
+
 		for hero, heroData in pairs(HeroDetails.HeroDetails) do
-			local owned = DataController.ownedHeroData[hero] ~= nil
+			local owned = ownedHeroes[hero] ~= nil
 
 			local button = characterSelect:FindFirstChild(hero)
 
 			if not button then
 				local skinName = if owned
-					then assert(DataController.ownedHeroData[hero].SelectedSkin)
+					then assert(ownedHeroes[hero].SelectedSkin)
 					else HeroDetails.HeroDetails[heroData.Name].DefaultSkin
 				local model = HeroDetails.GetModelFromName(heroData.Name, skinName)
 
@@ -573,7 +575,7 @@ function RenderCharacterSelectButtons()
 
 					displayedHero = hero
 
-					local data = DataController.ownedHeroData[hero]
+					local data = ownedHeroes[hero]
 					if data then
 						selectedSkin = data.SelectedSkin
 						DataController.SelectHero(hero)
@@ -626,9 +628,10 @@ function RenderSkinSelectButtons()
 
 	task.spawn(function()
 		-- Wait for data to be received from server
-		DataController.HasLoadedDataPromise():Await()
+		local data = DataController.GetLocalData():Await()
+
 		for skin, skinData in pairs(HeroDetails.HeroDetails[selectedHero].Skins) do
-			local owned = DataController.ownedHeroData[displayedHero].Skins[skin] ~= nil
+			local owned = data.Private.OwnedHeroes[displayedHero].Skins[skin] ~= nil
 			local button = skinSelect:FindFirstChild(skin)
 			if not button then
 				local model = HeroDetails.GetModelFromName(displayedHero, skin)
@@ -667,7 +670,37 @@ end
 function UIController:Initialize()
 	self = self :: UIController
 
-	task.spawn(self.RenderAllUI, self)
+	-- This function is spawned so we can wait here
+	DataController.HasLoadedData():Await()
+
+	FighterDiedEvent:On(function()
+		died = true
+		SoundController:PlayGeneralSound("Died")
+	end)
+
+	MatchResultsEvent:On(RenderMatchResults)
+
+	local playerData = DataController.GetLocalData():Await()
+
+	selectedHero = playerData.Private.SelectedHero
+	displayedHero = selectedHero
+
+	selectedSkin = playerData.Public.SelectedSkin
+	displayedSkin = selectedSkin
+
+	DataController.LocalDataUpdated:Connect(function(newData)
+		if newData.Private.SelectedHero ~= selectedHero then
+			selectedHero = newData.Private.SelectedHero
+			displayedHero = selectedHero
+			selectedSkin = newData.Private.OwnedHeroes[selectedHero].SelectedSkin
+			displayedSkin = selectedSkin
+		else
+			selectedSkin = newData.Public.SelectedSkin
+		end
+
+		ready = newData.Public.Queued
+		inCombat = newData.Public.InCombat
+	end)
 
 	RunService.RenderStepped:Connect(function(...)
 		self:RenderAllUI(...)
@@ -806,30 +839,15 @@ function UIController:Initialize()
 			PurchaseController.Purchase(idNum)
 		end)
 	end
-
-	Net:On("PlayerDied", function()
-		died = true
-		SoundController:PlayGeneralSound("Died")
-	end)
-
-	Net:On("MatchResults", RenderMatchResults)
-
-	Net:LocalFolder():GetAttributeChangedSignal("Hero"):Connect(function()
-		selectedHero = Net:LocalFolder():GetAttribute("Hero")
-		if not displayedHero then
-			displayedHero = selectedHero
-		end
-	end)
-
-	Net:LocalFolder():GetAttributeChangedSignal("Skin"):Connect(function()
-		selectedSkin = Net:LocalFolder():GetAttribute("Skin")
-		if not displayedSkin then
-			displayedSkin = selectedSkin
-		end
-	end)
 end
 
-UIController:Initialize()
+-- In a new thread since we don't want to delay client loading,
+-- which would delay the data loading
+-- and this script is reliant on data loading,
+-- so it would be a deadlock
+task.spawn(function()
+	UIController:Initialize()
+end)
 
 export type UIController = typeof(UIController)
 

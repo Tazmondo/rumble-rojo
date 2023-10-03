@@ -26,7 +26,7 @@ export type LocalPlayerData = {
 	Public: Data.PublicPlayerData,
 }
 
-local player = Players.LocalPlayer
+local localPlayer = Players.LocalPlayer
 
 function DataController.HasLoadedData()
 	return Future.new(function()
@@ -95,7 +95,7 @@ function DataController.GetLocalData()
 		DataController.HasLoadedData():Await()
 		return {
 			Private = PrivateData,
-			Public = PublicData[player],
+			Public = PublicData[localPlayer],
 		} :: LocalPlayerData
 	end)
 end
@@ -121,17 +121,20 @@ function DataController.Initialize()
 
 	GameDataEvent:On(function(data)
 		GameData = data
-		DataController.GameDataUpdated:Fire()
+		DataController.GameDataUpdated:Fire(data)
 	end)
 
 	PrivateDataEvent:On(function(data)
 		PrivateData = data
-		DataController.LocalDataUpdated:Fire()
+		DataController.LocalDataUpdated:Fire(DataController.GetLocalData():Await())
 	end)
 
 	PublicDataEvent:On(function(player, data)
 		PublicData[player] = data
-		DataController.PublicDataUpdated:Fire()
+		DataController.PublicDataUpdated:Fire(player, data)
+		if player == localPlayer then
+			DataController.LocalDataUpdated:Fire(DataController.GetLocalData():Await())
+		end
 	end)
 end
 
