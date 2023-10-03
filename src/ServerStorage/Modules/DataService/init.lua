@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local Migration = require(script.Migration)
 local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Table = require(ReplicatedStorage.Modules.Shared.Table)
@@ -175,10 +176,24 @@ function DataService.UpdateGameData(targetPlayer: Player?)
 	end
 end
 
+function DataService.AddTrophies(privateData: Data.PrivatePlayerData, trophies: number)
+	privateData.Trophies = math.max(0, privateData.Trophies + trophies)
+	privateData.PeriodTrophies = math.max(0, privateData.PeriodTrophies + trophies)
+end
+
+function DataService.AddKills(privateData: Data.PrivatePlayerData, kills: number)
+	privateData.Stats.Kills = math.max(0, privateData.Stats.Kills + kills)
+	privateData.PeriodKills = math.max(0, privateData.PeriodKills + kills)
+end
+
 local function reconcile(profile)
 	profile:Reconcile()
 
 	local data = profile.Data :: Data.ProfileData
+
+	data.LastLoggedIn = os.time()
+
+	Migration(data)
 
 	for hero, heroData in pairs(data.OwnedHeroes) do
 		TableUtil.Reconcile(heroData, Data.OwnedHeroTemplate)

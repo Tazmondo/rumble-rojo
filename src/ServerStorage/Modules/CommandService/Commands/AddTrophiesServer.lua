@@ -8,7 +8,7 @@ return function(context, recipientPlayers, trophies)
 	for i, player in ipairs(recipientPlayers) do
 		local data = DataService.GetPrivateData(player):UnwrapOr(nil) :: Data.PrivatePlayerData?
 		if data then
-			data.Trophies = math.max(0, data.Trophies + trophies)
+			DataService.AddTrophies(data, trophies)
 			output = output .. player.Name .. " now has " .. data.Trophies .. " trophies\n"
 		else
 			output = output .. "could not get data for " .. player.Name .. "\n"

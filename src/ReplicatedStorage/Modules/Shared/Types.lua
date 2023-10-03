@@ -30,4 +30,11 @@ export type UpdateData = {
 	State: string,
 }
 
+export type Leaderboard = { { Data: number, UserID: string } }
+export type LeaderboardData = {
+	KillBoard: Leaderboard,
+	TrophyBoard: Leaderboard,
+	ResetTime: number,
+}
+
 return {}

@@ -19,7 +19,7 @@ Data.ProfileTemplate = {
 	Playtime = 0,
 	OwnedHeroes = {} :: { [string]: OwnedHeroData }, -- automatically fills with free heroes and skins
 	SelectedHero = "Taz",
-	Version = 1, -- version is for data migration purposes in future
+	Version = 2, -- version is for data migration purposes in future
 	Stats = {
 		Kills = 0,
 		KillStreak = 0,
@@ -30,6 +30,11 @@ Data.ProfileTemplate = {
 		BestWinStreak = 0,
 		DamageDealt = 0,
 	},
+
+	-- For leaderboard purposes
+	PeriodTrophies = 0,
+	PeriodKills = 0,
+	LastLoggedIn = os.time(),
 }
 TableUtil.Lock(Data.ProfileTemplate)
 

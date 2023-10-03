@@ -42,12 +42,12 @@ function ArenaService.HandleResults(player)
 	local privateData = DataService.GetPrivateData(player):Unwrap()
 	local publicData = DataService.GetPublicData(player):Unwrap()
 	if privateData and publicData then
-		privateData.Trophies = math.max(privateData.Trophies + trophies, 0)
+		DataService.AddTrophies(privateData, trophies)
+		DataService.AddKills(privateData, battleData.Kills)
 
 		privateData.Money += money
 		privateData.OwnedHeroes[battleData.Hero].Trophies += trophies
 
-		privateData.Stats.Kills += battleData.Kills
 		privateData.Stats.KillStreak += battleData.Kills
 		privateData.Stats.BestKillStreak = math.max(privateData.Stats.BestKillStreak, privateData.Stats.KillStreak)
 
