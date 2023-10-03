@@ -23,7 +23,7 @@ local trophyLeaderboard = {}
 local killLeaderboard = {}
 
 function UpdateLeaderBoard()
-	print(killLeaderboard, trophyLeaderboard)
+	-- TODO: update physical leaderboard / sync data to clients
 end
 
 function SavePlayer(player: Player)
