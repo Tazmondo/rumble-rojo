@@ -290,7 +290,7 @@ function ArenaService.Initialize()
 		playerQueueStatus[player] = false
 
 		-- Autoqueue player when they join
-		if DataService.PlayerLoaded(player):Await() then
+		if CONFIG.QueueOnJoin and DataService.PlayerLoaded(player):Await() then
 			HandleQueue(player, true)
 		end
 	end

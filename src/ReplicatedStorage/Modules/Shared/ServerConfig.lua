@@ -1,5 +1,3 @@
-local ServerConfig = {}
-
 local RunService = game:GetService("RunService")
 
 local CONFIG = {
@@ -9,6 +7,8 @@ local CONFIG = {
 
 	MinPlayers = 2,
 	MaxPlayers = 6,
+
+	QueueOnJoin = true,
 }
 
 -- don't edit this to affect the game, this is just for studio testing
@@ -19,6 +19,8 @@ local studioconfig = {
 
 	MinPlayers = 1,
 	MaxPlayers = 6,
+
+	QueueOnJoin = false,
 }
 
 return if RunService:IsStudio() then studioconfig else CONFIG

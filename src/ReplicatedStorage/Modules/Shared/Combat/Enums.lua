@@ -3,9 +3,9 @@
 local Enums = {}
 
 Enums.MovementSpeed = {
-	Normal = 10,
+	Normal = 13,
 	Fast = 14,
-	Slow = 8,
+	Slow = 12,
 }
 
 Enums.AttackRange = {

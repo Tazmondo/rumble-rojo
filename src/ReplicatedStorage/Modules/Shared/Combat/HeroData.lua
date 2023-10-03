@@ -127,7 +127,7 @@ local HeroData: { [string]: HeroData } = {
 	},
 	Frankie = {
 		Name = "Frankie",
-		Health = 4000,
+		Health = 4200,
 		MovementSpeed = Enums.MovementSpeed.Normal,
 		Attack = {
 			AbilityType = "Attack" :: "Attack",
