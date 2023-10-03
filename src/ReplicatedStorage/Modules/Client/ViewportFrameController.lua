@@ -45,19 +45,13 @@ function ViewportFrameController.NewHeadButton(model: Model)
 	newModel.Parent = viewport
 	newModel:PivotTo(MODELCFRAME)
 
-	return button
+	return button :: any
 end
 
-function ViewportFrameController.get(frame: ViewportFrame)
-	if viewports[frame] then
-		return viewports[frame]
-	end
-	local self = setmetatable({}, ViewportFrameController) :: ViewportFrameController
+function _initSelf(frame: ViewportFrame)
+	local self = setmetatable({}, ViewportFrameController)
 
 	self.frame = frame
-
-	-- Remove placeholder
-	frame:ClearAllChildren()
 
 	self.camera = Instance.new("Camera")
 	self.camera.Parent = frame
@@ -70,6 +64,18 @@ function ViewportFrameController.get(frame: ViewportFrame)
 	self.animationRig = nil :: Model?
 	self.track = nil :: AnimationTrack?
 
+	self.renderConnection = nil :: RBXScriptConnection?
+
+	return self
+end
+
+function ViewportFrameController.get(frame: ViewportFrame): ViewportFrameController
+	if viewports[frame] then
+		return viewports[frame]
+	end
+	frame:ClearAllChildren()
+
+	local self = _initSelf(frame) :: ViewportFrameController
 	self.renderConnection = RunService.RenderStepped:Connect(function()
 		self:Render()
 	end)
@@ -153,7 +159,7 @@ function ViewportFrameController.Render(self: ViewportFrameController)
 end
 
 function ViewportFrameController.Destroy(self: ViewportFrameController)
-	self.renderConnection:Disconnect()
+	assert(self.renderConnection):Disconnect()
 
 	if self.model then
 		self.model:Destroy()
@@ -164,6 +170,6 @@ function ViewportFrameController.Destroy(self: ViewportFrameController)
 	viewports[self.frame] = nil
 end
 
-export type ViewportFrameController = typeof(ViewportFrameController.get(...)) & typeof(ViewportFrameController)
+export type ViewportFrameController = typeof(_initSelf(...)) & typeof(ViewportFrameController)
 
 return ViewportFrameController

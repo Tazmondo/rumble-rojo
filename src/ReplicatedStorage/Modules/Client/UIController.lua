@@ -1,4 +1,3 @@
---!nonstrict
 -- I opted for a declarative approach to the UI. There are a lot of elements and dealing with state for each individual one
 -- is too much effort.
 -- There are some exceptions, e.g. for tweening.
@@ -10,11 +9,11 @@ local Player = game.Players.LocalPlayer :: Player
 
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
-local MainUI = PlayerGui:WaitForChild("MainUI") :: ScreenGui
-local ArenaUI = PlayerGui:WaitForChild("ArenaUI") :: ScreenGui
-local ResultsUI = PlayerGui:WaitForChild("ResultsUI") :: ScreenGui
-local HeroSelect = PlayerGui:WaitForChild("HeroSelectUI") :: ScreenGui
-local BuyBucksUI = PlayerGui:WaitForChild("BuyBucksUI") :: ScreenGui
+local MainUI = PlayerGui:WaitForChild("MainUI") :: any
+local ArenaUI = PlayerGui:WaitForChild("ArenaUI") :: any
+local ResultsUI = PlayerGui:WaitForChild("ResultsUI") :: any
+local HeroSelect = PlayerGui:WaitForChild("HeroSelectUI") :: any
+local BuyBucksUI = PlayerGui:WaitForChild("BuyBucksUI") :: any
 
 local TopText = ArenaUI.Interface.TopBar.TopText.Text
 
@@ -52,12 +51,6 @@ local shouldReRenderCharacterSelectButtons = true
 local shouldReRenderSkinSelectButtons = true
 
 -- functions
-
-function UIController:IsAlive()
-	return Player
-		and Player.Character
-		and (Player.Character:FindFirstChild("Humanoid") and Player.Character.Humanoid.Health > 0)
-end
 
 function ShowBuyBucks()
 	BuyBucksUI.Enabled = true
@@ -349,7 +342,7 @@ function RenderHeroSelectScreen()
 	-- RENDERING HERO SELECT
 	RenderCharacterSelectButtons()
 
-	local frame = HeroSelect.Frame.Select :: Frame
+	local frame = HeroSelect.Frame.Select
 	local details = frame.Information:FindFirstChild("2-Details")
 
 	local data = DataController.GetLocalData():Unwrap()
@@ -519,9 +512,6 @@ function UIController:RenderAllUI()
 end
 
 function UIController:ReadyClick()
-	-- Here we render twice, once for instant feedback, and again to correct the state if the server rejected their queue request.
-	self = self :: UIController
-
 	local playerData = DataController.GetLocalData():Unwrap()
 	playerData.Public.Queued = true
 
@@ -531,10 +521,6 @@ function UIController:ReadyClick()
 end
 
 function UIController:ExitClick()
-	self = self :: UIController
-
-	self = self :: UIController
-
 	local playerData = DataController.GetLocalData():Unwrap()
 	playerData.Public.Queued = false
 
@@ -679,8 +665,6 @@ function RenderSkinSelectButtons()
 end
 
 function UIController:Initialize()
-	self = self :: UIController
-
 	-- This function is spawned so we can wait here
 	DataController.HasLoadedData():Await()
 
@@ -711,14 +695,14 @@ function UIController:Initialize()
 	end)
 
 	RunService.RenderStepped:Connect(function(...)
-		self:RenderAllUI(...)
+		UIController:RenderAllUI(...)
 	end)
 
 	MainUI.Queue.Ready.MouseButton1Down:Connect(function()
-		self:ReadyClick()
+		UIController:ReadyClick()
 	end)
 	MainUI.Queue.Exit.MouseButton1Down:Connect(function()
-		self:ExitClick()
+		UIController:ExitClick()
 	end)
 
 	HeroSelect.Frame.Inventory.Exit.Activated:Connect(function(input: InputObject)
@@ -856,7 +840,5 @@ end
 task.spawn(function()
 	UIController:Initialize()
 end)
-
-export type UIController = typeof(UIController)
 
 return UIController
