@@ -17,10 +17,12 @@ local studioconfig = {
 	HeroSelection = 5, -- 15
 	RoundLength = 60, -- 2mimnutes
 
-	MinPlayers = 1,
+	MinPlayers = 2,
 	MaxPlayers = 6,
 
 	QueueOnJoin = false,
 }
 
-return if RunService:IsStudio() then studioconfig else CONFIG
+local out = if RunService:IsStudio() then studioconfig else CONFIG
+
+return out :: typeof(CONFIG)
