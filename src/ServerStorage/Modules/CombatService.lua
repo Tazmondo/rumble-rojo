@@ -586,12 +586,16 @@ function CombatService:PlayerAdded(player: Player)
 
 	if RunService:IsStudio() and ServerScriptService:GetAttribute("combat") then
 		local hero = ServerScriptService:GetAttribute("hero") or "Taz"
-		local skin = ServerScriptService:GetAttribute("skin") or HeroDetails.HeroDetails[hero].DefaultSkin
+		local skin = ServerScriptService:GetAttribute("skin")
+		if not skin or skin == "" then
+			skin = HeroDetails.HeroDetails[hero].DefaultSkin
+		end
+
 		PlayersInCombat[player] = { HeroName = hero, SkinName = skin }
 	end
 
 	if DataService.PlayerLoaded(player):Await() then
-		self:SpawnCharacter(player)
+		self:SpawnCharacter(player):Await()
 
 		-- ensure nametags appear for combatplayers that already existed
 		CombatService:ForceUpdateCombatPlayers()

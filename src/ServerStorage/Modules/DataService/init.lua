@@ -69,6 +69,7 @@ export type Profile = ProfileService.Profile<Data.ProfileData>
 
 function DataService.PlayerLoaded(player: Player)
 	return Future.new(function(player)
+		LoadedService.ClientLoaded(player):Await()
 		while not Profiles[player] or not PublicData[player] or not PrivateData[player] do
 			if player.Parent == nil then
 				return false
