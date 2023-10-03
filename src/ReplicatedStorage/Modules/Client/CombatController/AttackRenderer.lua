@@ -68,22 +68,11 @@ end
 function GetRaycastParams(excludeCharacter: Model?)
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	raycastParams.FilterDescendantsInstances = CollectionService:GetTagged(Config.SolidAir)
 	if excludeCharacter then
-		raycastParams.FilterDescendantsInstances = { excludeCharacter }
+		table.insert(raycastParams.FilterDescendantsInstances, excludeCharacter)
 	end
 	raycastParams.RespectCanCollide = true
-	return raycastParams
-end
-
-function RaycastOnlyMap()
-	local raycastParams = RaycastParams.new()
-	raycastParams.RespectCanCollide = true
-
-	-- raycastParams.FilterType = Enum.RaycastFilterType.Include
-	-- raycastParams.FilterDescendantsInstances = { arenaFolder }
-	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-	raycastParams.FilterDescendantsInstances = CombatPlayer.GetAllCombatPlayerCharacters() :: any
-
 	return raycastParams
 end
 
