@@ -6,27 +6,20 @@ local ArenaService = {}
 -- services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local ServerConfig = require(ReplicatedStorage.Modules.Shared.ServerConfig)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
-local Red = require(ReplicatedStorage.Packages.Red)
 local CombatService = require(script.Parent.CombatService)
 local DataService = require(script.Parent.DataService)
 local ItemService = require(script.Parent.ItemService)
-local LoadedService = require(script.Parent.LoadedService)
 local MapService = require(script.Parent.MapService)
-local ServerConfig = require(script.Parent.ServerConfig)
 
 local CONFIG = ServerConfig
 
--- Use Net:Folder() predominantly, as multiple scripts on client need access to information about game state
-local Net = Red.Server("game", { "PlayerDied", "MatchResults" })
-Net:Folder()
-
 local playerQueueStatus: { [Player]: boolean } = {}
 
-local registeredPlayers: { [Player]: Types.PlayerBattleStats } = {} -- boolean before character select, playerstats afterwards
+local registeredPlayers: { [Player]: Types.PlayerBattleResults } = {} -- boolean before character select, playerstats afterwards
 
 function ArenaService.HandleResults(player)
 	local battleData = registeredPlayers[player]
@@ -42,26 +35,30 @@ function ArenaService.HandleResults(player)
 
 	local money = battleData.Kills * Config.MoneyKill
 
-	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)
-		data.Trophies = math.max(data.Trophies + trophies, 0)
-		data.Money += money
-		data.OwnedHeroes[battleData.Hero].Trophies += trophies
+	local privateData = DataService.GetPrivateData(player):Unwrap()
+	local publicData = DataService.GetPublicData(player):Unwrap()
+	if privateData and publicData then
+		privateData.Trophies = math.max(privateData.Trophies + trophies, 0)
+		publicData.Trophies = privateData.Trophies
 
-		data.Stats.Kills += battleData.Kills
-		data.Stats.KillStreak += battleData.Kills
-		data.Stats.BestKillStreak = math.max(data.Stats.BestKillStreak, data.Stats.KillStreak)
+		privateData.Money += money
+		privateData.OwnedHeroes[battleData.Hero].Trophies += trophies
+
+		privateData.Stats.Kills += battleData.Kills
+		privateData.Stats.KillStreak += battleData.Kills
+		privateData.Stats.BestKillStreak = math.max(privateData.Stats.BestKillStreak, privateData.Stats.KillStreak)
 
 		if battleData.Won then
-			data.Stats.Wins += 1
-			data.Stats.WinStreak += 1
-			data.Stats.BestWinStreak = math.max(data.Stats.BestWinStreak, data.Stats.WinStreak)
+			privateData.Stats.Wins += 1
+			privateData.Stats.WinStreak += 1
+			privateData.Stats.BestWinStreak = math.max(privateData.Stats.BestWinStreak, privateData.Stats.WinStreak)
 		elseif battleData.Died then
-			data.Stats.Deaths += 1
-			data.Stats.WinStreak = 0
-			data.Stats.KillStreak = 0
+			privateData.Stats.Deaths += 1
+			privateData.Stats.WinStreak = 0
+			privateData.Stats.KillStreak = 0
 		end
 		DataService.SyncPlayerData(player)
-	end)
+	end
 
 	Net:Fire(player, "MatchResults", trophies, battleData)
 	Net:Folder(player):SetAttribute("InMatch", false)

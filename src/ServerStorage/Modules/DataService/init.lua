@@ -4,9 +4,11 @@ local DataService = {}
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
+local Table = require(ReplicatedStorage.Modules.Shared.Table)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local LoadedService = require(script.Parent.LoadedService)
@@ -26,9 +28,15 @@ local STOREPREFIX = "Player5_"
 
 local Profiles = {} :: { [Player]: Profile }
 
-local PublicData: Data.PlayersData = {}
-local PrivateData: { [Player]: Data.PrivatePlayerData } = {}
-local GameData: Data.GameData = TableUtil.Copy(Data.GameData, true)
+local PublicData: Data.PlayersData
+local PrivateData: { [Player]: Data.PrivatePlayerData }
+local GameData: Data.GameData
+
+local scheduledUpdates = {
+	Game = false,
+	Public = {} :: { [Player]: boolean },
+	Private = {} :: { [Player]: boolean },
+}
 
 -- makes sure the owned hero table is valid, or creates it if not
 function CorrectOwnedHero(heroData: HeroDetails.Hero, ownedHero: Data.OwnedHeroData?)
@@ -190,8 +198,13 @@ local function PlayerAdded(player: Player)
 			Profiles[player] = profile
 
 			-- A profile has been successfully loaded:
-			PrivateData[player] = profile.Data
-			PublicData[player] = TableUtil.Copy(Data.TempPlayerData, true)
+			PrivateData[player] = Table.HookTable(profile.Data, function()
+				scheduledUpdates.Private[player] = true
+			end)
+
+			PublicData[player] = Table.HookTable(TableUtil.Copy(Data.TempPlayerData, true), function()
+				scheduledUpdates.Public[player] = true
+			end)
 
 			if LoadedService.ClientLoaded(player):Await() then
 				DataService.UpdatePrivateData(player)
@@ -222,9 +235,6 @@ function HandleSelectHero(player: Player, hero: string)
 		local publicData = assert(DataService.GetPublicData(player):Await())
 		publicData.SelectedHero = hero
 		publicData.SelectedSkin = privateData.OwnedHeroes[hero].SelectedSkin
-
-		DataService.UpdatePrivateData(player)
-		DataService.UpdatePublicData(player)
 	else
 		warn("Tried to select hero without owning it.")
 	end
@@ -242,9 +252,6 @@ function HandleSelectSkin(player: Player, hero: string, skin: string)
 
 		local publicData = assert(DataService.GetPublicData(player):Await())
 		publicData.SelectedSkin = skin
-
-		DataService.UpdatePrivateData(player)
-		DataService.UpdatePublicData(player)
 	else
 		warn("Tried to select skin without owning it.")
 	end
@@ -271,8 +278,6 @@ function HandlePurchaseHero(player: Player, hero: string, select: boolean?)
 
 	if select then
 		HandleSelectHero(player, hero)
-	else
-		DataService.UpdatePrivateData(player)
 	end
 end
 
@@ -299,11 +304,35 @@ function HandlePurchaseSkin(player: Player, hero: string, skin: string)
 
 	privateData.Money -= skinData.Price
 	privateData.OwnedHeroes[hero].Skins[skin] = true
+end
 
-	DataService.UpdatePrivateData(player)
+function StartEventLoop()
+	RunService.Stepped:Connect(function()
+		if scheduledUpdates.Game then
+			DataService.UpdateGameData()
+		end
+
+		for player, _ in pairs(scheduledUpdates.Private) do
+			DataService.UpdatePrivateData(player)
+		end
+
+		for player, _ in pairs(scheduledUpdates.Public) do
+			DataService.UpdatePublicData(player)
+		end
+
+		scheduledUpdates.Game = false
+		scheduledUpdates.Private = {}
+		scheduledUpdates.Public = {}
+	end)
 end
 
 function DataService.Initialize()
+	GameData = Table.HookTable(TableUtil.Copy(Data.GameData, true), function(i, v)
+		scheduledUpdates.Game = true
+	end)
+	PublicData = {}
+	PrivateData = {}
+
 	-- In case Players have joined the server earlier than this script ran:
 	for _, player in ipairs(Players:GetPlayers()) do
 		task.spawn(PlayerAdded, player)
@@ -328,6 +357,8 @@ function DataService.Initialize()
 	SelectSkinEvent:On(HandleSelectSkin)
 	PurchaseHeroEvent:On(HandlePurchaseHero)
 	PurchaseSkinEvent:On(HandlePurchaseSkin)
+
+	StartEventLoop()
 end
 
 DataService.Initialize()
