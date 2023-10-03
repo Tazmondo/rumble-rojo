@@ -7,9 +7,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
-local Red = require(ReplicatedStorage.Packages.Red)
 
-local Net = Red.Client("game")
+local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Client()
 
 local BUSHTAG = Config.BushTag
 local PARTIALOPACITY = 0.8
@@ -289,7 +288,7 @@ function BushController.Initialize()
 
 	RunService.PreRender:Connect(Render)
 
-	Net:On("Damaged", HandleDamage)
+	DamagedEvent:On(HandleDamage)
 end
 
 BushController.Initialize()

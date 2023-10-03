@@ -12,7 +12,7 @@ local Janitor = require(ReplicatedStorage.Packages.Janitor)
 local CombatUI = {}
 CombatUI.__index = CombatUI
 
-function CombatUI.new(combatPlayer: CombatPlayer.CombatPlayer, character: Model)
+function _initSelf(combatPlayer: CombatPlayer.CombatPlayer, character: Model)
 	local self = setmetatable({}, CombatUI)
 	self.janitor = Janitor.new()
 	self.combatPlayer = combatPlayer
@@ -29,6 +29,12 @@ function CombatUI.new(combatPlayer: CombatPlayer.CombatPlayer, character: Model)
 
 	self.mainUI.Enabled = true
 	self.attackFrame.Visible = true
+
+	return self
+end
+
+function CombatUI.new(combatPlayer: CombatPlayer.CombatPlayer, character: Model)
+	local self = _initSelf(combatPlayer, character) :: CombatUI
 
 	self:RenderLoop()
 	self:SubscribeToCombatPlayerEvents()
@@ -52,7 +58,7 @@ function CombatUI:HandleDamageDealt(amount: number, target: Model?)
 	if not target or not target:FindFirstChild("HumanoidRootPart") then
 		return
 	end
-	local HRP = target:FindFirstChild("HumanoidRootPart")
+	local HRP = assert(target:FindFirstChild("HumanoidRootPart"))
 
 	local popup = DamagePopup.get(Color3.fromHSV(0, 0, 1), HRP, target)
 	popup:AddDamage(amount)
@@ -61,7 +67,7 @@ end
 function CombatUI:HandleDamageTaken(amount: number)
 	self = self :: CombatUI
 
-	local HRP = self.character:FindFirstChild("HumanoidRootPart")
+	local HRP = assert(self.character:FindFirstChild("HumanoidRootPart"))
 
 	local popup = DamagePopup.get(Color3.fromHSV(0, 1, 1), HRP, self.character)
 	popup:AddDamage(amount)
@@ -107,6 +113,6 @@ function CombatUI:Destroy()
 	self.janitor:Destroy()
 end
 
-export type CombatUI = typeof(CombatUI.new(...))
+export type CombatUI = typeof(_initSelf(...)) & typeof(CombatUI)
 
 return CombatUI

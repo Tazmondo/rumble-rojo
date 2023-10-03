@@ -8,48 +8,37 @@ local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local ServerStorage = game:GetService("ServerStorage")
+
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
+local Signal = require(ReplicatedStorage.Packages.Signal)
+local HeroData = require(script.Parent.HeroData)
+local Config = require(script.Parent.Config)
+
+local SyncEvent: any
+local UpdateEvent: any
 
 local SoundController
+local DataController
 if RunService:IsClient() then
 	SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
+	SyncEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerSyncEvent):Client()
+	DataController = require(ReplicatedStorage.Modules.Client.DataController)
 end
-local Red = require(ReplicatedStorage.Packages.Red)
 
 local VFXService
+local DataService
 if RunService:IsServer() then
-	local ServerStorage = game:GetService("ServerStorage")
 	VFXService = require(ServerStorage.Modules.VFXService)
+	SyncEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerSyncEvent):Server()
+	UpdateEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerUpdateEvent):Server()
+	DataService = require(ServerStorage.Modules.DataService)
 end
-
-local SYNCEVENT = "CombatPlayerSync"
-
-local NetServer
-local NetClient
-if RunService:IsServer() then
-	NetServer = Red.Server("game", { SYNCEVENT, "CombatPlayerUpdate" })
-else
-	NetClient = Red.Client("game")
-end
-local Signal = Red.Signal
 
 local CombatPlayer = {}
 CombatPlayer.__index = CombatPlayer
 
-local HeroData = require(script.Parent.HeroData)
-local Config = require(script.Parent.Config)
-
 export type State = "Idle" | "Dead"
-
-export type UpdateData = {
-	Health: number,
-	MaxHealth: number,
-	SuperAvailable: boolean,
-	AimingSuper: boolean,
-	IsObject: boolean,
-	Character: Model,
-	Name: string,
-	State: string,
-}
 
 -- On the server, when processing certain things we want to allow for some latency, so laggy players don't have a bad experience
 -- But too much will give leeway for exploiters
@@ -61,9 +50,9 @@ end
 
 function GetGameState()
 	if RunService:IsServer() then
-		return NetServer:Folder():GetAttribute("GameState")
+		return DataService.GetGameData().Status
 	else
-		return NetClient:Folder():GetAttribute("GameState")
+		return DataController.GetGameData():Await().Status
 	end
 end
 
@@ -117,9 +106,9 @@ function InitializeSelf(heroData: HeroData.HeroData, model: Model, player: Playe
 
 	self.damageDealt = 0
 
-	self.DamageDealtSignal = Signal.new()
-	self.TookDamageSignal = Signal.new()
-	self.DiedSignal = Signal.new()
+	self.DamageDealtSignal = Signal()
+	self.TookDamageSignal = Signal()
+	self.DiedSignal = Signal()
 
 	self.scheduledChange = nil :: {}? -- We use a table so if it updates we can detect and cancel the change
 	self.scheduledReloads = 0
@@ -134,7 +123,7 @@ function CombatPlayer.new(heroName: string, model: Model, player: Player?): Comb
 	local self = InitializeSelf(heroData, model, player)
 
 	if RunService:IsClient() then
-		NetClient:On(SYNCEVENT, function(func, ...)
+		SyncEvent:On(function(func, ...)
 			self[func](self, ...)
 		end)
 	end
@@ -180,21 +169,21 @@ end
 
 function CombatPlayer.Sync(self: CombatPlayer, funcName, ...)
 	if RunService:IsServer() and self.player then
-		NetServer:Fire(self.player, SYNCEVENT, funcName, ...)
+		SyncEvent:Fire(self.player, funcName, ...)
 	end
 end
 
 function CombatPlayer.Update(self: CombatPlayer)
 	if RunService:IsServer() then
 		if self.player then
-			NetServer:FireAllExcept(self.player, "CombatPlayerUpdate", self:AsUpdateData())
+			UpdateEvent:FireAllExcept(self.player, self:AsUpdateData())
 		else
-			NetServer:FireAll("CombatPlayerUpdate", self:AsUpdateData())
+			UpdateEvent:FireAll(self:AsUpdateData())
 		end
 	end
 end
 
-function CombatPlayer.AsUpdateData(self: CombatPlayer): UpdateData
+function CombatPlayer.AsUpdateData(self: CombatPlayer): Types.UpdateData
 	return {
 		Health = self.health,
 		MaxHealth = self.maxHealth,

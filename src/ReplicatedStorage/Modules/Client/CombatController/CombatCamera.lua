@@ -16,12 +16,8 @@ local Janitor = require(ReplicatedStorage.Packages.Janitor)
 -- Makes sure combat cameras arent forgotten to be cleaned up, as only one should exist at any time anyway
 local prevCamera: CombatCamera? = nil
 
-function CombatCamera.new()
-	if prevCamera then
-		warn(debug.traceback("Combatcamera may have been forgotten to be cleaned up!"))
-		prevCamera:Destroy()
-	end
-	local self = setmetatable({}, CombatCamera) :: CombatCamera
+function _initSelf()
+	local self = setmetatable({}, CombatCamera)
 
 	self.janitor = Janitor.new()
 
@@ -49,9 +45,6 @@ function CombatCamera.new()
 
 	self.destroyed = false
 
-	self:SetupInput()
-	self:SetupCamera()
-
 	self.janitor:Add(self.player.CharacterAdded:Connect(function(char)
 		self.character = char
 		self.HRP = char:WaitForChild("HumanoidRootPart")
@@ -60,9 +53,22 @@ function CombatCamera.new()
 	return self
 end
 
+function CombatCamera.new(): CombatCamera
+	if prevCamera then
+		warn(debug.traceback("Combatcamera may have been forgotten to be cleaned up!"))
+		prevCamera:Destroy()
+	end
+
+	local self = _initSelf()
+	self:SetupInput()
+	self:SetupCamera()
+
+	return self :: CombatCamera
+end
+
 function CombatCamera.GetCFrame(self: CombatCamera)
 	if not self.HRP then
-		return
+		return CFrame.new()
 	end
 	return CFrame.lookAt(self.HRP.Position + self.cameraOffset, self.HRP.Position)
 end
@@ -212,6 +218,6 @@ function CombatCamera.Destroy(self: CombatCamera)
 	self.destroyed = true
 end
 
-export type CombatCamera = typeof(CombatCamera.new(...))
+export type CombatCamera = typeof(_initSelf(...))
 
 return CombatCamera

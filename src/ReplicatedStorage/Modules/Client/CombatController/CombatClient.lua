@@ -23,12 +23,14 @@ local CombatCamera = require(script.Parent.CombatCamera)
 local CombatUI = require(script.Parent.CombatUI)
 local NameTag = require(script.Parent.NameTag)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
-local Red = require(ReplicatedStorage.Packages.Red)
-
 local AttackLogic = require(combatFolder.AttackLogic)
 local CombatPlayer = require(combatFolder.CombatPlayer)
 
-local Net = Red.Client("game")
+local PlayerKilledEvent = require(ReplicatedStorage.Events.Combat.PlayerKilledEvent):Client()
+local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Client()
+local AttackEvent = require(ReplicatedStorage.Events.Combat.AttackEvent):Client()
+local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Client()
+local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Client()
 
 local function _VisualiseRay(ray: Ray)
 	local part = Instance.new("Part")
@@ -89,8 +91,10 @@ function CombatClient.new(heroName: string): CombatClient
 
 	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer, self.character))
 
-	Net:On("CombatKill", function()
-		SoundController:PlayGeneralSound("KO")
+	PlayerKilledEvent:On(function(data)
+		if data.Killer == self.player then
+			SoundController:PlayGeneralSound("KO")
+		end
 	end)
 
 	-- Net:On("PlayerKill", function()
@@ -122,22 +126,22 @@ function CombatClient.Destroy(self: CombatClient)
 end
 
 -- we already check if the hit is a combatplayer before this function is called
-function CombatClient.RayHit(self: CombatClient, instance: Instance, position: Vector3, id: number)
-	Net:Fire("Hit", instance, position, id)
+function CombatClient.RayHit(self: CombatClient, instance: BasePart, position: Vector3, id: number)
+	HitEvent:Fire(instance, position, id)
 end
 
 function CombatClient.ExplosionHit(
 	self: CombatClient,
 	hits: {
 		{
-			instance: Instance,
+			instance: BasePart,
 			position: Vector3,
 		}
 	},
 	id: number,
 	explosionCentre: Vector3
 )
-	Net:Fire("HitMultiple", hits, id, explosionCentre)
+	HitMultipleEvent:Fire(hits, id, explosionCentre)
 end
 
 -- Returns point of intersection between a ray and a plane
@@ -259,11 +263,11 @@ function CombatClient.PrepareAttack(self: CombatClient, cancel: boolean?)
 	if not self.usingSuper then
 		self.aimRenderer:Enable()
 		self.combatPlayer:SetAiming(Enums.AbilityType.Attack)
-		Net:Fire("Aim", Enums.AbilityType.Attack)
+		AimEvent:Fire(Enums.AbilityType.Attack)
 	else
 		self.superAimRenderer:Enable()
 		self.combatPlayer:SetAiming(Enums.AbilityType.Super)
-		Net:Fire("Aim", Enums.AbilityType.Super)
+		AimEvent:Fire(Enums.AbilityType.Super)
 	end
 end
 
@@ -289,7 +293,7 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 	self.aimRenderer:Disable()
 	self.superAimRenderer:Disable()
 	self.combatPlayer:SetAiming(nil)
-	Net:Fire("Aim", nil)
+	AimEvent:Fire(nil)
 	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection), self.usingSuper)
 
 	self.usingSuper = false
@@ -414,22 +418,19 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 			self:RayHit(...)
 		end
 
-	-- If attack doesn't go through on server then reset attack id to prevent desync
-	local serverId
-	if not super then
-		serverId = Net:Call("Attack", origin, attackDetails):Await()
-	else
-		serverId = Net:Call("Super", origin, attackDetails):Await()
-	end
-	if serverId then
-		self.combatPlayer.attackId = serverId
-	end
+	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction)
 
-	-- calling this after calling the server so the hit does not reach server before the attack start
-	-- need to call it in a new thread because of a bug with Red, where :Await causes this thread to error silently
-	task.spawn(function()
-		AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction)
-	end)
+	AttackEvent:Fire(super, origin, attackDetails)
+	-- If attack doesn't go through on server then reset attack id to prevent desync
+	-- local serverId
+	-- if not super then
+	-- 	serverId = Net:Call("Attack", origin, attackDetails):Await()
+	-- else
+	-- 	serverId = Net:Call("Super", origin, attackDetails):Await()
+	-- end
+	-- if serverId then
+	-- 	self.combatPlayer.attackId = serverId
+	-- end
 end
 
 export type CombatClient = typeof(CombatClient.new(...)) & typeof(CombatClient)

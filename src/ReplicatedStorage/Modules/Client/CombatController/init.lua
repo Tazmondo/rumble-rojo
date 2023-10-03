@@ -5,17 +5,16 @@
 local CombatController = {}
 CombatController.__index = CombatController
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local AttackRenderer = require(script.AttackRenderer)
 local BushController = require(script.BushController)
 local CombatClient = require(script.CombatClient)
-local CombatPlayerController = require(script.CombatPlayerController)
 local ItemController = require(script.Parent.ItemController)
-local Red = require(ReplicatedStorage.Packages.Red)
 
-local Net = Red.Client("game")
+local CombatPlayerInitializeEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerInitializeEvent):Client()
+local ReplicateAttackEvent = require(ReplicatedStorage.Events.Combat.ReplicateAttackEvent):Client()
 
 local localPlayer = Players.LocalPlayer
 local combatClient: CombatClient.CombatClient
@@ -66,8 +65,8 @@ end)
 
 function CombatController:Initialize()
 	print("Initializing combat controller")
-	Net:On("CombatPlayerInitialize", InitializeCombatClient)
-	Net:On("Attack", AttackRenderer.RenderOtherClientAttack)
+	CombatPlayerInitializeEvent:On(InitializeCombatClient)
+	ReplicateAttackEvent:On(AttackRenderer.RenderOtherClientAttack)
 end
 
 CombatController:Initialize()

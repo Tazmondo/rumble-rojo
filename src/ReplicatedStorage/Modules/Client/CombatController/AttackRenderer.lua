@@ -329,7 +329,7 @@ end
 
 function AttackRenderer.RenderOtherClientAttack(
 	player: Player,
-	attackData: HeroData.AttackData,
+	attackData: HeroData.AbilityData,
 	origin: CFrame,
 	attackDetails: AttackLogic.AttackDetails
 )

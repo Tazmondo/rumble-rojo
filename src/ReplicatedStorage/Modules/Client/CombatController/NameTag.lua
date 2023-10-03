@@ -1,9 +1,11 @@
+--!nonstrict
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local BushController = require(script.Parent.BushController)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 
 local NameTag = {}
 
@@ -105,7 +107,7 @@ function NameTag.InitFriendly(combatPlayer: CombatPlayer.CombatPlayer)
 	end)
 end
 
-function NameTag.InitEnemy(data: CombatPlayer.UpdateData)
+function NameTag.InitEnemy(data: Types.UpdateData)
 	local character = data.Character
 
 	assert(character.Parent, "Character has not been parented to workspace yet!")
@@ -117,21 +119,21 @@ function NameTag.InitEnemy(data: CombatPlayer.UpdateData)
 		lid = character:WaitForChild("lid", 5)
 		if not lid then
 			warn("Chest did not have lid!")
-			return
+			return false
 		end
 	else
 		HRP = character:WaitForChild("HumanoidRootPart", 5)
 		humanoid = character:FindFirstChild("Humanoid")
 		if not HRP or not humanoid then
 			warn("No HRP/humanoid", character, HRP, humanoid)
-			return
+			return false
 		end
 	end
 
 	local anchor = HRP or lid
 	if not anchor then
 		warn("no anchor found, object:", data.IsObject)
-		return
+		return false
 	end
 
 	local gui = anchor:FindFirstChild("CombatGUI")

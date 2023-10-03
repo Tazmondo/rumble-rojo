@@ -6,14 +6,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local NameTag = require(script.Parent.NameTag)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
-local Red = require(ReplicatedStorage.Packages.Red)
-local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 
-local Net = Red.Client("game")
+local CombatPlayerUpdateEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerUpdateEvent):Client()
 
-local combatPlayers: { [Model]: CombatPlayer.UpdateData } = {}
+local combatPlayers: { [Model]: Types.UpdateData } = {}
 
-function MakeNewCombatPlayer(data: CombatPlayer.UpdateData)
+function MakeNewCombatPlayer(data: Types.UpdateData)
 	if combatPlayers[data.Character] then
 		warn("Overwriting combat player with new data")
 		return
@@ -37,7 +36,7 @@ function MakeNewCombatPlayer(data: CombatPlayer.UpdateData)
 	return data
 end
 
-function HandleUpdate(data: CombatPlayer.UpdateData)
+function HandleUpdate(data: Types.UpdateData)
 	task.spawn(function()
 		if data.Character == Players.LocalPlayer.Character then
 			return
@@ -55,14 +54,14 @@ function HandleUpdate(data: CombatPlayer.UpdateData)
 	end)
 end
 
-function CombatPlayerController.GetData(character: Model): CombatPlayer.UpdateData?
+function CombatPlayerController.GetData(character: Model): Types.UpdateData?
 	return combatPlayers[character]
 end
 
 function CombatPlayerController.Initialize()
 	print("Initializing combatplayercontroller")
 
-	Net:On("CombatPlayerUpdate", HandleUpdate)
+	CombatPlayerUpdateEvent:On(HandleUpdate)
 end
 
 CombatPlayerController.Initialize()

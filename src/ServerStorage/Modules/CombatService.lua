@@ -16,7 +16,6 @@ local StarterGui = game:GetService("StarterGui")
 
 local DataService = require(script.Parent.DataService)
 local ItemService = require(script.Parent.ItemService)
-local LobbyNameTagService = require(script.Parent.LobbyNameTagService)
 local SoundService = require(script.Parent.SoundService)
 
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
@@ -25,8 +24,18 @@ local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
-local Red = require(ReplicatedStorage.Packages.Red)
-local Net = Red.Server("game", { "CombatPlayerInitialize", "CombatKill", "PlayerKill", "Damaged" })
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
+local Future = require(ReplicatedStorage.Packages.Future)
+local Signal = require(ReplicatedStorage.Packages.Signal)
+
+local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Server()
+local AttackEvent = require(ReplicatedStorage.Events.Combat.AttackEvent):Server()
+local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Server()
+local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Server()
+local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Server()
+local CombatPlayerInitializeEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerInitializeEvent):Server()
+local PlayerKilledEvent = require(ReplicatedStorage.Events.Combat.PlayerKilledEvent):Server()
+local ReplicateAttackEvent = require(ReplicatedStorage.Events.Combat.ReplicateAttackEvent):Server()
 
 type PlayerCombatDetails = {
 	HeroName: string,
@@ -75,7 +84,7 @@ local function replicateAttack(
 			combatPlayer:RegisterBullet(pellet.id, pellet.CFrame, pellet.speed, attackData)
 		end
 
-		Net:FireAll("Attack", player, attackData, origin, attackDetails)
+		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
 	elseif attackData.AttackType == "Shot" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotDetails
 
@@ -93,7 +102,7 @@ local function replicateAttack(
 			attackData
 		)
 
-		Net:FireAll("Attack", player, attackData, origin, attackDetails)
+		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
 	elseif attackData.AttackType == "Arced" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ArcDetails
 
@@ -114,7 +123,7 @@ local function replicateAttack(
 
 		print("registered arc", localAttackDetails.id)
 
-		Net:FireAll("Attack", player, attackData, origin, attackDetails)
+		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
 	end
 end
 
@@ -171,7 +180,7 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 	return combatPlayer.attackId
 end
 
-function handleAim(player: Player, aim: string)
+function handleAim(player: Player, aim: string?)
 	if not player.Character then
 		return
 	end
@@ -230,11 +239,13 @@ function processHit(
 	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
 	combatPlayer:DealDamage(attackDetails.Damage, victimCharacter)
 
-	Net:FireAll("Damaged", victimCharacter, attackDetails.Damage)
+	DamagedEvent:FireAll(victimCharacter, attackDetails.Damage)
 
 	-- Update Data
-	DataService.GetProfileData(player):Then(function(data: DataService.ProfileData)
-		data.Stats.DamageDealt += attackDetails.Damage
+	DataService.GetPrivateData(player):After(function(data)
+		if data then
+			data.Stats.DamageDealt += attackDetails.Damage
+		end
 	end)
 
 	-- Must be cast to any to prevent "generic subtype escaping scope" error whatever that means
@@ -246,13 +257,12 @@ function processHit(
 
 	local victimPlayer = Players:GetPlayerFromCharacter(victimCharacter)
 	if died then
-		Net:Fire(player, "CombatKill", victimCombatPlayer)
 		if victimPlayer and died then
 			local data = {
 				Killer = player,
 				Victim = victimPlayer,
 				Attack = attackDetails.Data,
-			} :: KillData
+			} :: Types.KillData
 			CombatService:HandlePlayerDeath(victimPlayer, data)
 		end
 		local victimHRP = (
@@ -306,17 +316,7 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 	processHit(player, target, localTargetPosition, combatPlayer, victimCharacter, victimCombatPlayer, attackDetails)
 end
 
-function handleClientExplosionHit(
-	player: Player,
-	hitList: {
-		{
-			instance: BasePart,
-			position: Vector3,
-		}
-	},
-	attackId: number,
-	explosionCentre: Vector3
-)
+function handleClientExplosionHit(player: Player, hitList: Types.HitList, attackId: number, explosionCentre: Vector3)
 	if not player.Character then
 		return
 	end
@@ -408,13 +408,16 @@ end
 
 function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 	self = self :: CombatService
+	return Future.new(function()
+		local data = DataService.GetPrivateData(player):Await()
+		if not data then
+			return nil :: boolean?, nil :: Model?
+		end
 
-	return Red.Promise.new(function(resolve)
-		local profile = DataService.GetProfileData(player):Await() :: DataService.ProfileData
-		local hero = profile.SelectedHero
-		PlayersInCombat[player] = { HeroName = hero, SkinName = profile.OwnedHeroes[hero].SelectedSkin }
+		local hero = data.SelectedHero
+		PlayersInCombat[player] = { HeroName = hero, SkinName = data.OwnedHeroes[hero].SelectedSkin }
 
-		resolve(self:SpawnCharacter(player, newCFrame):Await())
+		return self:SpawnCharacter(player, newCFrame):Await()
 	end)
 end
 
@@ -429,14 +432,14 @@ function CombatService:ExitPlayerCombat(player: Player)
 	self:SpawnCharacter(player)
 end
 
-function CombatService:HandlePlayerDeath(player: Player, data: KillData?)
+function CombatService:HandlePlayerDeath(player: Player, data: Types.KillData?)
 	if data then
 		CombatService.KillSignal:Fire(data)
-		Net:FireAll("PlayerKill", data)
+		PlayerKilledEvent:FireAll(data)
 	else
 		local data = { Victim = player }
 		CombatService.KillSignal:Fire(data)
-		Net:FireAll("PlayerKill", data)
+		PlayerKilledEvent:FireAll(data)
 	end
 
 	task.delay(3, function()
@@ -455,7 +458,7 @@ function CombatService:SetupCombatPlayer(player: Player, details: PlayerCombatDe
 	self:InitializeNameTag(char, combatPlayer, player)
 
 	print("Asking client to initialize combat player")
-	Net:Fire(player, "CombatPlayerInitialize", details.HeroName)
+	CombatPlayerInitializeEvent:Fire(player, details.HeroName)
 end
 
 function CombatService:LoadCharacterWithModel(player: Player, characterModel: Model?)
@@ -477,17 +480,12 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	self = self :: CombatService
 	print("Spawning Character", player, debug.traceback())
 
-	return Red.Promise.new(function(resolve, reject)
+	return Future.Try(function()
 		local connection
-		local loadTimeout = task.delay(5, function(...)
-			connection:Disconnect()
-			warn("Character wasn't spawned after 5 seconds")
-			reject("Character wasn't spawned after 5 seconds")
-		end)
+
+		local loadedChar = nil
 
 		connection = player.CharacterAdded:Once(function(char)
-			coroutine.close(loadTimeout)
-
 			print(player, "Character was added, processing")
 
 			task.wait() -- Let it get parented to workspace
@@ -495,14 +493,6 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 
 			if PlayersInCombat[player] then
 				self:SetupCombatPlayer(player, PlayersInCombat[player])
-			else
-				DataService.GetProfileData(player)
-					:Then(function(profile: DataService.ProfileData)
-						LobbyNameTagService.New(player, char, profile.Trophies)
-					end)
-					:Catch(function(msg)
-						warn(msg)
-					end)
 			end
 
 			local humanoid =
@@ -517,7 +507,8 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 				-- Use moveto so characters never spawn in the ground
 				char:MoveTo(spawnCFrame.Position)
 			end
-			resolve(char)
+
+			loadedChar = char
 		end)
 		print(player, "Loading char")
 
@@ -528,6 +519,18 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 		else
 			self:LoadCharacterWithModel(player)
 		end
+
+		local start = os.clock()
+		while not loadedChar and os.clock() - start < 10 do
+			task.wait()
+		end
+
+		if not loadedChar then
+			warn("Character wasn't spawned after 10 seconds")
+		end
+
+		connection:Disconnect()
+		return loadedChar :: Model?
 	end)
 end
 
@@ -586,18 +589,12 @@ function CombatService:PlayerAdded(player: Player)
 		PlayersInCombat[player] = { HeroName = hero, SkinName = skin }
 	end
 
-	DataService.PromiseLoad(player):Then(function(resolve)
-		print("Resolved:", resolve)
-		if resolve then
-			self:SpawnCharacter(player)
+	if DataService.PlayerLoaded(player):Await() then
+		self:SpawnCharacter(player)
 
-			-- ensure nametags appear for combatplayers that already existed
-			CombatService:ForceUpdateCombatPlayers()
-		end
-	end, function(reject)
-		print(reject)
-		player:Kick("Failed to load: " .. reject)
-	end)
+		-- ensure nametags appear for combatplayers that already existed
+		CombatService:ForceUpdateCombatPlayers()
+	end
 end
 
 function CombatService:Initialize()
@@ -612,11 +609,16 @@ function CombatService:Initialize()
 		self:PlayerAdded(player)
 	end
 
-	Net:On("Attack", handleAttack)
-	Net:On("Super", handleSuper)
-	Net:On("Hit", handleClientHit)
-	Net:On("HitMultiple", handleClientExplosionHit)
-	Net:On("Aim", handleAim)
+	AttackEvent:On(function(player, super, origin, details)
+		if super then
+			handleSuper(player, origin, details)
+		else
+			handleAttack(player, origin, details)
+		end
+	end)
+	HitEvent:On(handleClientHit)
+	HitMultipleEvent:On(handleClientExplosionHit)
+	AimEvent:On(handleAim)
 
 	for _, v in pairs(workspace:GetChildren()) do
 		if v.Name == "Rig" then
@@ -631,13 +633,8 @@ function CombatService:Initialize()
 	ItemService.Initialize(CombatPlayerData)
 end
 
-CombatService.KillSignal = Red.Signal.new()
+CombatService.KillSignal = Signal()
 
-export type KillData = {
-	Killer: Player?,
-	Victim: Player,
-	Attack: HeroData.AttackData | HeroData.SuperData?,
-}
 export type CombatService = typeof(CombatService)
 
 CombatService:Initialize()

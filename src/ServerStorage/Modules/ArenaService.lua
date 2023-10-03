@@ -178,7 +178,10 @@ function ArenaService.StartMatch()
 
 		publicData.InCombat = true
 
-		CombatService:EnterPlayerComba(player, spawns[spawnCount]):Then(function(char: Model)
+		CombatService:EnterPlayerCombat(player, spawns[spawnCount]):After(function(success, char: Model?)
+			if not success or not char then
+				return
+			end
 			-- Wait for character position to correct if spawn is slightly off vertically
 			-- task.wait(0) -- UPDATE: use moveto in spawn function so dont need to do this anymore
 			local HRP = char:FindFirstChild("HumanoidRootPart") :: BasePart
@@ -302,7 +305,7 @@ function ArenaService.Initialize()
 		registeredPlayers[player] = nil
 	end)
 
-	CombatService.KillSignal:Connect(function(data: CombatService.KillData)
+	CombatService.KillSignal:Connect(function(data: Types.KillData)
 		if ArenaService.GetRegisteredPlayersLength() < 2 then
 			-- Don't handle kills that are a result of ties.
 			return

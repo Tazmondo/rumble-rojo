@@ -131,6 +131,6 @@ export type ArcDetails = {
 	timeToLand: number,
 }
 
-export type AttackDetails = ShotDetails | ShotgunDetails
+export type AttackDetails = ShotDetails | ShotgunDetails | ArcDetails
 
 return AttackLogic

@@ -1,3 +1,4 @@
+-- TODO: CLIENT RENDER
 --!strict
 local LobbyNameTagService = {}
 
