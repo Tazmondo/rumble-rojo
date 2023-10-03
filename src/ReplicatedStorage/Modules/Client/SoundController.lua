@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
+local DataController = require(script.Parent.DataController)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 
 local SoundController = {}
@@ -107,9 +108,11 @@ function SoundController:StateUpdated()
 		-- lobby music was annoying as fuck after a while, disabling music in studio.
 		return
 	end
+	local gameData = DataController.GetGameData():Await()
+	local playerData = DataController.GetLocalData():Await()
 
-	local state = Net:Folder():GetAttribute("GameState")
-	local inMatch = Net:LocalFolder():GetAttribute("InMatch")
+	local state = gameData.Status
+	local inMatch = playerData.Public.InCombat
 
 	local lobbyMusic = soundFolder.General.LobbyMusic
 	local battleMusic = soundFolder.General.BattleMusic
@@ -139,8 +142,9 @@ function CharacterAdded(char)
 end
 
 function SoundController:Initialize()
-	Net:Folder():GetAttributeChangedSignal("GameState"):Connect(SoundController.StateUpdated)
-	Net:LocalFolder():GetAttributeChangedSignal("InMatch"):Connect(SoundController.StateUpdated)
+	DataController.GameDataUpdated:Connect(function()
+		SoundController:StateUpdated()
+	end)
 	SoundController:StateUpdated()
 
 	AttackSoundEvent:On(function(...)

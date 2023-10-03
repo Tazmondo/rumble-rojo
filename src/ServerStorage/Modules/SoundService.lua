@@ -1,6 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
-local Red = require(ReplicatedStorage.Packages.Red)
 
 local AttackSoundEvent = require(ReplicatedStorage.Events.Sound.AttackSoundEvent):Server()
 

@@ -5,10 +5,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
-local Table = require(ReplicatedStorage.Modules.Shared.Table)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Signal = require(ReplicatedStorage.Packages.Signal)
-local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 -- Receives data sync from server when the Red folder cannot be used and exposes it to the other client controllers
 
 local PrivateDataEvent = require(ReplicatedStorage.Events.Data.PrivateDataEvent):Client()
@@ -20,7 +18,7 @@ local SelectHeroEvent = require(ReplicatedStorage.Events.Data.SelectHeroEvent):C
 local SelectSkinEvent = require(ReplicatedStorage.Events.Data.SelectSkinEvent):Client()
 
 local PrivateData: Data.PrivatePlayerData
-local PublicData: Data.PlayersData
+local PublicData: Data.PlayersData = {}
 local GameData: Data.GameData
 
 export type LocalPlayerData = {
