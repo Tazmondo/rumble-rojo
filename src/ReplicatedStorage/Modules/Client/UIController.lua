@@ -665,6 +665,7 @@ function RenderSkinSelectButtons()
 end
 
 function UIController:Initialize()
+	print("init uicontroller")
 	-- This function is spawned so we can wait here
 	DataController.HasLoadedData():Await()
 

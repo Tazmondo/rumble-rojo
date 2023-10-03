@@ -411,12 +411,15 @@ function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 	return Future.new(function()
 		print("Entering combat", player)
 		local data = DataService.GetPrivateData(player):Await()
-		if not data then
+		local dataPublic = DataService.GetPublicData(player):Await()
+		if not data or not dataPublic then
 			return nil :: boolean?, nil :: Model?
 		end
 
 		local hero = data.SelectedHero
 		PlayersInCombat[player] = { HeroName = hero, SkinName = data.OwnedHeroes[hero].SelectedSkin }
+
+		dataPublic.InCombat = true
 
 		return self:SpawnCharacter(player, newCFrame):Await()
 	end)
@@ -424,6 +427,11 @@ end
 
 function CombatService:ExitPlayerCombat(player: Player)
 	self = self :: CombatService
+
+	local publicData = DataService.GetPublicData(player):Await()
+	if publicData then
+		publicData.InCombat = false
+	end
 
 	PlayersInCombat[player] = nil
 	if player.Character and CombatPlayerData[player.Character] then
@@ -443,8 +451,8 @@ function CombatService:HandlePlayerDeath(player: Player, data: Types.KillData?)
 		PlayerKilledEvent:FireAll(data)
 	end
 
-	task.delay(3, function()
-		self:ExitPlayerCombat(player)
+	task.delay(1, function()
+		CombatService:ExitPlayerCombat(player)
 	end)
 end
 

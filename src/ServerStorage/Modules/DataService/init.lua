@@ -103,12 +103,9 @@ end
 
 function DataService.GetPublicData(player: Player)
 	return Future.new(function(player)
-		print("1")
 		local loaded = DataService.PlayerLoaded(player):Await()
-		print("2")
 		if loaded then
 			Data.ReplicateToPublic(PrivateData[player], PublicData[player])
-			print("3")
 			return proxyPublicData[player] :: Data.PublicPlayerData?
 		else
 			return nil

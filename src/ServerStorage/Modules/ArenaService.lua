@@ -42,8 +42,6 @@ function ArenaService.HandleResults(player)
 	local privateData = DataService.GetPrivateData(player):Unwrap()
 	local publicData = DataService.GetPublicData(player):Unwrap()
 	if privateData and publicData then
-		publicData.InCombat = false
-
 		privateData.Trophies = math.max(privateData.Trophies + trophies, 0)
 
 		privateData.Money += money
@@ -173,10 +171,6 @@ function ArenaService.StartMatch()
 
 		data.Hero = playerData.SelectedHero
 		assert(data.Hero, "Player did not have a selected character.")
-
-		local publicData = assert(DataService.GetPublicData(player):Unwrap())
-
-		publicData.InCombat = true
 
 		CombatService:EnterPlayerCombat(player, spawns[spawnCount]):After(function(success, char: Model?)
 			if not success or not char then
