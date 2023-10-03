@@ -32,6 +32,10 @@ local PublicData: Data.PlayersData
 local PrivateData: { [Player]: Data.PrivatePlayerData }
 local GameData: Data.GameData
 
+local proxyPublicData: typeof(PublicData)
+local proxyPrivateData: typeof(PrivateData)
+local proxyGameData: typeof(GameData)
+
 local scheduledUpdates = {
 	Game = false,
 	Public = {} :: { [Player]: boolean },
@@ -86,29 +90,33 @@ function DataService.GetProfile(player: Player)
 end
 
 function DataService.GetPrivateData(player: Player)
-	return Future.new(function()
+	return Future.new(function(player)
 		local loaded = DataService.PlayerLoaded(player):Await()
 		if loaded then
-			return PrivateData[player] :: Data.PrivatePlayerData?
+			return proxyPrivateData[player] :: Data.PrivatePlayerData?
 		else
 			return nil
 		end
-	end)
+	end, player)
 end
 
 function DataService.GetPublicData(player: Player)
-	return Future.new(function()
+	return Future.new(function(player)
+		print("1")
 		local loaded = DataService.PlayerLoaded(player):Await()
+		print("2")
 		if loaded then
-			return PublicData[player] :: Data.PublicPlayerData?
+			Data.ReplicateToPublic(PrivateData[player], PublicData[player])
+			print("3")
+			return proxyPublicData[player] :: Data.PublicPlayerData?
 		else
 			return nil
 		end
-	end)
+	end, player)
 end
 
 function DataService.GetGameData()
-	return GameData
+	return proxyGameData
 end
 
 function DataService.UpdatePrivateData(player)
@@ -147,6 +155,9 @@ function DataService.LoadAllPublicData(targetPlayer)
 	end
 
 	for player, data in pairs(PublicData) do
+		local privateData = PrivateData[player]
+		Data.ReplicateToPublic(privateData, data)
+
 		PublicDataEvent:Fire(targetPlayer, player, data)
 	end
 end
@@ -204,15 +215,19 @@ local function PlayerAdded(player: Player)
 			Profiles[player] = profile
 
 			-- A profile has been successfully loaded:
-			PrivateData[player] = Table.HookTable(profile.Data, function()
+			PrivateData[player] = profile.Data
+			proxyPrivateData[player] = Table.HookTable(PrivateData[player], function()
 				scheduledUpdates.Private[player] = true
 			end)
 
-			PublicData[player] = Table.HookTable(TableUtil.Copy(Data.TempPlayerData, true), function()
+			PublicData[player] = TableUtil.Copy(Data.TempPlayerData, true)
+			proxyPublicData[player] = Table.HookTable(PublicData[player], function()
 				scheduledUpdates.Public[player] = true
 			end)
 
+			print("Waiting for client to load!")
 			if LoadedService.ClientLoaded(player):Await() then
+				print("Replicating data!")
 				DataService.UpdatePrivateData(player)
 				DataService.LoadAllPublicData(player)
 				DataService.UpdateGameData(player)
@@ -333,11 +348,15 @@ function StartEventLoop()
 end
 
 function DataService.Initialize()
-	GameData = Table.HookTable(TableUtil.Copy(Data.GameData, true), function(i, v)
+	GameData = TableUtil.Copy(Data.GameData, true)
+	proxyGameData = Table.HookTable(GameData, function(i, v)
 		scheduledUpdates.Game = true
 	end)
+
 	PublicData = {}
 	PrivateData = {}
+	proxyPublicData = {}
+	proxyPrivateData = {}
 
 	-- In case Players have joined the server earlier than this script ran:
 	for _, player in ipairs(Players:GetPlayers()) do

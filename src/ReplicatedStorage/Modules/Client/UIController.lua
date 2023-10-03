@@ -36,8 +36,6 @@ local QueueEvent = require(ReplicatedStorage.Events.Arena.QueueEvent):Client()
 local FighterDiedEvent = require(ReplicatedStorage.Events.Arena.FighterDiedEvent):Client()
 local MatchResultsEvent = require(ReplicatedStorage.Events.Arena.MatchResultsEvent):Client()
 
-local ready = true
-local inCombat = false
 local heroSelectOpen = false
 local displayResults = false
 
@@ -67,6 +65,9 @@ end
 
 function UpdateQueueButtons()
 	local gameData = DataController.GetGameData():Unwrap()
+	local playerData = DataController.GetLocalData():Unwrap()
+	local ready = playerData.Public.Queued
+
 	MainUI.Queue.Visible = true
 	if ready then
 		MainUI.Queue.Ready.Visible = false
@@ -132,7 +133,12 @@ function RenderHeroIcon()
 		local frame = MainUI.Interface.MenuBar:FindFirstChild("Current Character") :: Frame
 		frame:ClearAllChildren()
 
-		local button = ViewportFrameController.NewHeadButton(HeroDetails.GetModelFromName(selectedHero, selectedSkin))
+		local model = assert(
+			HeroDetails.GetModelFromName(selectedHero, selectedSkin),
+			"Model not found for " .. selectedHero .. " " .. selectedSkin
+		)
+
+		local button = ViewportFrameController.NewHeadButton(model)
 		button.Size = UDim2.fromScale(1, 1)
 		button.ViewportFrame.Equipped.Visible = false
 
@@ -172,17 +178,16 @@ function IntermissionRender(changed)
 	TopText.Text = gameData.IntermissionTime
 end
 
-local prevCountdown = 0
 function BattleStartingRender(changed)
 	local gameData = DataController.GetGameData():Unwrap()
+	local playerData = DataController.GetLocalData():Unwrap()
 	ArenaUI.Enabled = true
 
 	local gameFrame = ArenaUI.Interface.Game
 	gameFrame.Visible = true
 
-	if ready then
+	if playerData.Public.Queued then
 		if changed then
-			inCombat = true
 			SoundController:PlayGeneralSound("FightStart")
 			gameFrame.StartFight.Position = UDim2.fromScale(0.5, 0.5)
 		end
@@ -196,7 +201,7 @@ function BattleStartingRender(changed)
 		-- 	0.4
 		-- )
 		-- gameFrame.Countdown:Tween
-	elseif not inCombat then
+	elseif not playerData.Public.InCombat then
 		RenderStats()
 		RenderHeroIcon()
 	end
@@ -215,6 +220,7 @@ local died = false
 local diedHandled = false
 function BattleRender(changed)
 	local gameData = DataController.GetGameData():Unwrap()
+	local playerData = DataController.GetLocalData():Unwrap()
 	-- Combat UI rendering is handled by the combat client
 	ArenaUI.Enabled = true
 
@@ -235,7 +241,7 @@ function BattleRender(changed)
 		end
 	end
 
-	if not inCombat then
+	if not playerData.Public.InCombat then
 		RenderStats()
 		RenderHeroIcon()
 	end
@@ -275,7 +281,6 @@ function LabelRenderTrophyCount(label: TextLabel, trophyCount: number)
 end
 
 function RenderMatchResults(trophies: number, data: Types.PlayerBattleResults)
-	inCombat = false
 	displayResults = true
 	HideAll()
 
@@ -456,17 +461,16 @@ function RenderHeroSelectScreen()
 	viewportController:UpdateModel(model)
 end
 
-function ResetRoundVariables()
-	-- ready = false
-	UpdateQueueButtons()
-end
+function ResetRoundVariables() end
 
 function UIController:RenderAllUI()
 	-- Might appear a weird way of doing it, but means we can get precise control over how the UI renders by just editing the function for the corresponding gamestate.
 	-- Checking if it's changed also allows us to do tweening.
 	debug.profilebegin("UIControllerRender")
 
-	local state = DataController.GetGameData():Unwrap()
+	local gameData = DataController.GetGameData():Unwrap()
+	local playerData = DataController.GetLocalData():Unwrap()
+	local state = gameData.Status
 
 	if displayResults then
 		-- HideAll()
@@ -483,7 +487,9 @@ function UIController:RenderAllUI()
 		HideAll()
 	end
 
-	if heroSelectOpen and not (inCombat and state ~= "NotEnoughPlayers" and state ~= "Intermission") then
+	if
+		heroSelectOpen and not (playerData.Public.InCombat and state ~= "NotEnoughPlayers" and state ~= "Intermission")
+	then
 		RenderHeroSelectScreen()
 	else
 		if state == "NotEnoughPlayers" then
@@ -492,7 +498,7 @@ function UIController:RenderAllUI()
 			IntermissionRender(changed)
 		elseif state == "BattleStarting" then
 			BattleStartingRender(changed)
-			if ready then
+			if playerData.Public.Queued then
 				BuyBucksUI.Enabled = false
 				heroSelectOpen = false
 				-- ready = false
@@ -516,8 +522,8 @@ function UIController:ReadyClick()
 	-- Here we render twice, once for instant feedback, and again to correct the state if the server rejected their queue request.
 	self = self :: UIController
 
-	ready = true
-	UpdateQueueButtons()
+	local playerData = DataController.GetLocalData():Unwrap()
+	playerData.Public.Queued = true
 
 	QueueEvent:Fire(true)
 
@@ -527,15 +533,14 @@ end
 function UIController:ExitClick()
 	self = self :: UIController
 
-	ready = false
-	UpdateQueueButtons()
+	self = self :: UIController
 
-	-- RemoteFunction returns a value indicating if the queue was successful or not
-	local result = QueueEvent:Call("Queue", false)
-	ready = result:Await()
+	local playerData = DataController.GetLocalData():Unwrap()
+	playerData.Public.Queued = false
+
+	QueueEvent:Fire(false)
 
 	SoundController:PlayGeneralSound("LeaveQueue")
-	UpdateQueueButtons()
 end
 
 function RenderCharacterSelectButtons()
@@ -564,7 +569,10 @@ function RenderCharacterSelectButtons()
 				local skinName = if owned
 					then assert(ownedHeroes[hero].SelectedSkin)
 					else HeroDetails.HeroDetails[heroData.Name].DefaultSkin
-				local model = HeroDetails.GetModelFromName(heroData.Name, skinName)
+				local model = assert(
+					HeroDetails.GetModelFromName(heroData.Name, skinName),
+					"Model not found for " .. heroData.Name .. " " .. skinName
+				)
 
 				button = ViewportFrameController.NewHeadButton(model)
 				button.Parent = characterSelect
@@ -634,7 +642,10 @@ function RenderSkinSelectButtons()
 			local owned = data.Private.OwnedHeroes[displayedHero].Skins[skin] ~= nil
 			local button = skinSelect:FindFirstChild(skin)
 			if not button then
-				local model = HeroDetails.GetModelFromName(displayedHero, skin)
+				local model = assert(
+					HeroDetails.GetModelFromName(displayedHero, skin),
+					"No model " .. displayedHero .. " " .. skin
+				)
 				button = ViewportFrameController.NewHeadButton(model)
 				button.Parent = skinSelect
 				button.Name = skin
@@ -697,9 +708,6 @@ function UIController:Initialize()
 		else
 			selectedSkin = newData.Public.SelectedSkin
 		end
-
-		ready = newData.Public.Queued
-		inCombat = newData.Public.InCombat
 	end)
 
 	RunService.RenderStepped:Connect(function(...)

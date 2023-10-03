@@ -130,10 +130,14 @@ function DataController.Initialize()
 	end)
 
 	PublicDataEvent:On(function(player, data)
-		PublicData[player] = data
-		DataController.PublicDataUpdated:Fire(player, data)
-		if player == localPlayer then
-			DataController.LocalDataUpdated:Fire(DataController.GetLocalData():Await())
+		if not data then
+			PublicData[player] = nil
+		else
+			PublicData[player] = data
+			DataController.PublicDataUpdated:Fire(player, data)
+			if player == localPlayer then
+				DataController.LocalDataUpdated:Fire(DataController.GetLocalData():Await())
+			end
 		end
 	end)
 end

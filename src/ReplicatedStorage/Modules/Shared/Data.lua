@@ -64,7 +64,7 @@ function Data.ReplicateToPublic(privateData: PrivatePlayerData, publicData: Publ
 		end
 	end
 
-	publicData.SelectedSkin = privateData.OwnedHeroes[privateData.SelectedHero].SelectedSkin
+	publicData.SelectedSkin = assert(privateData.OwnedHeroes[privateData.SelectedHero].SelectedSkin)
 end
 
 export type ProfileData = typeof(Data.ProfileTemplate)
@@ -76,7 +76,7 @@ export type PrivatePlayerData = ProfileData
 -- May decide to split this up in future
 export type PublicPlayerData = TempPlayerData
 
-export type PlayersData = { [Player]: PublicPlayerData? } -- So that nil can be passed when player leaves
+export type PlayersData = { [Player]: PublicPlayerData } -- So that nil can be passed when player leaves
 
 export type GameStatus = "NotEnoughPlayers" | "Intermission" | "BattleStarting" | "Battle" | "BattleEnded"
 

@@ -409,6 +409,7 @@ end
 function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 	self = self :: CombatService
 	return Future.new(function()
+		print("Entering combat", player)
 		local data = DataService.GetPrivateData(player):Await()
 		if not data then
 			return nil :: boolean?, nil :: Model?
