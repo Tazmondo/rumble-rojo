@@ -6,15 +6,13 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Red = require(ReplicatedStorage.Packages.Red)
+local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local DataService = require(script.Parent.DataService)
 local LoadedService = require(script.Parent.LoadedService)
 
-local Net = Red.Server("Purchase", {})
-
 local MAXSTOREDPURCHASES = 50
 
-type BuyFunction = (Player, DataService.ProfileData) -> nil
+type BuyFunction = (Player, Data.PrivatePlayerData) -> nil
 
 type Product = {
 	Disabied: boolean?,
@@ -105,10 +103,9 @@ function PurchaseIdCheckAsync(
 	end
 end
 
-function GrantPurchaseCallback(player: Player, profile: DataService.ProfileData, buyFunction: BuyFunction)
+function GrantPurchaseCallback(player: Player, profile: Data.PrivatePlayerData, buyFunction: BuyFunction)
 	return function()
 		buyFunction(player, profile)
-		DataService.SyncPlayerData(player)
 	end
 end
 
@@ -119,8 +116,9 @@ function ProcessReceipt(receipt_info)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
-	local profile = DataService.GetProfile(player):Await() :: DataService.Profile
-	if not profile then
+	local profile = DataService.GetProfile(player):Await()
+	local data = DataService.GetPrivateData(player):Await()
+	if not profile or not data then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
@@ -140,7 +138,7 @@ function ProcessReceipt(receipt_info)
 			player,
 			profile,
 			receipt_info.PurchaseId,
-			GrantPurchaseCallback(player, profile.Data, product.BuyFunction)
+			GrantPurchaseCallback(player, data, product.BuyFunction)
 		)
 	else
 		return Enum.ProductPurchaseDecision.NotProcessedYet
@@ -149,9 +147,7 @@ end
 
 MarketplaceService.ProcessReceipt = ProcessReceipt
 
-function PlayerAdded(player: Player)
-	LoadedService.IsClientLoadedPromise(player):Then(function() end)
-end
+function PlayerAdded(player: Player) end
 
 function Initialize()
 	Players.PlayerAdded:Connect(PlayerAdded)

@@ -77,8 +77,11 @@ end
 
 function DataService.GetProfile(player: Player)
 	return Future.new(function(player)
-		DataService.PlayerLoaded(player):Await()
-		return Profiles[player]
+		if DataService.PlayerLoaded(player):Await() then
+			return Profiles[player] :: Profile?
+		else
+			return nil
+		end
 	end, player)
 end
 
