@@ -28,7 +28,6 @@ end
 
 function UpdateNameTags()
 	local publicData = DataController.GetPublicData():Unwrap()
-	print(publicData[Players.LocalPlayer].InCombat)
 	for player, nameTag in pairs(nameTags) do
 		local data = publicData[player]
 		if not data then
