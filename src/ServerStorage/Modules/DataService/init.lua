@@ -11,6 +11,7 @@ local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Table = require(ReplicatedStorage.Modules.Shared.Table)
 local Future = require(ReplicatedStorage.Packages.Future)
+local Signal = require(ReplicatedStorage.Packages.Signal)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local LoadedService = require(script.Parent.LoadedService)
 local ProfileService = require(script.ProfileService)
@@ -42,6 +43,8 @@ local scheduledUpdates = {
 	Public = {} :: { [Player]: boolean },
 	Private = {} :: { [Player]: boolean },
 }
+
+DataService.BeforeProfileLoadedHook = Signal()
 
 -- makes sure the owned hero table is valid, or creates it if not
 function CorrectOwnedHero(heroData: HeroDetails.Hero, ownedHero: Data.OwnedHeroData?)
@@ -186,10 +189,12 @@ function DataService.AddKills(privateData: Data.PrivatePlayerData, kills: number
 	privateData.PeriodKills = math.max(0, privateData.PeriodKills + kills)
 end
 
-local function reconcile(profile)
+local function reconcile(player: Player, profile)
 	profile:Reconcile()
 
 	local data = profile.Data :: Data.ProfileData
+
+	DataService.BeforeProfileLoadedHook:Fire(player, data)
 
 	data.LastLoggedIn = os.time()
 
@@ -218,7 +223,7 @@ local function PlayerAdded(player: Player)
 	local profile = ProfileStore:LoadProfileAsync(STOREPREFIX .. player.UserId)
 	if profile ~= nil then
 		profile:AddUserId(player.UserId) -- GDPR compliance
-		reconcile(profile)
+		reconcile(player, profile)
 		profile:ListenToRelease(function()
 			Profiles[player] = nil
 			-- The profile could've been loaded on another Roblox server:

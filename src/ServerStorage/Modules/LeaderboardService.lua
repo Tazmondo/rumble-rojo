@@ -6,8 +6,10 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
+local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local DataService = require(ServerStorage.Modules.DataService)
 
 local LeaderboardEvent = require(ReplicatedStorage.Events.Leaderboard.LeaderboardEvent):Server()
@@ -17,6 +19,15 @@ local storesEnabled = not RunService:IsStudio() or true
 -- 	-- This will error if current instance has no Studio API access:
 -- 	DataStoreService:GetDataStore("____PS"):SetAsync("____PS", os.time())
 -- end)
+
+local REWARDS = {
+	{ Position = 1, Reward = 9000 },
+	{ Position = 2, Reward = 7000 },
+	{ Position = 3, Reward = 5000 },
+	{ Position = 10, Reward = 3000 },
+	{ Position = 50, Reward = 1000 },
+	{ Position = 100, Reward = 700 },
+}
 
 local STARTTIME = 1696161600 -- Time when players started playing
 local WEEKLENGTH = 604800 -- 60 * 60 * 24 * 7
@@ -59,6 +70,18 @@ function RetrieveTop100(dataStore)
 
 		return output
 	end)
+end
+
+function GetReward(leaderboardPosition: number)
+	if leaderboardPosition then
+		for i, rewardData in ipairs(REWARDS) do
+			if leaderboardPosition <= rewardData.Position then
+				return rewardData.Reward
+			end
+		end
+	end
+
+	return 0
 end
 
 function LeaderboardService.GetDataForTime(time: number)
@@ -220,6 +243,25 @@ function LoadFromDataService()
 	end)
 end
 
+function CheckPeriodPassed()
+	local weekNow = GetWeek(os.time())
+	if weekNow > currentWeek then
+		currentWeek = weekNow
+		ENDTIME = STARTTIME + (currentWeek + 1) * WEEKLENGTH
+
+		TrophyLeaderboardStore = DataStoreService:GetOrderedDataStore(GetStorePrefixWithWeek(currentWeek) .. "Trophy")
+		KillLeaderboardStore = DataStoreService:GetOrderedDataStore(GetStorePrefixWithWeek(currentWeek) .. "Kill")
+
+		for i, player in ipairs(Players:GetPlayers()) do
+			DataService.GetPrivateData(player):After(function(data)
+				if data then
+					HandleReward(player, data)
+				end
+			end)
+		end
+	end
+end
+
 function DataServiceLoop()
 	print("Leaderboard dataservice loop started")
 
@@ -228,8 +270,56 @@ function DataServiceLoop()
 
 		UpdateLeaderBoard()
 
+		CheckPeriodPassed()
+
 		task.wait(DATASERVICECOOLDOWN)
 	end
+end
+
+-- This function is spawned, so it should try to avoid yielding
+function HandleReward(player: Player, data: Data.ProfileData)
+	local lastLogin = data.LastLoggedIn
+
+	local week = GetWeek(lastLogin)
+	print(week, currentWeek)
+	if week >= currentWeek then
+		print("no rewards, week hasnt changed")
+		return
+	end
+
+	local success, lastData = LeaderboardService.GetDataForTime(lastLogin):Await()
+
+	if not success then
+		warn(lastData)
+		return
+	end
+
+	local reward = 0
+
+	local _, index = TableUtil.Find(lastData.Kill, function(a)
+		return a.UserID == tostring(player.UserId)
+	end)
+	if index then
+		reward += GetReward(index)
+	end
+
+	local _, index = TableUtil.Find(lastData.Trophy, function(a)
+		return a.UserID == tostring(player.UserId)
+	end)
+	if index then
+		reward += GetReward(index)
+	end
+
+	print("rewarding: ", reward)
+
+	data.Money += reward
+
+	data.LastLoggedIn = os.time()
+	data.PeriodKills = 0
+	data.PeriodTrophies = 0
+
+	task.wait()
+	-- This code will now run after the reconciliation has happenede
 end
 
 function PlayerAdded(player: Player)
@@ -243,6 +333,9 @@ end
 
 -- Make sure all players are saved
 function OnClose()
+	if RunService:IsStudio() then
+		return
+	end
 	local count = #Players:GetPlayers()
 	for i, player in ipairs(Players:GetPlayers()) do
 		SavePlayer(player):After(function(success)
@@ -257,6 +350,8 @@ end
 
 function LeaderboardService.Initialize()
 	print("initializing leaderboard service")
+
+	DataService.BeforeProfileLoadedHook:Connect(HandleReward)
 
 	Players.PlayerAdded:Connect(PlayerAdded)
 	Players.PlayerRemoving:Connect(PlayerRemoving)

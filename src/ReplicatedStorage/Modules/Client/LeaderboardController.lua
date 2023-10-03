@@ -143,7 +143,7 @@ function UpdateTime()
 		return
 	end
 
-	local timeLeft = currentTargetTime - os.time()
+	local timeLeft = math.max(0, currentTargetTime - os.time())
 	local hours = math.floor(timeLeft / (60 * 60))
 	local minutes = math.floor((timeLeft - (hours * 60 * 60)) / 60)
 	local seconds = math.floor(timeLeft - (hours * 60 * 60) - minutes * 60)
