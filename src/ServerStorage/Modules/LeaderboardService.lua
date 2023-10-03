@@ -4,11 +4,8 @@ local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
-local Types = require(ReplicatedStorage.Modules.Shared.Types)
-local CombatService = require(ServerStorage.Modules.CombatService)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
-local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local DataService = require(ServerStorage.Modules.DataService)
 
 local PREFIX = "Player_"
@@ -128,10 +125,21 @@ function PlayerAdded(player: Player)
 	SavePlayer(player)
 end
 
+function PlayerRemoving(player: Player)
+	SavePlayer(player)
+end
+
 function LeaderboardService.Initialize()
 	print("initializing leaderboard service")
 
 	Players.PlayerAdded:Connect(PlayerAdded)
+	Players.PlayerRemoving:Connect(PlayerRemoving)
+
+	game:BindToClose(function()
+		-- Give player removing callbacks time to save to datastore
+		task.wait(15)
+	end)
+
 	for i, v in ipairs(Players:GetPlayers()) do
 		Spawn(PlayerAdded, v)
 	end
