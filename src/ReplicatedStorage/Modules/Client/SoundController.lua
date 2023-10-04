@@ -22,6 +22,7 @@ playingFolder.Name = "PlayingSounds"
 -- Index is original, value is clone
 local playingSounds: { [Sound]: Sound } = {}
 local ambience: Sound? = nil
+local muted: boolean = false
 
 local player = Players.LocalPlayer
 
@@ -32,6 +33,7 @@ function SoundController:SetAmbience(sound: Sound?)
 			return
 		elseif ambience then
 			ambience:Destroy()
+			ambience = nil
 		end
 
 		ambience = sound:Clone()
@@ -42,6 +44,7 @@ function SoundController:SetAmbience(sound: Sound?)
 		ambience:Play()
 	elseif ambience then
 		ambience:Destroy()
+		ambience = nil
 	end
 end
 
@@ -106,8 +109,12 @@ function SoundController:PlayHeroAttack(heroName: string, super: boolean, charac
 end
 
 function SoundController:StateUpdated()
-	if RunService:IsStudio() then
+	if
+		-- RunService:IsStudio() or
+		muted
+	then
 		-- lobby music was annoying as fuck after a while, disabling music in studio.
+		SoundController:SetAmbience()
 		return
 	end
 	local gameData = DataController.GetGameData():Await()
@@ -131,6 +138,19 @@ function SoundController:StateUpdated()
 		warn("Weird sound state: ", state, inMatch)
 		SoundController:SetAmbience()
 	end
+end
+
+function SoundController:MuteMusic(shouldMute: boolean)
+	muted = shouldMute
+	if muted then
+		SoundController:SetAmbience()
+	else
+		SoundController:StateUpdated()
+	end
+end
+
+function SoundController:Muted()
+	return muted
 end
 
 function CharacterAdded(char)

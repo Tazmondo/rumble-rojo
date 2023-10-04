@@ -105,6 +105,9 @@ function RenderStats()
 	MainUI.Interface.Inventory.Trophies.TrophyCount.Text = trophies
 	MainUI.Interface.Inventory["G Bucks"].GBucksCount.Text = money
 
+	MainUI.Interface.Inventory.Mute.Visible = not SoundController:Muted()
+	MainUI.Interface.Inventory.Unmute.Visible = SoundController:Muted()
+
 	HeroSelect.Frame.Inventory.Trophies.TrophyCount.Text = trophies
 	HeroSelect.Frame.Inventory["G Bucks"].GBucksCount.Text = money
 end
@@ -665,6 +668,14 @@ function RenderSkinSelectButtons()
 	end)
 end
 
+function Mute()
+	SoundController:MuteMusic(true)
+end
+
+function UnMute()
+	SoundController:MuteMusic(false)
+end
+
 function UIController:Initialize()
 	-- This function is spawned so we can wait here
 	DataController.HasLoadedData():Await()
@@ -705,6 +716,9 @@ function UIController:Initialize()
 	MainUI.Queue.Exit.MouseButton1Down:Connect(function()
 		UIController:ExitClick()
 	end)
+
+	MainUI.Interface.Inventory.Mute.Activated:Connect(Mute)
+	MainUI.Interface.Inventory.Unmute.Activated:Connect(UnMute)
 
 	HeroSelect.Frame.Inventory.Exit.Activated:Connect(function(input: InputObject)
 		heroSelectOpen = false
