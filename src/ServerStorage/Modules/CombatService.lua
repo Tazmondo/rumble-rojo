@@ -486,14 +486,22 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	print("Spawning Character", player)
 
 	return Future.Try(function()
+		local playerData = DataService.GetPublicData(player):Await()
+		if not playerData then
+			-- player left so dont need to continue spawning
+			return
+		end
+
 		local details = PlayersInCombat[player]
 		local heroModel = if details
 			then HeroDetails.GetModelFromName(details.HeroName, details.SkinName):Clone()
 			else nil
 
 		print(player, "Loading character...")
-		local character = LoadCharacterService.SpawnCharacter(player, spawnCFrame, heroModel)
+		local character = LoadCharacterService.SpawnCharacter(player, spawnCFrame, heroModel):Await()
 		print(player, "Character loaded")
+
+		playerData.CharacterLoaded = true
 
 		local humanoid = assert(
 			character:FindFirstChild("Humanoid"),
@@ -503,7 +511,6 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 		if PlayersInCombat[player] then
 			self:SetupCombatPlayer(player, PlayersInCombat[player])
 		else
-			-- increase movement speed in lobby
 			character:ScaleTo(ServerConfig.LobbyPlayerScale)
 			humanoid.WalkSpeed = ServerConfig.LobbyMovementSpeed
 		end

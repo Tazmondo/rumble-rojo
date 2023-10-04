@@ -26,7 +26,6 @@ local muted: boolean = false
 local player = Players.LocalPlayer
 
 function SoundController:SetAmbience(sound: Sound?)
-	print("Setting ambience to", sound)
 	if sound then
 		if ambience and ambience.SoundId == sound.SoundId then
 			return
@@ -41,6 +40,7 @@ function SoundController:SetAmbience(sound: Sound?)
 		ambience.Parent = playingFolder
 		ambience.Looped = true
 		ambience:Play()
+		print("Set ambience to", sound)
 	elseif ambience then
 		ambience:Destroy()
 		ambience = nil
@@ -112,7 +112,6 @@ function SoundController:StateUpdated()
 		-- RunService:IsStudio() or
 		muted
 	then
-		-- lobby music was annoying as fuck after a while, disabling music in studio.
 		SoundController:SetAmbience()
 		return
 	end
@@ -164,6 +163,10 @@ end
 
 function SoundController:Initialize()
 	DataController.GameDataUpdated:Connect(function()
+		SoundController:StateUpdated()
+	end)
+
+	DataController.LocalDataUpdated:Connect(function()
 		SoundController:StateUpdated()
 	end)
 
