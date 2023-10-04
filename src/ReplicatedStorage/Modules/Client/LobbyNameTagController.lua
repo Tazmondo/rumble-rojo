@@ -36,9 +36,10 @@ function UpdateNameTags()
 			warn("Tried to update name tag with no player data")
 			continue
 		end
+		local nameColour = if data.Queued then Color3.fromRGB(31, 226, 0) else Color3.new(1, 1, 1)
 
+		nameTag.name.name.PlayerName.TextColor3 = nameColour
 		nameTag.Trophies.TrophyCount.Text = data.Trophies
-		nameTag.Ready.Visible = data.Queued
 	end
 end
 
