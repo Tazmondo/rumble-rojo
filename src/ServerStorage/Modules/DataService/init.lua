@@ -109,7 +109,6 @@ function DataService.GetPublicData(player: Player)
 	return Future.new(function(player)
 		local loaded = DataService.PlayerLoaded(player):Await()
 		if loaded then
-			Data.ReplicateToPublic(PrivateData[player], PublicData[player])
 			return proxyPublicData[player] :: Data.PublicPlayerData?
 		else
 			return nil
@@ -132,9 +131,6 @@ end
 
 function DataService.UpdatePublicData(changedPlayer)
 	local data = assert(PublicData[changedPlayer], "Tried to update public data before it existed!")
-	local privateData = assert(PrivateData[changedPlayer])
-
-	Data.ReplicateToPublic(privateData, data)
 
 	-- Client needs to be loaded to receive the initial request
 	for i, v in ipairs(Players:GetPlayers()) do
@@ -157,9 +153,6 @@ function DataService.LoadAllPublicData(targetPlayer)
 	end
 
 	for player, data in pairs(PublicData) do
-		local privateData = PrivateData[player]
-		Data.ReplicateToPublic(privateData, data)
-
 		PublicDataEvent:Fire(targetPlayer, player, data)
 	end
 end
@@ -235,15 +228,19 @@ local function PlayerAdded(player: Player)
 			-- A profile has been successfully loaded:
 			PrivateData[player] = profile.Data
 			PublicData[player] = TableUtil.Copy(Data.TempPlayerData, true)
+			Data.ReplicateToPublic(PrivateData[player], PublicData[player])
 
 			proxyPrivateData[player] = Table.HookTable(PrivateData[player], function(t, i, v)
+				-- Run before value is set
 				local privateChanged = t[i] ~= v
 				if privateChanged then
 					scheduledUpdates.Private[player] = true
-					local changed = Data.ReplicateToPublic(PrivateData[player], PublicData[player])
-					if changed then
-						scheduledUpdates.Public[player] = true
-					end
+				end
+			end, function(t, i, v)
+				-- Run after value is set
+				local changed = Data.ReplicateToPublic(PrivateData[player], PublicData[player])
+				if changed then
+					scheduledUpdates.Public[player] = true
 				end
 			end)
 
