@@ -12,7 +12,6 @@ local Bin = require(ReplicatedStorage.Packages.Bin)
 
 local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Client()
 
-local BUSHTAG = Config.BushTag
 local PARTIALOPACITY = 0.5
 local HITREVEALTIME = 0.5
 local BUSHREVEALDISTANCE = 14

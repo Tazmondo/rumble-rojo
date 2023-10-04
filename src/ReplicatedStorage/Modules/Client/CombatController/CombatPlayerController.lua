@@ -6,7 +6,6 @@ local CombatPlayerController = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local NameTag = require(script.Parent.NameTag)
-local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 
 local CombatPlayerUpdateEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerUpdateEvent):Client()

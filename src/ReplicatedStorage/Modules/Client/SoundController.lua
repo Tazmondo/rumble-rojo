@@ -3,7 +3,6 @@ print("SoundController initializing")
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local DataController = require(script.Parent.DataController)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)

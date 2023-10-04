@@ -25,7 +25,6 @@ local attackVFXFolder = ReplicatedStorage.Assets.VFX.Attack
 local partFolder = Instance.new("Folder", workspace)
 partFolder.Name = "Part Folder"
 
-local arenaFolder = assert(workspace:FindFirstChild("Arena"), "Could not find arena folder")
 local cylinderTemplate = assert(ReplicatedStorage.Assets.Cylinder, "Could not find cylinder hitbox part!") :: BasePart
 
 local VALIDPARTS = {

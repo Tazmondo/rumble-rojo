@@ -5,7 +5,6 @@ ViewportFrameController.__index = ViewportFrameController
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Janitor = require(ReplicatedStorage.Packages.Janitor)
 
 local headButtonTemplate = ReplicatedStorage.Assets.HeadButtonTemplate :: ImageButton
 
