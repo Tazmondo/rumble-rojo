@@ -340,7 +340,7 @@ function RenderMatchResults(trophies: number, data: Types.PlayerBattleResults)
 end
 
 local prevOpen = false
-local prevModel = nil
+local prevModel: Model? = nil
 function RenderHeroSelectScreen()
 	HeroSelect.Enabled = true
 

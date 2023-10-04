@@ -261,7 +261,7 @@ end
 
 ValidateData()
 
-function module.GetModelFromName(heroName: string, skinName: string?)
+function module.GetModelFromName(heroName: string, skinName: string?): Model
 	if not skinName then
 		skinName = module.HeroDetails[heroName].DefaultSkin
 	end

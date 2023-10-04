@@ -2,6 +2,7 @@ local CommandService = {}
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Cmdr = require(ReplicatedStorage.Packages.Cmdr)
 
 local CmdrFolder = ReplicatedStorage.Cmdr
@@ -11,7 +12,7 @@ function IsAdmin(player: Player)
 end
 
 function PlayerAdded(player: Player)
-	if IsAdmin(player) then
+	if IsAdmin(player) or RunService:IsStudio() then
 		player:SetAttribute("Cmdr_Admin", true)
 	else
 		player:SetAttribute("Cmdr_Admin", false)

@@ -16,6 +16,7 @@ local StarterGui = game:GetService("StarterGui")
 
 local DataService = require(script.Parent.DataService)
 local ItemService = require(script.Parent.ItemService)
+local LoadCharacterService = require(script.Parent.LoadCharacterService)
 local SoundService = require(script.Parent.SoundService)
 
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
@@ -438,10 +439,6 @@ end
 function CombatService:ExitPlayerCombat(player: Player)
 	self = self :: CombatService
 
-	if PlayersInCombat[player] == nil then
-		return
-	end
-
 	local publicData = DataService.GetPublicData(player):Await()
 	if publicData then
 		publicData.InCombat = false
@@ -506,62 +503,36 @@ end
 
 function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	self = self :: CombatService
-	print("Spawning Character", player, debug.traceback())
+	print("Spawning Character", player)
 
 	return Future.Try(function()
-		local connection
-
-		local loadedChar = nil
-
-		connection = player.CharacterAdded:Once(function(char)
-			print(player, "Character was added, processing")
-
-			task.wait() -- Let it get parented to workspace
-			print(player, "Character initialized to workspace")
-
-			if spawnCFrame then
-				-- Use moveto so characters never spawn in the ground
-				char:MoveTo(spawnCFrame.Position)
-			end
-
-			local humanoid =
-				assert(char:FindFirstChild("Humanoid"), "Humanoid was not found during character spawning.") :: Humanoid
-
-			if PlayersInCombat[player] then
-				self:SetupCombatPlayer(player, PlayersInCombat[player])
-			else
-				-- increase movement speed in lobby
-				humanoid.WalkSpeed = ServerConfig.LobbyMovementSpeed
-			end
-
-			-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
-			humanoid.Died:Once(function()
-				self:HandlePlayerDeath(player)
-			end)
-
-			loadedChar = char
-		end)
-		print(player, "Loading char")
-
 		local details = PlayersInCombat[player]
+		local heroModel = if details
+			then HeroDetails.GetModelFromName(details.HeroName, details.SkinName):Clone()
+			else nil
 
-		if details then
-			self:LoadCharacterWithModel(player, HeroDetails.GetModelFromName(details.HeroName, details.SkinName))
+		print(player, "Loading character...")
+		local character = LoadCharacterService.SpawnCharacter(player, spawnCFrame, heroModel)
+		print(player, "Character loaded")
+
+		local humanoid = assert(
+			character:FindFirstChild("Humanoid"),
+			"Humanoid was not found during character spawning."
+		) :: Humanoid
+
+		if PlayersInCombat[player] then
+			self:SetupCombatPlayer(player, PlayersInCombat[player])
 		else
-			self:LoadCharacterWithModel(player)
+			-- increase movement speed in lobby
+			humanoid.WalkSpeed = ServerConfig.LobbyMovementSpeed
 		end
 
-		local start = os.clock()
-		while not loadedChar and os.clock() - start < 10 do
-			task.wait()
-		end
+		-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
+		humanoid.Died:Once(function()
+			self:HandlePlayerDeath(player)
+		end)
 
-		if not loadedChar then
-			warn("Character wasn't spawned after 10 seconds")
-		end
-
-		connection:Disconnect()
-		return loadedChar :: Model?
+		return character :: Model?
 	end)
 end
 
