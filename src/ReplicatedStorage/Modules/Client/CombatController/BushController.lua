@@ -1,4 +1,5 @@
 --!strict
+print("init bushcontroller")
 local BushController = {}
 
 local CollectionService = game:GetService("CollectionService")

@@ -1,6 +1,7 @@
 --!strict
 -- Handles rendering of attacks
 -- This will be more fleshed out when we have more attacks
+print("init aimrenderer")
 local AimRenderer = {}
 AimRenderer.__index = AimRenderer
 

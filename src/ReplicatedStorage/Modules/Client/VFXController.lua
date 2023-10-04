@@ -1,3 +1,4 @@
+print("vfxcontroller initialize")
 local VFXController = {}
 
 local Debris = game:GetService("Debris")

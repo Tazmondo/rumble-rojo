@@ -1,5 +1,5 @@
 -- Handles all client sided combat systems, such as the inputs, the camera, and sending data to the server
-
+print("init combatcamera")
 local CombatCamera = {}
 CombatCamera.__index = CombatCamera
 

@@ -1,4 +1,5 @@
 --!strict
+print("init viewportframecontroller")
 local ViewportFrameController = {}
 ViewportFrameController.__index = ViewportFrameController
 

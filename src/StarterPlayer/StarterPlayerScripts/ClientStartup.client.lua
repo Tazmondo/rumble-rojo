@@ -5,6 +5,8 @@ local LoadedEvent = require(ReplicatedStorage.Events.Loaded):Client()
 
 local Client = ReplicatedStorage.Modules.Client
 
+print("Beginning loading.")
+
 local loaded = Loader.LoadChildren(Client)
 
 print("Finished loading, firing server.")

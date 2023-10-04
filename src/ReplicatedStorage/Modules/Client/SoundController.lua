@@ -1,4 +1,6 @@
 --!strict
+print("SoundController initializing")
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -145,7 +147,10 @@ function SoundController:Initialize()
 	DataController.GameDataUpdated:Connect(function()
 		SoundController:StateUpdated()
 	end)
-	SoundController:StateUpdated()
+
+	if DataController.GetGameData():IsComplete() then
+		SoundController:StateUpdated()
+	end
 
 	AttackSoundEvent:On(function(...)
 		SoundController:PlayHeroAttack(...)
@@ -155,8 +160,6 @@ function SoundController:Initialize()
 		CharacterAdded(player.Character)
 	end
 	player.CharacterAdded:Connect(CharacterAdded)
-
-	print("SoundController initialized")
 end
 
 SoundController:Initialize()

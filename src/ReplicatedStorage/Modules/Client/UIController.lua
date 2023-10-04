@@ -1,6 +1,7 @@
 -- I opted for a declarative approach to the UI. There are a lot of elements and dealing with state for each individual one
 -- is too much effort.
 -- There are some exceptions, e.g. for tweening.
+print("init uicontroller")
 
 -- variables
 local UIController = {}
@@ -665,7 +666,6 @@ function RenderSkinSelectButtons()
 end
 
 function UIController:Initialize()
-	print("init uicontroller")
 	-- This function is spawned so we can wait here
 	DataController.HasLoadedData():Await()
 

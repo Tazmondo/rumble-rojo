@@ -1,5 +1,7 @@
 -- TODO: CLIENT RENDER
 --!strict
+print("Initializing lobbynametagcontroller")
+
 local LobbyNameTagController = {}
 
 local Players = game:GetService("Players")
@@ -67,7 +69,6 @@ function PlayerRemoving(player: Player)
 end
 
 function LobbyNameTagController.Initialize()
-	print("Initializing lobbynametagcontroller")
 	Players.PlayerAdded:Connect(PlayerAdded)
 	Players.PlayerRemoving:Connect(PlayerRemoving)
 	for i, v in ipairs(Players:GetPlayers()) do

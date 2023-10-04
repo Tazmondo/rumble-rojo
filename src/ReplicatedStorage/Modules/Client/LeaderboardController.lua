@@ -1,4 +1,6 @@
 -- Handles rendering of the lobby leaderboard
+print("initializing leaderboard controller")
+
 local LeaderboardController = {}
 
 local Players = game:GetService("Players")

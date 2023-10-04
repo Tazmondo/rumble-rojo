@@ -1,3 +1,4 @@
+print("init renderfunctions")
 local RenderFunctions = {}
 local TweenService = game:GetService("TweenService")
 

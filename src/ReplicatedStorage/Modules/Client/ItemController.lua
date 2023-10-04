@@ -1,3 +1,5 @@
+print("Initializing item controller")
+
 local ItemController = {}
 
 local Players = game:GetService("Players")
@@ -173,7 +175,6 @@ function ItemController.SetCombatStatus(status: boolean)
 end
 
 function ItemController.Initialize()
-	print("Initializing item controller")
 	RunService.PreRender:Connect(Render)
 
 	RegisterItemEvent:On(RegisterItem)

@@ -1,6 +1,7 @@
 --!strict
 -- Initializes client sided combat system
 -- This does not do any combat logic on its own, just enables the CombatClient which handles all logic
+print("Initializing combat controller")
 
 local CombatController = {}
 CombatController.__index = CombatController
@@ -64,7 +65,6 @@ localPlayer.CharacterRemoving:Connect(function()
 end)
 
 function CombatController:Initialize()
-	print("Initializing combat controller")
 	CombatPlayerInitializeEvent:On(InitializeCombatClient)
 	ReplicateAttackEvent:On(AttackRenderer.RenderOtherClientAttack)
 end

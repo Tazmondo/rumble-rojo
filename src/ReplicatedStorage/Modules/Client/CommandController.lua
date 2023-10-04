@@ -1,3 +1,5 @@
+print("Initialize command controller")
+
 local CommandController = {}
 
 local Players = game:GetService("Players")
@@ -6,8 +8,7 @@ local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local Cmdr = require(ReplicatedStorage:WaitForChild("CmdrClient")) :: any -- booo bad module, shouldnt have to cast this
 
 function CommandController.Initialize()
-	print("Initialize command controller")
-	Cmdr:SetActivationKeys({ Enum.KeyCode.F2 })
+	Cmdr:SetActivationKeys({ Enum.KeyCode.Semicolon })
 	Cmdr:SetEnabled(false)
 	Spawn(function()
 		while Players.LocalPlayer:GetAttribute("Cmdr_Admin") == nil do

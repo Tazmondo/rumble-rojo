@@ -1,4 +1,5 @@
 --!strict
+print("initializing datacontroller")
 local DataController = {}
 
 local Players = game:GetService("Players")
@@ -115,6 +116,7 @@ function DataController.GetPublicData()
 end
 
 function DataController.Initialize()
+	print("Data controller initialize called")
 	DataController.GameDataUpdated = Signal()
 	DataController.LocalDataUpdated = Signal()
 	DataController.PublicDataUpdated = Signal()
@@ -144,4 +146,5 @@ end
 
 DataController.Initialize()
 
+print("returning data controller")
 return DataController

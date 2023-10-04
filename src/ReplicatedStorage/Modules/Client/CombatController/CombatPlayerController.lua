@@ -1,5 +1,6 @@
 --!strict
 -- Handles data about all combat players for UI rendering purposes
+print("init combatplayercontroller")
 local CombatPlayerController = {}
 
 local Players = game:GetService("Players")

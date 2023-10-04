@@ -1,4 +1,5 @@
 --!strict
+print("init purchasecontroller")
 local PurchaseController = {}
 
 local MarketplaceService = game:GetService("MarketplaceService")
