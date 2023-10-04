@@ -3,11 +3,11 @@ local LoadCharacterService = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Future = require(ReplicatedStorage.Packages.Future)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 
 local BaseCharacter = ReplicatedStorage.Assets.BaseR15 :: Model
 BaseCharacter.Archivable = true
+local AnimateScript = BaseCharacter:FindFirstChild("Animate") :: LocalScript
 local LobbySpawn = workspace.Lobby:FindFirstChild("SpawnLocation", true) :: SpawnLocation
 
 -- Stores player characters for quick cloning instead of constantly fetching the description
@@ -29,6 +29,10 @@ function InitializeCharacter(player: Player, model: Model?, spawnPosition: CFram
 	end
 	assert(model)
 
+	if not model:FindFirstChild("Animate") then
+		AnimateScript:Clone().Parent = model
+	end
+
 	model.Name = player.Name
 
 	player.Character = model
@@ -44,7 +48,8 @@ function InitializeCharacter(player: Player, model: Model?, spawnPosition: CFram
 	model:MoveTo(spawnPosition.Position)
 
 	-- Rotate character so it faces same way as spawnpoint
-	model:PivotTo(model:GetPivot() * spawnPosition.Rotation)
+	local x, y, z = spawnPosition.Rotation:ToEulerAnglesYXZ()
+	model:PivotTo(model:GetPivot() * CFrame.Angles(0, y, 0))
 
 	if not archived then
 		local humanoid = assert(model:FindFirstChild("Humanoid")) :: Humanoid
