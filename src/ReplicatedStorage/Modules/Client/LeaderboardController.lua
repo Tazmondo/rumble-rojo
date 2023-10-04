@@ -15,7 +15,8 @@ local LeaderboardEvent = require(ReplicatedStorage.Events.Leaderboard.Leaderboar
 
 local CachedData: { [string]: { Name: string?, Image: string? } } = {}
 
-local LeaderboardPart = assert(workspace:FindFirstChild("Screen"))
+local lobby = assert(workspace:FindFirstChild("Lobby"))
+local LeaderboardPart = assert(lobby:FindFirstChild("Screen"))
 
 local localPlayer = Players.LocalPlayer
 local localUserId = tostring(localPlayer.UserId)
