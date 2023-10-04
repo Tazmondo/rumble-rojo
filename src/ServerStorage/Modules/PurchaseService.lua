@@ -8,7 +8,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local DataService = require(script.Parent.DataService)
-local LoadedService = require(script.Parent.LoadedService)
 
 local MAXSTOREDPURCHASES = 50
 

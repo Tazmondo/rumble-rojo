@@ -1,6 +1,3 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Data = require(ReplicatedStorage.Modules.Shared.Data)
-local Guard = require(ReplicatedStorage.Packages.Guard)
 local Check = {}
 
 function Check.BasePart(part)
