@@ -44,9 +44,9 @@ function UpdateNameTags()
 end
 
 function CharacterAdded(player: Player, character: Model)
-	local playerData = DataController.GetPublicData():Await()[player]
+	local playerData = DataController.GetPublicDataForPlayer(player):Await()
 	if not playerData then
-		warn("LobbyNameTagService: Player data for player did not exist!")
+		warn("LobbyNameTagService: Player left before nametag could load!")
 		return
 	end
 	if not playerData.InCombat then
@@ -76,13 +76,12 @@ function LobbyNameTagController.Initialize()
 		Spawn(PlayerAdded, v)
 	end
 
+	DataController.PublicDataUpdated:Connect(function()
+		UpdateNameTags()
+	end)
 	Spawn(function()
 		DataController.HasLoadedData():Await()
-		while true do
-			UpdateNameTags()
-
-			task.wait(0.1)
-		end
+		UpdateNameTags()
 	end)
 end
 

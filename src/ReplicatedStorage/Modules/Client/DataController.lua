@@ -115,6 +115,16 @@ function DataController.GetPublicData()
 	end)
 end
 
+function DataController.GetPublicDataForPlayer(player: Player)
+	return Future.new(function()
+		local data = DataController.GetPublicData():Await()
+		while not data[player] and player.Parent ~= nil do
+			task.wait()
+		end
+		return data[player] or nil -- or nil is for type purposes
+	end)
+end
+
 function DataController.Initialize()
 	print("Data controller initialize called")
 	DataController.GameDataUpdated = Signal()
