@@ -482,6 +482,11 @@ function CombatService:LoadCharacterWithModel(player: Player, characterModel: Mo
 		player:LoadCharacter()
 		starterChar:Destroy()
 	else
+		if ServerConfig.LobbyPlayerScale ~= 1 then
+			player.CharacterAdded:Once(function(char)
+				char:ScaleTo(ServerConfig.LobbyPlayerScale)
+			end)
+		end
 		player:LoadCharacter()
 	end
 end
