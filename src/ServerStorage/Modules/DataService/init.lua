@@ -26,7 +26,8 @@ local SelectHeroEvent = require(ReplicatedStorage.Events.Data.SelectHeroEvent):S
 local SelectSkinEvent = require(ReplicatedStorage.Events.Data.SelectSkinEvent):Server()
 
 -- increment this to reset the datastore
-local STOREPREFIX = "Player5_"
+local studioPrefix = if RunService:IsStudio() then "Studio_" else ""
+local STOREPREFIX = studioPrefix .. "Player5_"
 
 local Profiles = {} :: { [Player]: Profile }
 
