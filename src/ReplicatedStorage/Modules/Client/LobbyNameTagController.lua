@@ -51,6 +51,7 @@ function CharacterAdded(player: Player, character: Model)
 	end
 	if not playerData.InCombat then
 		LobbyNameTagController.New(player, character)
+		UpdateNameTags()
 	else
 		nameTags[player] = nil
 	end

@@ -31,7 +31,7 @@ local localPlayer = Players.LocalPlayer
 
 function DataController.HasLoadedData()
 	return Future.new(function()
-		while not PrivateData or not PublicData or not GameData do
+		while not PrivateData or not PublicData[localPlayer] or not GameData do
 			task.wait()
 		end
 	end)
@@ -93,7 +93,9 @@ end
 -- These functions only yield if called very early on.
 function DataController.GetLocalData()
 	return Future.new(function()
-		DataController.HasLoadedData():Await()
+		while not PublicData[localPlayer] or not PrivateData do
+			task.wait()
+		end
 		return {
 			Private = PrivateData,
 			Public = PublicData[localPlayer],
@@ -103,14 +105,18 @@ end
 
 function DataController.GetGameData()
 	return Future.new(function()
-		DataController.HasLoadedData():Await()
+		while not GameData do
+			task.wait()
+		end
 		return GameData
 	end)
 end
 
 function DataController.GetPublicData()
 	return Future.new(function()
-		DataController.HasLoadedData():Await()
+		while not PublicData[localPlayer] do
+			task.wait()
+		end
 		return PublicData
 	end)
 end
@@ -133,11 +139,13 @@ function DataController.Initialize()
 
 	GameDataEvent:On(function(data)
 		GameData = data
+
 		DataController.GameDataUpdated:Fire(data)
 	end)
 
 	PrivateDataEvent:On(function(data)
 		PrivateData = data
+
 		DataController.LocalDataUpdated:Fire(DataController.GetLocalData():Await())
 	end)
 
@@ -146,6 +154,7 @@ function DataController.Initialize()
 			PublicData[player] = nil
 		else
 			PublicData[player] = data
+
 			DataController.PublicDataUpdated:Fire(player, data)
 			if player == localPlayer then
 				DataController.LocalDataUpdated:Fire(DataController.GetLocalData():Await())
