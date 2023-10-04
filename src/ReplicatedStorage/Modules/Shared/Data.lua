@@ -58,18 +58,28 @@ Data.GameData = {
 TableUtil.Lock(Data.GameData)
 
 -- So we can automatically update the public values when the private ones change
-function Data.ReplicateToPublic(privateData: PrivatePlayerData, publicData: PublicPlayerData)
+function Data.ReplicateToPublic(privateData: PrivatePlayerData, publicData: PublicPlayerData): boolean
+	local changed = false
 	for key, value in pairs(privateData) do
 		if Data.TempPlayerData[key] ~= nil then
 			if typeof(value) == "table" then
-				Data.ReplicateToPublic(privateData[key], publicData[key] or {})
+				changed = changed or Data.ReplicateToPublic(privateData[key], publicData[key] or {})
 			else
-				publicData[key] = value
+				if publicData[key] ~= value then
+					changed = true
+					publicData[key] = value
+				end
 			end
 		end
 	end
 
-	publicData.SelectedSkin = assert(privateData.OwnedHeroes[privateData.SelectedHero].SelectedSkin)
+	local newSkin = assert(privateData.OwnedHeroes[privateData.SelectedHero].SelectedSkin)
+	if publicData.SelectedSkin ~= newSkin then
+		changed = true
+		publicData.SelectedSkin = newSkin
+	end
+
+	return changed
 end
 
 export type ProfileData = typeof(Data.ProfileTemplate)

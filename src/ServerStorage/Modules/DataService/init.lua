@@ -234,11 +234,16 @@ local function PlayerAdded(player: Player)
 
 			-- A profile has been successfully loaded:
 			PrivateData[player] = profile.Data
+			PublicData[player] = TableUtil.Copy(Data.TempPlayerData, true)
+
 			proxyPrivateData[player] = Table.HookTable(PrivateData[player], function()
 				scheduledUpdates.Private[player] = true
+				local changed = Data.ReplicateToPublic(PrivateData[player], PublicData[player])
+				if changed then
+					scheduledUpdates.Public[player] = true
+				end
 			end)
 
-			PublicData[player] = TableUtil.Copy(Data.TempPlayerData, true)
 			proxyPublicData[player] = Table.HookTable(PublicData[player], function()
 				scheduledUpdates.Public[player] = true
 			end)
