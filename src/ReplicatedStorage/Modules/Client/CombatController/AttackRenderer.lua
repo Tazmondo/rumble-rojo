@@ -119,7 +119,9 @@ function RenderBulletHit(position: Vector3, projectileSize: number)
 
 	emitter:Emit(1)
 
-	Debris:AddItem(hit, 10)
+	task.delay(emitter.Lifetime.Max, function()
+		hit:Destroy()
+	end)
 end
 
 function CreateAttackProjectile(
