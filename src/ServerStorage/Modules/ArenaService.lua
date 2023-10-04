@@ -105,8 +105,7 @@ function ArenaService.StartIntermission()
 
 	registeredPlayers = {}
 
-	local intermissionTime = CONFIG.Intermission
-	gameData.IntermissionTime = intermissionTime
+	gameData.IntermissionTime = CONFIG.Intermission
 
 	while ArenaService.GetQueuedPlayersLength() < CONFIG.MinPlayers do
 		task.wait()
@@ -120,10 +119,9 @@ function ArenaService.StartIntermission()
 		MapService:LoadNextMap()
 	end
 
-	while intermissionTime > 0 do
+	while gameData.IntermissionTime > 0 do
 		task.wait(1)
-		intermissionTime -= 1
-		gameData.IntermissionTime = intermissionTime
+		gameData.IntermissionTime -= 1
 		if ArenaService.GetQueuedPlayersLength() < CONFIG.MinPlayers then
 			ArenaService.StartIntermission()
 			return

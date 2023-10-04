@@ -6,7 +6,10 @@ local ServerConfig = require(ReplicatedStorage.Modules.Shared.ServerConfig)
 local running = false
 
 return function(context)
-	if DataService.GetGameData().Status ~= "NotEnoughPlayers" then
+	if
+		DataService.GetGameData().Status ~= "NotEnoughPlayers"
+		and DataService.GetGameData().Status ~= "Intermission"
+	then
 		return "You can only call this during the intermission when there aren't enough players"
 	end
 	if DataService.GetGameData().NumQueuedPlayers == 0 then
@@ -19,8 +22,9 @@ return function(context)
 	local old = ServerConfig.MinPlayers
 
 	ServerConfig.MinPlayers = 1
+	DataService.GetGameData().IntermissionTime = 10
 
-	task.wait(ServerConfig.Intermission + 2)
+	task.wait(11)
 
 	ServerConfig.MinPlayers = old
 	running = false
