@@ -127,12 +127,12 @@ local HeroData: { [string]: HeroData } = {
 	},
 	Frankie = {
 		Name = "Frankie",
-		Health = 4200,
+		Health = 4500,
 		MovementSpeed = Enums.MovementSpeed.Normal,
 		Attack = {
 			AbilityType = "Attack" :: "Attack",
 			Name = "Energy Ball",
-			Damage = 800,
+			Damage = 850,
 			Ammo = 3,
 			AmmoRegen = 2,
 			Range = Enums.AttackRange.Short, -- to account for size of projectile
