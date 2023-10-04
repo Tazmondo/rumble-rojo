@@ -26,7 +26,6 @@ local Janitor = require(ReplicatedStorage.Packages.Janitor)
 local AttackLogic = require(combatFolder.AttackLogic)
 local CombatPlayer = require(combatFolder.CombatPlayer)
 
-local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Client()
 local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Client()
 local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Client()
@@ -253,17 +252,16 @@ function CombatClient.PrepareAttack(self: CombatClient, cancel: boolean?)
 	self.superAimRenderer:Disable()
 
 	if cancel then
+		self.combatPlayer:SetAiming(nil)
 		return
 	end
 
 	if not self.usingSuper then
 		self.aimRenderer:Enable()
 		self.combatPlayer:SetAiming(Enums.AbilityType.Attack)
-		AimEvent:Fire(Enums.AbilityType.Attack)
 	else
 		self.superAimRenderer:Enable()
 		self.combatPlayer:SetAiming(Enums.AbilityType.Super)
-		AimEvent:Fire(Enums.AbilityType.Super)
 	end
 end
 
@@ -289,7 +287,6 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 	self.aimRenderer:Disable()
 	self.superAimRenderer:Disable()
 	self.combatPlayer:SetAiming(nil)
-	AimEvent:Fire(nil)
 	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection), self.usingSuper)
 
 	self.usingSuper = false

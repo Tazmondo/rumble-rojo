@@ -17,12 +17,14 @@ local Config = require(script.Parent.Config)
 
 local SyncEvent: any
 local UpdateEvent: any
+local AimEvent: any
 
 local SoundController
 local DataController
 if RunService:IsClient() then
 	SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
 	SyncEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerSyncEvent):Client()
+	AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Client()
 	DataController = require(ReplicatedStorage.Modules.Client.DataController)
 end
 
@@ -444,6 +446,9 @@ end
 function CombatPlayer.SetAiming(self: CombatPlayer, aim: string?)
 	self.aiming = aim
 	self:Update()
+	if RunService:IsClient() then
+		AimEvent:Fire(aim)
+	end
 end
 
 function CombatPlayer.AddBooster(self: CombatPlayer, count: number)
