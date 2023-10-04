@@ -5,7 +5,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataController = require(script.Parent.DataController)
 local Iris = require(ReplicatedStorage.Modules.Shared.Iris)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
-local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
 local player = Players.LocalPlayer
 
