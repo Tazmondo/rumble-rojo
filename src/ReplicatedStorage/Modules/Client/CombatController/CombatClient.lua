@@ -27,7 +27,7 @@ local AttackLogic = require(combatFolder.AttackLogic)
 local CombatPlayer = require(combatFolder.CombatPlayer)
 
 local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Client()
-local AttackEvent = require(ReplicatedStorage.Events.Combat.AttackEvent):Client()
+local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Client()
 local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Client()
 
@@ -413,17 +413,7 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 
 	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction)
 
-	AttackEvent:Fire(super, origin, attackDetails)
-	-- If attack doesn't go through on server then reset attack id to prevent desync
-	-- local serverId
-	-- if not super then
-	-- 	serverId = Net:Call("Attack", origin, attackDetails):Await()
-	-- else
-	-- 	serverId = Net:Call("Super", origin, attackDetails):Await()
-	-- end
-	-- if serverId then
-	-- 	self.combatPlayer.attackId = serverId
-	-- end
+	self.combatPlayer.attackId = AttackFunction:Call(super, origin, attackDetails):Await()
 end
 
 export type CombatClient = typeof(CombatClient.new(...)) & typeof(CombatClient)

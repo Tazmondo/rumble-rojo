@@ -160,6 +160,7 @@ function ArenaService.StartMatch()
 		if not playerData then
 			continue
 		end
+		assert(playerData) -- appease type checker
 
 		local data = {
 			Kills = 0,

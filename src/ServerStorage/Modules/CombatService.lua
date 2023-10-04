@@ -30,7 +30,7 @@ local Future = require(ReplicatedStorage.Packages.Future)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Server()
-local AttackEvent = require(ReplicatedStorage.Events.Combat.AttackEvent):Server()
+local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Server()
 local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Server()
 local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Server()
@@ -140,7 +140,15 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails):
 	end
 
 	if not combatPlayer:CanAttack() then
-		warn(player, "Tried to attack when they couldn't", combatPlayer.ammo, os.clock() - combatPlayer.lastAttackTime)
+		warn(
+			player,
+			"Tried to attack when they couldn't",
+			combatPlayer.ammo,
+			os.clock() - combatPlayer.lastAttackTime,
+			combatPlayer.reloadSpeed,
+			combatPlayer:GetState(),
+			combatPlayer:AttackingEnabled()
+		)
 		return combatPlayer.attackId
 	end
 
@@ -429,6 +437,10 @@ end
 function CombatService:ExitPlayerCombat(player: Player)
 	self = self :: CombatService
 
+	if PlayersInCombat[player] == nil then
+		return
+	end
+
 	local publicData = DataService.GetPublicData(player):Await()
 	if publicData then
 		publicData.InCombat = false
@@ -630,13 +642,15 @@ function CombatService:Initialize()
 		self:PlayerAdded(player)
 	end
 
-	AttackEvent:On(function(player, super, origin, details)
-		if super then
-			handleSuper(player, origin, details)
-		else
-			handleAttack(player, origin, details)
+	AttackFunction:SetCallback(
+		function(player: Player, super: boolean, origin: CFrame, details: AttackLogic.AttackDetails)
+			if super then
+				return handleSuper(player, origin, details)
+			else
+				return handleAttack(player, origin, details)
+			end
 		end
-	end)
+	)
 	HitEvent:On(handleClientHit)
 	HitMultipleEvent:On(handleClientExplosionHit)
 	AimEvent:On(handleAim)
