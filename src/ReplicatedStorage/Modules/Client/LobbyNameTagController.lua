@@ -21,8 +21,8 @@ function LobbyNameTagController.New(player: Player, character: Model)
 
 	(nameTag :: any).name.name.PlayerName.Text = player.DisplayName
 
-	nameTag.ExtentsOffset = Vector3.zero
-	nameTag.ExtentsOffsetWorldSpace = Vector3.new(0, 3, 0)
+	-- nameTag.ExtentsOffset = Vector3.zero
+	-- nameTag.ExtentsOffsetWorldSpace = Vector3.new(0, 3, 0)
 	nameTag.Parent = character:WaitForChild("HumanoidRootPart")
 
 	nameTags[player] = nameTag
