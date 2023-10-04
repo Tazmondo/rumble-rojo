@@ -120,6 +120,8 @@ end
 
 -- we already check if the hit is a combatplayer before this function is called
 function CombatClient.RayHit(self: CombatClient, instance: BasePart, position: Vector3, id: number)
+	-- Wait to make sure server has
+	task.wait()
 	HitEvent:Fire(instance, position, id)
 end
 
@@ -134,6 +136,7 @@ function CombatClient.ExplosionHit(
 	id: number,
 	explosionCentre: Vector3
 )
+	task.wait()
 	HitMultipleEvent:Fire(hits, id, explosionCentre)
 end
 

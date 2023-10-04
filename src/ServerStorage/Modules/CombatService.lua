@@ -293,6 +293,7 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 
 	local attackDetails = combatPlayer.attacks[attackId]
 	if not attackDetails then
+		warn("Invalid attack id for hit given", attackId)
 		return
 	end
 	combatPlayer.attacks[attackId] = nil
@@ -517,6 +518,12 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 
 			task.wait() -- Let it get parented to workspace
 			print(player, "Character initialized to workspace")
+
+			if spawnCFrame then
+				-- Use moveto so characters never spawn in the ground
+				char:MoveTo(spawnCFrame.Position)
+			end
+
 			local humanoid =
 				assert(char:FindFirstChild("Humanoid"), "Humanoid was not found during character spawning.") :: Humanoid
 
@@ -531,11 +538,6 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 			humanoid.Died:Once(function()
 				self:HandlePlayerDeath(player)
 			end)
-
-			if spawnCFrame then
-				-- Use moveto so characters never spawn in the ground
-				char:MoveTo(spawnCFrame.Position)
-			end
 
 			loadedChar = char
 		end)
