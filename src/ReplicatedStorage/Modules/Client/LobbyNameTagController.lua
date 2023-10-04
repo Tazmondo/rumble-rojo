@@ -29,7 +29,7 @@ function LobbyNameTagController.New(player: Player, character: Model)
 end
 
 function UpdateNameTags()
-	local publicData = DataController.GetPublicData():Unwrap()
+	local publicData = DataController.GetPublicData():Await()
 	for player, nameTag in pairs(nameTags) do
 		local data = publicData[player]
 		if not data then
@@ -78,10 +78,6 @@ function LobbyNameTagController.Initialize()
 	end
 
 	DataController.PublicDataUpdated:Connect(function()
-		UpdateNameTags()
-	end)
-	Spawn(function()
-		DataController.HasLoadedData():Await()
 		UpdateNameTags()
 	end)
 end

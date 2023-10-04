@@ -32,6 +32,7 @@ local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Server()
 local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
+local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Server()
 local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Server()
 local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Server()
@@ -449,7 +450,12 @@ function CombatService:ExitPlayerCombat(player: Player)
 		CombatPlayerData[player.Character]:Destroy()
 		CombatPlayerData[player.Character] = nil
 	end
-	self:SpawnCharacter(player)
+	Spawn(function()
+		-- Must wait for replication, otherwise the client will still think the player is in combat
+		-- when the character loads
+		DataService.WaitForReplication():Await()
+		self:SpawnCharacter(player)
+	end)
 end
 
 function CombatService:HandlePlayerDeath(player: Player, data: Types.KillData?)

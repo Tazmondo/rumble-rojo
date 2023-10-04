@@ -47,6 +47,9 @@ local scheduledUpdates = {
 
 DataService.BeforeProfileLoadedHook = Signal()
 
+local DataReplicated = Signal()
+local DataSent = Signal()
+
 -- makes sure the owned hero table is valid, or creates it if not
 function CorrectOwnedHero(heroData: HeroDetails.Hero, ownedHero: Data.OwnedHeroData?)
 	if not ownedHero then
@@ -135,14 +138,12 @@ function DataService.UpdatePublicData(changedPlayer)
 
 	-- Client needs to be loaded to receive the initial request
 	for i, v in ipairs(Players:GetPlayers()) do
-		Spawn(function()
-			-- If we await here, then events could pile up and get fired on the same frame,
-			-- which will be received at the same time in the wrong order
-			-- potentially causing weird bugs when a player has just loaded in
-			if LoadedService.ClientLoaded(v):IsComplete() then
-				PublicDataEvent:Fire(v, changedPlayer, data)
-			end
-		end)
+		-- If we await here, then events could pile up and get fired on the same frame,
+		-- which will be received at the same time in the wrong order
+		-- potentially causing weird bugs when a player has just loaded in
+		if LoadedService.ClientLoaded(v):IsComplete() then
+			PublicDataEvent:Fire(v, changedPlayer, data)
+		end
 	end
 end
 
@@ -181,6 +182,13 @@ end
 function DataService.AddKills(privateData: Data.PrivatePlayerData, kills: number)
 	privateData.Stats.Kills = math.max(0, privateData.Stats.Kills + kills)
 	privateData.PeriodKills = math.max(0, privateData.PeriodKills + kills)
+end
+
+function DataService.WaitForReplication()
+	return Future.new(function()
+		DataSent:Wait()
+		DataReplicated:Wait()
+	end)
 end
 
 local function reconcile(player: Player, profile)
@@ -371,6 +379,12 @@ function StartEventLoop()
 		scheduledUpdates.Game = false
 		scheduledUpdates.Private = {}
 		scheduledUpdates.Public = {}
+
+		DataSent:Fire()
+		RunService.Heartbeat:Wait()
+		task.defer(function()
+			DataReplicated:Fire()
+		end)
 	end)
 end
 
