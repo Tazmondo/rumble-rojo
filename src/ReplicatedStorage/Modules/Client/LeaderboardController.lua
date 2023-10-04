@@ -18,6 +18,7 @@ local CachedData: { [string]: { Name: string?, Image: string? } } = {}
 local LeaderboardPart = assert(workspace:FindFirstChild("Screen"))
 
 local localPlayer = Players.LocalPlayer
+local localUserId = tostring(localPlayer.UserId)
 
 local TrophyTemplate = LeaderboardPart.TrophiesMain.List.ScrollingFrame.User
 TrophyTemplate.Parent = nil
@@ -108,7 +109,7 @@ function HandleLeaderboardUpdate(data: Types.LeaderboardData)
 	end
 
 	for i, v in ipairs(trophyBoard) do
-		if v.UserID == localPlayer.UserId then
+		if v.UserID == localUserId then
 			playerTrophy.Rank.Text = i
 		end
 
@@ -124,7 +125,7 @@ function HandleLeaderboardUpdate(data: Types.LeaderboardData)
 	end
 
 	for i, v in ipairs(killBoard) do
-		if v.UserID == localPlayer.UserId then
+		if v.UserID == localUserId then
 			playerKill.Rank.Text = i
 		end
 
