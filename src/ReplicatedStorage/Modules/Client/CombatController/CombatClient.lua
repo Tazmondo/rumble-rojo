@@ -26,7 +26,6 @@ local Janitor = require(ReplicatedStorage.Packages.Janitor)
 local AttackLogic = require(combatFolder.AttackLogic)
 local CombatPlayer = require(combatFolder.CombatPlayer)
 
-local PlayerKilledEvent = require(ReplicatedStorage.Events.Combat.PlayerKilledEvent):Client()
 local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Client()
 local AttackEvent = require(ReplicatedStorage.Events.Combat.AttackEvent):Client()
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Client()
@@ -90,12 +89,6 @@ function CombatClient.new(heroName: string): CombatClient
 	NameTag.InitFriendly(self.combatPlayer)
 
 	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer, self.character))
-
-	PlayerKilledEvent:On(function(data)
-		if data.Killer == self.player then
-			SoundController:PlayGeneralSound("KO")
-		end
-	end)
 
 	-- Net:On("PlayerKill", function()
 	-- 	-- TODO: Render leaderboard, maybe dont do this here

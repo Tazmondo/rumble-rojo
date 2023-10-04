@@ -13,9 +13,11 @@ local AttackRenderer = require(script.AttackRenderer)
 local BushController = require(script.BushController)
 local CombatClient = require(script.CombatClient)
 local ItemController = require(script.Parent.ItemController)
+local SoundController = require(script.Parent.SoundController)
 
 local CombatPlayerInitializeEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerInitializeEvent):Client()
 local ReplicateAttackEvent = require(ReplicatedStorage.Events.Combat.ReplicateAttackEvent):Client()
+local PlayerKilledEvent = require(ReplicatedStorage.Events.Combat.PlayerKilledEvent):Client()
 
 local localPlayer = Players.LocalPlayer
 local combatClient: CombatClient.CombatClient
@@ -67,6 +69,12 @@ end)
 function CombatController:Initialize()
 	CombatPlayerInitializeEvent:On(InitializeCombatClient)
 	ReplicateAttackEvent:On(AttackRenderer.RenderOtherClientAttack)
+
+	PlayerKilledEvent:On(function(data)
+		if data.Killer == Players.LocalPlayer then
+			SoundController:PlayGeneralSound("KO")
+		end
+	end)
 end
 
 CombatController:Initialize()

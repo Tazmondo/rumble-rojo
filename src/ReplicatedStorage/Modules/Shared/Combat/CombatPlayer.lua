@@ -35,6 +35,15 @@ if RunService:IsServer() then
 	DataService = require(ServerStorage.Modules.DataService)
 end
 
+local clientCombatPlayer
+if RunService:IsClient() then
+	SyncEvent:On(function(func, ...)
+		if clientCombatPlayer then
+			clientCombatPlayer[func](clientCombatPlayer, ...)
+		end
+	end)
+end
+
 local CombatPlayer = {}
 CombatPlayer.__index = CombatPlayer
 
@@ -122,13 +131,11 @@ function CombatPlayer.new(heroName: string, model: Model, player: Player?): Comb
 	local heroData = assert(HeroData.HeroData[heroName], "Invalid hero name:", heroName)
 	local self = InitializeSelf(heroData, model, player)
 
-	if RunService:IsClient() then
-		SyncEvent:On(function(func, ...)
-			self[func](self, ...)
-		end)
-	end
-
 	self:Update()
+
+	if RunService:IsClient() then
+		clientCombatPlayer = self :: any
+	end
 
 	return self :: CombatPlayer
 end
@@ -465,6 +472,7 @@ function CombatPlayer.Destroy(self: CombatPlayer)
 		-- 	table.unpack(self.humanoidData)
 		-- self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
 	end
+	clientCombatPlayer = nil :: any
 end
 
 export type Attack = {
