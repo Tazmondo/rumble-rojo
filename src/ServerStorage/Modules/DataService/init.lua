@@ -236,16 +236,22 @@ local function PlayerAdded(player: Player)
 			PrivateData[player] = profile.Data
 			PublicData[player] = TableUtil.Copy(Data.TempPlayerData, true)
 
-			proxyPrivateData[player] = Table.HookTable(PrivateData[player], function()
-				scheduledUpdates.Private[player] = true
-				local changed = Data.ReplicateToPublic(PrivateData[player], PublicData[player])
-				if changed then
-					scheduledUpdates.Public[player] = true
+			proxyPrivateData[player] = Table.HookTable(PrivateData[player], function(t, i, v)
+				local privateChanged = t[i] ~= v
+				if privateChanged then
+					scheduledUpdates.Private[player] = true
+					local changed = Data.ReplicateToPublic(PrivateData[player], PublicData[player])
+					if changed then
+						scheduledUpdates.Public[player] = true
+					end
 				end
 			end)
 
-			proxyPublicData[player] = Table.HookTable(PublicData[player], function()
-				scheduledUpdates.Public[player] = true
+			proxyPublicData[player] = Table.HookTable(PublicData[player], function(t, i, v)
+				local changed = t[i] ~= v
+				if changed then
+					scheduledUpdates.Public[player] = true
+				end
 			end)
 
 			print("Waiting for client to load!")
@@ -372,8 +378,10 @@ end
 
 function DataService.Initialize()
 	GameData = TableUtil.Copy(Data.GameData, true)
-	proxyGameData = Table.HookTable(GameData, function(i, v)
-		scheduledUpdates.Game = true
+	proxyGameData = Table.HookTable(GameData, function(t, i, v)
+		if t[i] ~= v then
+			scheduledUpdates.Game = true
+		end
 	end)
 
 	PublicData = {}
