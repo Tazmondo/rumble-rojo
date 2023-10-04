@@ -67,7 +67,6 @@ function RetrieveTop100(dataStore)
 		for i, data in ipairs(top100) do
 			table.insert(output, { UserID = data.key:sub(#PREFIX + 1), Data = data.value })
 		end
-
 		return output
 	end)
 end
@@ -296,17 +295,19 @@ function HandleReward(player: Player, data: Data.ProfileData)
 
 	local reward = 0
 
-	local _, index = TableUtil.Find(lastData.Kill, function(a)
+	local value, index = TableUtil.Find(lastData.Kill, function(a)
 		return a.UserID == tostring(player.UserId)
 	end)
-	if index then
+	print(index, value)
+	if index and value and value.Data > 0 then
 		reward += GetReward(index)
 	end
 
-	local _, index = TableUtil.Find(lastData.Trophy, function(a)
+	local value, index = TableUtil.Find(lastData.Trophy, function(a)
 		return a.UserID == tostring(player.UserId)
 	end)
-	if index then
+	print(index, value)
+	if index and value and value.Data > 0 then
 		reward += GetReward(index)
 	end
 
