@@ -201,6 +201,7 @@ function BattleStartingRender(changed)
 	elseif not playerData.Public.InCombat then
 		RenderStats()
 		RenderHeroIcon()
+		UpdateQueueButtons()
 	end
 
 	TopText.Visible = true
@@ -241,6 +242,7 @@ function BattleRender(changed)
 	if not playerData.Public.InCombat then
 		RenderStats()
 		RenderHeroIcon()
+		UpdateQueueButtons()
 	end
 
 	TopText.Visible = true
@@ -266,6 +268,7 @@ function BattleEndedRender(changed)
 
 	RenderStats()
 	RenderHeroIcon()
+	UpdateQueueButtons()
 
 	TopText.Visible = true
 	TopText.Text = "Battle over!"
