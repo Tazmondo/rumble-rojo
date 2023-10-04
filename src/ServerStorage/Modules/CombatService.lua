@@ -481,26 +481,6 @@ function CombatService:SetupCombatPlayer(player: Player, details: PlayerCombatDe
 	CombatPlayerInitializeEvent:Fire(player, details.HeroName)
 end
 
-function CombatService:LoadCharacterWithModel(player: Player, characterModel: Model?)
-	self = self :: CombatService
-
-	if characterModel then
-		local starterChar = characterModel:Clone()
-		starterChar.Name = "StarterCharacter"
-		starterChar.Parent = game.StarterPlayer
-		starterChar.PrimaryPart = starterChar:FindFirstChild("HumanoidRootPart") :: BasePart
-		player:LoadCharacter()
-		starterChar:Destroy()
-	else
-		if ServerConfig.LobbyPlayerScale ~= 1 then
-			player.CharacterAdded:Once(function(char)
-				char:ScaleTo(ServerConfig.LobbyPlayerScale)
-			end)
-		end
-		player:LoadCharacter()
-	end
-end
-
 function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	self = self :: CombatService
 	print("Spawning Character", player)
@@ -524,6 +504,7 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 			self:SetupCombatPlayer(player, PlayersInCombat[player])
 		else
 			-- increase movement speed in lobby
+			character:ScaleTo(ServerConfig.LobbyPlayerScale)
 			humanoid.WalkSpeed = ServerConfig.LobbyMovementSpeed
 		end
 
