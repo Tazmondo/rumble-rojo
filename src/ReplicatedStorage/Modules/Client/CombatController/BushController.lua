@@ -8,11 +8,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local Bin = require(ReplicatedStorage.Packages.Bin)
 
 local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Client()
 
 local BUSHTAG = Config.BushTag
-local PARTIALOPACITY = 0.8
+local PARTIALOPACITY = 0.5
 local HITREVEALTIME = 0.5
 local BUSHREVEALDISTANCE = 14
 local FORCEVISIBLEDISTANCE = 6
@@ -48,6 +49,8 @@ type CharacterData = {
 }
 
 local characterData: { [Model]: CharacterData } = {}
+local activeBushes: { [BasePart]: boolean } = {}
+local bushBins = {}
 
 local inCombat = false
 
@@ -130,7 +133,6 @@ end
 
 function Render(dt: number)
 	debug.profilebegin("BushRender")
-	local bushes = CollectionService:GetTagged(BUSHTAG) :: { BasePart }
 
 	for character, data in pairs(characterData) do
 		local inBush = false
@@ -145,7 +147,10 @@ function Render(dt: number)
 			continue
 		end
 
-		for i, bush in ipairs(bushes) do
+		for bush, active in pairs(activeBushes) do
+			if not active then
+				continue
+			end
 			-- Make sure middle of HRP is inside the bush
 			if IsPointInVolume(HRP.Position, bush.CFrame, bush.Size) then
 				local clientHRP = player.Character:FindFirstChild("HumanoidRootPart") :: BasePart
@@ -181,7 +186,11 @@ function Render(dt: number)
 		return
 	end
 
-	for i, bush in ipairs(bushes) do
+	for bush, active in pairs(activeBushes) do
+		if not active then
+			continue
+		end
+
 		if inCombat then
 			local distance = (bush.Position - HRP.Position).Magnitude
 			if distance <= BUSHREVEALDISTANCE then
@@ -280,12 +289,39 @@ function BushController.IsCharacterHidden(character: Model)
 	return characterData.CurrentOpacity == 0
 end
 
+function HandleBushAdded(bush)
+	local active = bush:IsDescendantOf(workspace)
+	activeBushes[bush] = active
+
+	local Add, Remove = Bin()
+
+	Add(bush.AncestryChanged:Connect(function()
+		if activeBushes[bush] then
+			activeBushes[bush] = bush:IsDescendantOf(workspace)
+		end
+	end))
+
+	bushBins[bush] = Remove
+end
+
+function HandleBushRemoved(bush)
+	activeBushes[bush] = nil
+	bushBins[bush]()
+	bushBins[bush] = nil
+end
+
 function BushController.Initialize()
 	for i, v in pairs(CombatPlayer.GetAllCombatPlayerCharacters()) do
 		CombatCharacterAdded(v)
 	end
 	CombatPlayer.CombatPlayerAdded():Connect(CombatCharacterAdded)
 	CombatPlayer.CombatPlayerRemoved():Connect(CombatCharacterRemoved)
+
+	CollectionService:GetInstanceAddedSignal(Config.BushTag):Connect(HandleBushAdded)
+	CollectionService:GetInstanceRemovedSignal(Config.BushTag):Connect(HandleBushRemoved)
+	for i, bush in pairs(CollectionService:GetTagged(Config.BushTag)) do
+		HandleBushAdded(bush)
+	end
 
 	RunService.PreRender:Connect(Render)
 
