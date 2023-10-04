@@ -183,9 +183,15 @@ end
 function GetPartsInExplosion(radius: number, position: Vector3)
 	local overlapParams = OverlapParams.new()
 	overlapParams.FilterType = Enum.RaycastFilterType.Include
-	overlapParams.FilterDescendantsInstances = CombatPlayer.GetAllCombatPlayerCharacters() :: any
 
-	print(CombatPlayer.GetAllCombatPlayerCharacters())
+	local filter = {}
+	for i, char in ipairs(CombatPlayer.GetAllCombatPlayerCharacters()) do
+		if char ~= localPlayer.Character then
+			table.insert(filter, char)
+		end
+	end
+
+	overlapParams.FilterDescendantsInstances = filter :: any
 
 	overlapParams.MaxParts = 1000
 

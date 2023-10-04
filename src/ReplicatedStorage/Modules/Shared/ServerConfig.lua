@@ -15,7 +15,7 @@ local CONFIG = {
 -- don't edit this to affect the game, this is just for studio testing
 local studioconfig = {
 	Intermission = 10, -- 30
-	RoundLength = 60, -- 2mimnutes
+	RoundLength = 400, -- 2mimnutes
 
 	MinPlayers = 2,
 	MaxPlayers = 6,
