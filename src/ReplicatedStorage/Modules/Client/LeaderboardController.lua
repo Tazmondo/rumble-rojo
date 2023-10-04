@@ -71,7 +71,13 @@ function HandleLeaderboardUpdate(data: Types.LeaderboardData)
 	local killBoard = data.KillBoard
 	local trophyBoard = data.TrophyBoard
 
-	print("Updating leaderboard...")
+	local cachedData = CachedData[localPlayer.UserId]
+
+	local playerTrophy = LeaderboardPart.TrophiesSub.Player.User
+	playerTrophy.Number.Text = DataController.GetLocalData():Await().Private.PeriodTrophies
+
+	local playerKill = LeaderboardPart.KillsSub.Player.User
+	playerKill.Number.Text = DataController.GetLocalData():Await().Private.PeriodKills
 
 	for i, v in ipairs(LeaderboardPart.TrophiesMain.List.ScrollingFrame:GetChildren()) do
 		if not v:IsA("UIListLayout") then
@@ -83,14 +89,6 @@ function HandleLeaderboardUpdate(data: Types.LeaderboardData)
 			v:Destroy()
 		end
 	end
-
-	local cachedData = CachedData[localPlayer.UserId]
-
-	local playerTrophy = LeaderboardPart.TrophiesSub.Player.User
-	playerTrophy.Number.Text = DataController.GetLocalData():Await().Private.PeriodTrophies
-
-	local playerKill = LeaderboardPart.KillsSub.Player.User
-	playerKill.Number.Text = DataController.GetLocalData():Await().Private.PeriodKills
 
 	if not cachedData then
 		Future.new(function()

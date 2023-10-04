@@ -21,7 +21,7 @@ local studioconfig = {
 	MaxPlayers = 6,
 
 	QueueOnJoin = false,
-	LobbyMovementSpeed = 24,
+	LobbyMovementSpeed = 28,
 	LobbyPlayerScale = 1.5,
 }
 

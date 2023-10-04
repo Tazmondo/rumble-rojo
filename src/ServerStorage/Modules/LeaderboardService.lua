@@ -42,7 +42,8 @@ local currentWeek = GetWeek(os.time())
 local ENDTIME = STARTTIME + (currentWeek + 1) * WEEKLENGTH
 
 function GetStorePrefixWithWeek(week)
-	return "Leaderboard2_" .. currentWeek .. "_"
+	local studioPrefix = if RunService:IsStudio() then "Studio_" else ""
+	return studioPrefix .. "Leaderboard2_" .. currentWeek .. "_"
 end
 
 local PREFIX = "Player_"
