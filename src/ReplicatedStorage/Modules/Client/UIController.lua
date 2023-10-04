@@ -618,6 +618,8 @@ end
 function RenderSkinSelectButtons()
 	local skinSelect = HeroSelect.Frame.Skin.SkinSelect
 
+	local currentHero = displayedHero
+
 	if shouldReRenderSkinSelectButtons then
 		shouldReRenderSkinSelectButtons = false
 		for i, v in pairs(skinSelect:GetChildren()) do
@@ -631,14 +633,12 @@ function RenderSkinSelectButtons()
 		-- Wait for data to be received from server
 		local data = DataController.GetLocalData():Await()
 
-		for skin, skinData in pairs(HeroDetails.HeroDetails[selectedHero].Skins) do
-			local owned = data.Private.OwnedHeroes[displayedHero].Skins[skin] ~= nil
+		for skin, skinData in pairs(HeroDetails.HeroDetails[currentHero].Skins) do
+			local owned = data.Private.OwnedHeroes[currentHero].Skins[skin] ~= nil
 			local button = skinSelect:FindFirstChild(skin)
 			if not button then
-				local model = assert(
-					HeroDetails.GetModelFromName(displayedHero, skin),
-					"No model " .. displayedHero .. " " .. skin
-				)
+				local model =
+					assert(HeroDetails.GetModelFromName(currentHero, skin), "No model " .. currentHero .. " " .. skin)
 				button = ViewportFrameController.NewHeadButton(model)
 				button.Parent = skinSelect
 				button.Name = skin
