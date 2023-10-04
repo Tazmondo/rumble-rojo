@@ -132,7 +132,7 @@ function SoundController:StateUpdated()
 		SoundController:SetAmbience()
 	elseif state == "Battle" then
 		SoundController:SetAmbience(battleMusic)
-	elseif state == "Ended" then
+	elseif state == "BattleEnded" then
 		SoundController:SetAmbience()
 	else
 		warn("Weird sound state: ", state, inMatch)

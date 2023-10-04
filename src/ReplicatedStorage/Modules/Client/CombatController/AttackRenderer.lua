@@ -69,10 +69,19 @@ end
 function GetRaycastParams(excludeCharacter: Model?)
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-	raycastParams.FilterDescendantsInstances = CollectionService:GetTagged(Config.SolidAir)
+
+	local exclude = {}
+
 	if excludeCharacter then
-		table.insert(raycastParams.FilterDescendantsInstances, excludeCharacter)
+		table.insert(exclude, excludeCharacter :: Instance)
 	end
+
+	for i, v in ipairs(CollectionService:GetTagged(Config.SolidAir)) do
+		table.insert(exclude, v)
+	end
+
+	raycastParams.FilterDescendantsInstances = exclude
+
 	raycastParams.RespectCanCollide = true
 	return raycastParams
 end
