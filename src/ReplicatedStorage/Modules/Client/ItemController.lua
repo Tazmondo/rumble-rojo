@@ -7,6 +7,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local Future = require(ReplicatedStorage.Packages.Future)
+local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local RenderFunctions = require(script.Parent.RenderFunctions)
 local SoundController = require(script.Parent.SoundController)
 
@@ -67,6 +69,7 @@ end
 function RegisterItem(type: string, id: number, position: Vector3, disabled: boolean?)
 	print("Registering item", id)
 	if spawnedItems[id] then
+		print("destroying old item with id", id)
 		spawnedItems[id].Item:Destroy()
 	end
 
@@ -92,25 +95,27 @@ function DestroyItem(id: number)
 	end
 end
 
--- Yields
 function RenderAbsorption(model: Model, targetPart: BasePart)
-	local start = CFrame.new(model:GetPivot().Position)
-	local startTime = os.clock()
-	while model and targetPart and os.clock() - startTime < absorptionTime do
-		local target = CFrame.new(targetPart.Position)
-		local alpha = TweenService:GetValue(
-			(os.clock() - startTime) / absorptionTime,
-			Enum.EasingStyle.Quad,
-			Enum.EasingDirection.In
-		)
+	return Future.new(function()
+		local start = CFrame.new(model:GetPivot().Position)
+		local startTime = os.clock()
+		while model and targetPart and os.clock() - startTime < absorptionTime do
+			local target = CFrame.new(targetPart.Position)
+			local alpha = TweenService:GetValue(
+				(os.clock() - startTime) / absorptionTime,
+				Enum.EasingStyle.Quad,
+				Enum.EasingDirection.In
+			)
 
-		model:PivotTo(start:Lerp(target, alpha) * model:GetPivot().Rotation)
+			model:PivotTo(start:Lerp(target, alpha) * model:GetPivot().Rotation)
 
-		-- make smaller as it is absorbed in, but only to half the size
-		model:ScaleTo((1 - alpha) / 2 + 0.5)
-		task.wait()
-	end
-	SoundController:PlayGeneralSound("CollectBooster", targetPart)
+			-- make smaller as it is absorbed in, but only to half the size
+			model:ScaleTo((1 - alpha) / 2 + 0.5)
+			task.wait()
+		end
+		SoundController:PlayGeneralSound("CollectBooster", targetPart)
+		return
+	end)
 end
 
 function AbsorbItem(item: Item, part: BasePart)
@@ -120,11 +125,13 @@ function AbsorbItem(item: Item, part: BasePart)
 
 	BeginAbsorbEvent:Fire(item.Id)
 
-	task.spawn(function()
-		RenderAbsorption(model, part)
-		CollectItemEvent:Fire(item.Id)
-		model:Destroy()
-		spawnedItems[item.Id] = nil
+	Spawn(function()
+		RenderAbsorption(model, part):Await()
+		if spawnedItems[item.Id] and spawnedItems[item.Id].Item == model then
+			CollectItemEvent:Fire(item.Id)
+			model:Destroy()
+			spawnedItems[item.Id] = nil
+		end
 	end)
 end
 

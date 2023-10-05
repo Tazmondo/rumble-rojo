@@ -84,8 +84,7 @@ function HandleBeginAbsorb(combatPlayers: CombatPlayers, player: Player, id: num
 	-- this can be bypassed by teleporting to the item, but this can be stopped by anti-teleport checks
 	if (HRP.Position - item.Position).Magnitude > Config.PickupRadius + 5 then
 		-- since this is likely due to lag, get the client to replace the item again (as it will have assumed it to be picked up)
-		warn(player, "picked up item from too far away")
-		DestroyItemEvent:Fire(player, item.Id)
+		warn(player, "picked up item from too far away", (HRP.Position - item.Position).Magnitude)
 		RegisterItemEvent:Fire(player, "Booster", item.Id, item.Position)
 		return
 	end
