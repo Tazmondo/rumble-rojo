@@ -16,19 +16,6 @@ local Modifiers: {
 } =
 	{}
 
-local DefaultModify = function()
-	return
-end
-local DefaultDamage = function()
-	return 1
-end
-local DefaultDefence = function()
-	return 1
-end
-local DefaultOnHit = function()
-	return
-end
-
 Modifiers.Default = TableUtil.Copy(DefaultModifier, true) :: any
 Modifiers[""] = TableUtil.Copy(DefaultModifier, true) :: any
 
