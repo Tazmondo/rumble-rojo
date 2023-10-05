@@ -16,7 +16,7 @@ local MoveMapEvent = require(ReplicatedStorage.Events.Map.MoveMap):Server()
 local arena = workspace.Arena
 local activeMapFolder = arena.Map
 local mapFolder = ReplicatedStorage.Assets.Maps
-local lobby = workspace.Lobby :: Model
+local lobby = workspace.Lobby
 local pivotPoint = assert(lobby:FindFirstChild("MapPivotPoint"), "Lobby did not have a MapPivotPoint.") :: BasePart
 
 local MAPTRANSITIONTIME = 4

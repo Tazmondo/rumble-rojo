@@ -422,6 +422,10 @@ function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 	self = self :: CombatService
 	return Future.new(function()
 		print("Entering combat", player)
+		if PlayersInCombat[player] then
+			CombatService:ExitPlayerCombat(player):Await()
+		end
+
 		local data = DataService.GetPrivateData(player):Await()
 		local dataPublic = DataService.GetPublicData(player):Await()
 		if not data or not dataPublic then
@@ -432,29 +436,33 @@ function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 		PlayersInCombat[player] = { HeroName = hero, SkinName = data.OwnedHeroes[hero].SelectedSkin }
 
 		dataPublic.InCombat = true
+		DataService.WaitForReplication():Await()
 
-		return self:SpawnCharacter(player, newCFrame):Await()
+		local success, char = self:SpawnCharacter(player, newCFrame):Await()
+		return success
 	end)
 end
 
 function CombatService:ExitPlayerCombat(player: Player)
 	self = self :: CombatService
 
-	local publicData = DataService.GetPublicData(player):Await()
-	if publicData then
-		publicData.InCombat = false
-	end
+	return Future.new(function()
+		local publicData = DataService.GetPublicData(player):Await()
+		if publicData then
+			publicData.InCombat = false
+		end
 
-	PlayersInCombat[player] = nil
-	if player.Character and CombatPlayerData[player.Character] then
-		CombatPlayerData[player.Character]:Destroy()
-		CombatPlayerData[player.Character] = nil
-	end
-	Spawn(function()
+		PlayersInCombat[player] = nil
+		if player.Character and CombatPlayerData[player.Character] then
+			CombatPlayerData[player.Character]:Destroy()
+			CombatPlayerData[player.Character] = nil
+		end
+
 		-- Must wait for replication, otherwise the client will still think the player is in combat
 		-- when the character loads
 		DataService.WaitForReplication():Await()
-		self:SpawnCharacter(player)
+		local success, char = self:SpawnCharacter(player):Await()
+		return char
 	end)
 end
 
@@ -495,7 +503,7 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 		local playerData = DataService.GetPublicData(player):Await()
 		if not playerData then
 			-- player left so dont need to continue spawning
-			return
+			return nil :: any
 		end
 
 		local details = PlayersInCombat[player]
