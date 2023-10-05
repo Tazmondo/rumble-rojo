@@ -74,7 +74,7 @@ end
 function InitializeSelf(
 	heroData: HeroData.HeroData,
 	model: Model,
-	modifier: Modifier,
+	modifiers: ModifierCollection,
 	player: Player?,
 	object: boolean?
 )
@@ -92,13 +92,8 @@ function InitializeSelf(
 	self.baseHealth = self.heroData.Health
 	self.baseSpeed = self.heroData.MovementSpeed
 
-	if not modifier then
-		modifier = DefaultModifier
-	end
-	local modifier = modifier :: Modifier
-
-	modifier.Modify(self)
-	self.modifier = modifier
+	modifiers.Modify(self)
+	self.modifiers = modifiers :: ModifierCollection
 
 	self.maxHealth = self.baseHealth
 	self.health = self.maxHealth
@@ -152,9 +147,9 @@ function InitializeSelf(
 end
 
 -- Player is optional as NPCs can be combatplayers
-function CombatPlayer.new(heroName: string, model: Model, modifier: Modifier, player: Player?): CombatPlayer
+function CombatPlayer.new(heroName: string, model: Model, modifiers: ModifierCollection, player: Player?): CombatPlayer
 	local heroData = assert(HeroData.HeroData[heroName], "Invalid hero name:", heroName)
-	local self = InitializeSelf(heroData, model, modifier, player)
+	local self = InitializeSelf(heroData, model, modifiers, player)
 
 	self:Update()
 
@@ -558,6 +553,9 @@ export type Modifier = {
 	Name: string,
 	Description: string,
 	Price: number?, -- No price = unbuyable. Price: 0  = free
+} & ModifierCollection
+
+export type ModifierCollection = {
 	Modify: (CombatPlayer) -> (), -- Called when initialized
 	Damage: (CombatPlayer) -> number, -- Called when dealing damage
 	Defence: (CombatPlayer) -> number, -- Called when taking damage

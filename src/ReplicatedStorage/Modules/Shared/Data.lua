@@ -9,6 +9,8 @@ Data.OwnedHeroTemplate = {
 
 	Skins = {} :: { [string]: boolean }, -- owned skins
 	Modifiers = {} :: { [string]: boolean }, -- owned modifiers
+
+	SelectedModifiers = { "", "" } :: { string },
 }
 
 TableUtil.Lock(Data.OwnedHeroTemplate)
@@ -24,9 +26,6 @@ Data.ProfileTemplate = {
 
 	OwnedHeroes = {} :: { [string]: OwnedHeroData }, -- automatically fills with free heroes and skins
 	SelectedHero = "Taz",
-
-	OwnedModifiers = {} :: { [string]: boolean },
-	SelectedModifier = "",
 
 	Stats = {
 		Kills = 0,
@@ -52,7 +51,7 @@ Data.TempPlayerData = {
 	CharacterLoaded = false,
 	SelectedHero = "",
 	SelectedSkin = "",
-	SelectedModifier = "",
+	SelectedModifiers = { "", "" },
 	Trophies = 0,
 }
 TableUtil.Lock(Data.TempPlayerData)

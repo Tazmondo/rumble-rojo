@@ -28,6 +28,8 @@ local CombatPlayer = require(combatFolder.CombatPlayer)
 
 local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
 local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
+local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Client()
 local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Client()
 
@@ -45,7 +47,7 @@ local function _VisualiseRay(ray: Ray)
 	Debris:AddItem(part, 15)
 end
 
-function CombatClient.new(heroName: string, modifierName: string): CombatClient
+function CombatClient.new(heroName: string, modifierNames: { string }): CombatClient
 	local self = setmetatable({}, CombatClient) :: CombatClient
 	self.janitor = Janitor.new()
 
@@ -66,10 +68,13 @@ function CombatClient.new(heroName: string, modifierName: string): CombatClient
 	self.attemptingAttack = false
 	self.usingSuper = false
 
-	local modifier = Modifiers[modifierName]
+	local modifiers = TableUtil.Map(modifierNames, function(v)
+		return Modifiers[v]
+	end)
 
-	self.combatPlayer =
-		self.janitor:Add(CombatPlayer.new(heroName, self.character, modifier, self.player)) :: CombatPlayer.CombatPlayer
+	self.combatPlayer = self.janitor:Add(
+		CombatPlayer.new(heroName, self.character, ModifierCollection.new(modifiers), self.player)
+	) :: CombatPlayer.CombatPlayer
 	self.combatCamera = self.janitor:Add(CombatCamera.new())
 	self.combatCamera:Enable()
 
