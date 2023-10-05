@@ -32,7 +32,6 @@ local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Server()
 local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
-local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Server()
 local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Server()
 local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Server()
@@ -240,20 +239,21 @@ function processHit(
 		combatPlayer:ChargeSuper(1)
 	end
 	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
-	combatPlayer:DealDamage(attackDetails.Damage, victimCharacter)
+	local damage = CombatPlayer.GetDamageBetween(combatPlayer, victimCombatPlayer, attackDetails.Data)
+	combatPlayer:DealDamage(damage, victimCharacter)
 
-	DamagedEvent:FireAll(victimCharacter, attackDetails.Damage)
+	DamagedEvent:FireAll(victimCharacter, damage)
 
 	-- Update Data
 	DataService.GetPrivateData(player):After(function(data)
 		if data then
-			data.Stats.DamageDealt += attackDetails.Damage
+			data.Stats.DamageDealt += damage
 		end
 	end)
 
 	-- Must be cast to any to prevent "generic subtype escaping scope" error whatever that means
 	local beforeState = victimCombatPlayer:GetState() :: any
-	victimCombatPlayer:TakeDamage(attackDetails.Damage) -- Will update state to dead if this kills
+	victimCombatPlayer:TakeDamage(damage) -- Will update state to dead if this kills
 	local afterState = victimCombatPlayer:GetState() :: any
 
 	local died = victimCombatPlayer:GetState() == "Dead" and beforeState ~= afterState
@@ -438,7 +438,7 @@ function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 		dataPublic.InCombat = true
 		DataService.WaitForReplication():Await()
 
-		local success, char = self:SpawnCharacter(player, newCFrame):Await()
+		local success = self:SpawnCharacter(player, newCFrame):Await()
 		return success
 	end)
 end
@@ -462,6 +462,14 @@ function CombatService:ExitPlayerCombat(player: Player)
 		-- when the character loads
 		DataService.WaitForReplication():Await()
 		local success, char = self:SpawnCharacter(player):Await()
+		if not success then
+			warn("Failed to spawn character!")
+			local success, char = self:SpawnCharacter(player):Await()
+			if not success then
+				warn("Failed to spawn character again!!!")
+			end
+			return char
+		end
 		return char
 	end)
 end

@@ -48,8 +48,8 @@ local Config = {
 	MoneyKill = 25,
 
 	-- booster modifier multipliers
-	BoosterHealth = 1.1,
-	BoosterDamage = 1.1,
+	BoosterHealth = 0.1,
+	BoosterDamage = 0.1,
 
 	-- pickup radius for items
 	PickupRadius = 8,

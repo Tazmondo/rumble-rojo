@@ -180,6 +180,22 @@ function CombatPlayer.CombatPlayerRemoved()
 	return CollectionService:GetInstanceRemovedSignal(Config.CombatPlayerTag)
 end
 
+function CombatPlayer.GetDamageBetween(attacker: CombatPlayer, victim: CombatPlayer, attack: HeroData.AbilityData)
+	local baseDamage = attack.Damage
+	local boosterDamage = math.round(baseDamage * (1 + attacker.boosterCount * Config.BoosterDamage))
+	local finalDamage = boosterDamage * attacker:GetDamageMultiplier(victim) * victim:GetDefenceMultiplier()
+
+	return finalDamage
+end
+
+function CombatPlayer.GetDamageMultiplier(self: CombatPlayer, victim: CombatPlayer?)
+	return 1
+end
+
+function CombatPlayer.GetDefenceMultiplier(self: CombatPlayer)
+	return 1
+end
+
 function CombatPlayer.Sync(self: CombatPlayer, funcName, ...)
 	if RunService:IsServer() and self.player then
 		SyncEvent:Fire(self.player, funcName, ...)
@@ -340,14 +356,12 @@ function CombatPlayer.RegisterBullet(
 	attackSpeed: number,
 	attackData: HeroData.AbilityData
 )
-	local damage = self:GetAttackDamage(attackData.AbilityType)
 	self.attacks[attackId] = {
 		AttackId = attackId,
 		FiredTime = os.clock(),
 		FiredCFrame = attackCF,
 		Speed = attackSpeed,
 		Data = attackData,
-		Damage = damage,
 		HitPosition = nil,
 	}
 	task.delay(Config.MaxAttackTimeout, function()
@@ -460,14 +474,14 @@ function CombatPlayer.AddBooster(self: CombatPlayer, count: number)
 
 	local baseHealth = self.heroData.Health
 
-	self:SetMaxHealth(baseHealth + (baseHealth * Config.BoosterHealth - baseHealth) * self.boosterCount)
+	self:SetMaxHealth(baseHealth * (1 + self.boosterCount * Config.BoosterHealth))
 end
 
-function CombatPlayer.GetAttackDamage(self: CombatPlayer, attackType: "Attack" | "Super")
-	local baseDamage = if attackType == "Attack" then self.baseAttackDamage else self.baseSuperDamage
+-- function CombatPlayer.GetAttackDamage(self: CombatPlayer, attackType: "Attack" | "Super")
+-- 	local baseDamage = if attackType == "Attack" then self.baseAttackDamage else self.baseSuperDamage
 
-	return math.round(baseDamage + (baseDamage * Config.BoosterDamage - baseDamage) * self.boosterCount)
-end
+-- 	return math.round(baseDamage + (baseDamage * Config.BoosterDamage - baseDamage) * self.boosterCount)
+-- end
 
 function CombatPlayer.Destroy(self: CombatPlayer)
 	-- warn("CombatPlayer was destroyed, but this is undefined behaviour! Killing humanoid instead.")
@@ -489,7 +503,6 @@ export type Attack = {
 	FiredTime: number,
 	FiredCFrame: CFrame,
 	Speed: number,
-	Damage: number,
 	Data: HeroData.AbilityData,
 	-- HitPosition: Vector3?,
 }

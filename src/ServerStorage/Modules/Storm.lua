@@ -17,7 +17,6 @@ local DAMAGEDELAY = 0.75
 local MINLAYER = 3
 
 local MAPLENGTH = 24
-local SIDELENGTH = 16
 
 local BLOCKSIZE = 8
 
