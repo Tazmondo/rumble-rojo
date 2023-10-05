@@ -28,8 +28,8 @@ local DefaultOnHit = function()
 	return
 end
 
-Modifiers.Default = DefaultModifier :: any
-Modifiers[""] = DefaultModifier :: any
+Modifiers.Default = TableUtil.Copy(DefaultModifier, true) :: any
+Modifiers[""] = TableUtil.Copy(DefaultModifier, true) :: any
 
 Modifiers.Fast = {
 	Name = "Fast",
