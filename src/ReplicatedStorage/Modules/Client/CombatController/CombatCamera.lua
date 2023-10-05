@@ -190,7 +190,7 @@ function CombatCamera.SetupInput(self: CombatCamera)
 		if processed then
 			return
 		end
-		if input.KeyCode == Enum.KeyCode.F then
+		if input.KeyCode == Enum.KeyCode.F and RunService:IsStudio() then
 			if self.enabled then
 				self:Disable()
 			else
