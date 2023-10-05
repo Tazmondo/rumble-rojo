@@ -163,7 +163,6 @@ function CombatCamera.Transition(self: CombatCamera, enable: boolean)
 end
 
 function CombatCamera.Shake(self: CombatCamera)
-	print("Shaking")
 	print(self.shakeSpring:AddVelocity(self.shakeVelocity))
 end
 

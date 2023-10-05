@@ -32,6 +32,7 @@ local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Server()
 local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
+local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Server()
 local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Server()
 local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Server()
@@ -42,6 +43,7 @@ local ReplicateAttackEvent = require(ReplicatedStorage.Events.Combat.ReplicateAt
 type PlayerCombatDetails = {
 	HeroName: string,
 	SkinName: string,
+	Modifier: string,
 }
 
 -- Only for players currently fighting.
@@ -251,10 +253,11 @@ function processHit(
 		end
 	end)
 
-	-- Must be cast to any to prevent "generic subtype escaping scope" error whatever that means
-	local beforeState = victimCombatPlayer:GetState() :: any
+	local beforeState = victimCombatPlayer:GetState()
 	victimCombatPlayer:TakeDamage(damage) -- Will update state to dead if this kills
-	local afterState = victimCombatPlayer:GetState() :: any
+	local afterState = victimCombatPlayer:GetState()
+
+	combatPlayer.modifier.OnHit(combatPlayer, victimCombatPlayer)
 
 	local died = victimCombatPlayer:GetState() == "Dead" and beforeState ~= afterState
 
@@ -433,7 +436,8 @@ function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 		end
 
 		local hero = data.SelectedHero
-		PlayersInCombat[player] = { HeroName = hero, SkinName = data.OwnedHeroes[hero].SelectedSkin }
+		PlayersInCombat[player] =
+			{ HeroName = hero, SkinName = data.OwnedHeroes[hero].SelectedSkin, Modifier = data.SelectedModifier }
 
 		dataPublic.InCombat = true
 		DataService.WaitForReplication():Await()
@@ -494,13 +498,15 @@ function CombatService:SetupCombatPlayer(player: Player, details: PlayerCombatDe
 	print("Setting up", player.Name, "as", details.HeroName)
 	local char = assert(player.Character, "no character")
 
-	local combatPlayer = CombatPlayer.new(details.HeroName, char, player) :: CombatPlayer.CombatPlayer
+	local modifier = Modifiers[details.Modifier]
+
+	local combatPlayer = CombatPlayer.new(details.HeroName, char, modifier, player) :: CombatPlayer.CombatPlayer
 	CombatPlayerData[char] = combatPlayer
 
 	self:InitializeNameTag(char, combatPlayer, player)
 
 	print("Asking client to initialize combat player")
-	CombatPlayerInitializeEvent:Fire(player, details.HeroName)
+	CombatPlayerInitializeEvent:Fire(player, details.HeroName, details.Modifier)
 end
 
 function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
@@ -599,11 +605,15 @@ function CombatService:PlayerAdded(player: Player)
 		if RunService:IsStudio() and ServerScriptService:GetAttribute("combat") then
 			local hero = ServerScriptService:GetAttribute("hero") or "Taz"
 			local skin = ServerScriptService:GetAttribute("skin")
+			local modifier = ServerScriptService:GetAttribute("modifier")
 			if not skin or skin == "" then
 				skin = HeroDetails.HeroDetails[hero].DefaultSkin
 			end
+			if not modifier then
+				modifier = ""
+			end
 
-			PlayersInCombat[player] = { HeroName = hero, SkinName = skin }
+			PlayersInCombat[player] = { HeroName = hero, SkinName = skin, Modifier = modifier }
 
 			local data = assert(DataService.GetPublicData(player):Await(), "In studio, doesnt matter.")
 			data.InCombat = true
@@ -643,7 +653,7 @@ function CombatService:Initialize()
 
 	for _, v in pairs(workspace:GetChildren()) do
 		if v.Name == "TestDummy" then
-			local combatPlayer = CombatPlayer.new("Frankie", v) :: CombatPlayer.CombatPlayer
+			local combatPlayer = CombatPlayer.new("Frankie", v, Modifiers.Default) :: CombatPlayer.CombatPlayer
 			CombatPlayerData[v] = combatPlayer
 			self:InitializeNameTag(v, combatPlayer)
 		elseif v.Name == "Chest" then

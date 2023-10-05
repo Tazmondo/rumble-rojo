@@ -53,6 +53,8 @@ local DataSent = Signal()
 function CorrectOwnedHero(heroData: HeroDetails.Hero, ownedHero: Data.OwnedHeroData?)
 	if not ownedHero then
 		ownedHero = TableUtil.Copy(Data.OwnedHeroTemplate, true)
+	else
+		ownedHero = TableUtil.Reconcile(ownedHero, Data.OwnedHeroTemplate)
 	end
 	local ownedHero = ownedHero :: Data.OwnedHeroData
 

@@ -22,7 +22,7 @@ local PlayerKilledEvent = require(ReplicatedStorage.Events.Combat.PlayerKilledEv
 local localPlayer = Players.LocalPlayer
 local combatClient: CombatClient.CombatClient
 
-local function InitializeCombatClient(heroName)
+local function InitializeCombatClient(heroName: string, modifier: string)
 	if combatClient then
 		combatClient:Destroy()
 	end
@@ -53,7 +53,7 @@ local function InitializeCombatClient(heroName)
 
 	BushController.SetCombatStatus(true)
 	ItemController.SetCombatStatus(true)
-	combatClient = CombatClient.new(heroName) :: CombatClient.CombatClient
+	combatClient = CombatClient.new(heroName, modifier) :: CombatClient.CombatClient
 
 	combatClient.combatPlayer.DiedSignal:Connect(CleanUp)
 	print("Initialized combat client")

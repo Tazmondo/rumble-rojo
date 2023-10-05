@@ -1,4 +1,5 @@
 --!strict
+--!nolint LocalShadow
 -- This handles state relating to the player for the combat system
 -- Should not have any side-effects (i do not count the humanoid as a side effect, as this is the sole authority on the humanoid)
 -- Think of it as pretty much a custom humanoid for the combat system
@@ -14,6 +15,7 @@ local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
+local DefaultModifier = require(script.Parent.Modifiers.DefaultModifier) :: Modifier
 
 local SyncEvent: any
 local UpdateEvent: any
@@ -69,28 +71,47 @@ function GetGameState()
 	end
 end
 
-function InitializeSelf(heroData: HeroData.HeroData, model: Model, player: Player?, object: boolean?)
+function InitializeSelf(
+	heroData: HeroData.HeroData,
+	model: Model,
+	modifier: Modifier,
+	player: Player?,
+	object: boolean?
+)
 	local self = setmetatable({}, CombatPlayer)
 
+	local allowance = LATENCYALLOWANCE
 	if not player then
-		LATENCYALLOWANCE = 0
+		allowance = 0
 	end
 
 	self.heroData = heroData
 
-	self.maxHealth = self.heroData.Health
+	self.baseAttackDamage = self.heroData.Attack.Damage
+	self.baseSuperDamage = self.heroData.Super.Damage
+	self.baseHealth = self.heroData.Health
+	self.baseSpeed = self.heroData.MovementSpeed
+
+	if not modifier then
+		modifier = DefaultModifier
+	end
+	local modifier = modifier :: Modifier
+
+	modifier.Modify(self)
+	self.modifier = modifier
+
+	self.maxHealth = self.baseHealth
 	self.health = self.maxHealth
-	self.movementSpeed = self.heroData.MovementSpeed
+	self.movementSpeed = self.baseSpeed
 	self.maxAmmo = self.heroData.Attack.Ammo
 	self.ammo = self.maxAmmo
-	self.ammoRegen = self.heroData.Attack.AmmoRegen - LATENCYALLOWANCE
-	self.reloadSpeed = self.heroData.Attack.ReloadSpeed - LATENCYALLOWANCE
+	self.ammoRegen = self.heroData.Attack.AmmoRegen - allowance
+	self.reloadSpeed = self.heroData.Attack.ReloadSpeed - allowance
 	self.requiredSuperCharge = self.heroData.Super.Charge
 	self.superCharge = 0
 	self.boosterCount = 0
 
-	self.baseAttackDamage = self.heroData.Attack.Damage
-	self.baseSuperDamage = self.heroData.Super.Damage
+	self.statusEffects = {} :: { [string]: any }
 
 	self.character = model
 	self.character:AddTag(Config.CombatPlayerTag)
@@ -131,9 +152,9 @@ function InitializeSelf(heroData: HeroData.HeroData, model: Model, player: Playe
 end
 
 -- Player is optional as NPCs can be combatplayers
-function CombatPlayer.new(heroName: string, model: Model, player: Player?): CombatPlayer
+function CombatPlayer.new(heroName: string, model: Model, modifier: Modifier, player: Player?): CombatPlayer
 	local heroData = assert(HeroData.HeroData[heroName], "Invalid hero name:", heroName)
-	local self = InitializeSelf(heroData, model, player)
+	local self = InitializeSelf(heroData, model, modifier, player)
 
 	self:Update()
 
@@ -146,7 +167,7 @@ end
 
 function CombatPlayer.newChest(health: number, model: Model): CombatPlayer
 	local heroData = HeroData.ChestData
-	local self = InitializeSelf(heroData, model, nil, true)
+	local self = InitializeSelf(heroData, model, DefaultModifier, nil, true)
 	self.maxHealth = health
 	self.health = health
 
@@ -235,6 +256,21 @@ function CombatPlayer.IsDead(self: CombatPlayer)
 	return self.state == "Dead"
 end
 
+function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value: { any }?)
+	self:Sync("SetStatusEffect", effect, value)
+	if value then
+		self.statusEffects[effect] = value
+	else
+		self.statusEffects[effect] = nil
+	end
+
+	if effect == "Slow" then
+		self:UpdateSpeed()
+	else
+		error("Invalid status effect: " .. effect)
+	end
+end
+
 function CombatPlayer.Reload(self: CombatPlayer)
 	if RunService:IsClient() then
 		SoundController:PlayGeneralSound("ReloadAmmo")
@@ -255,6 +291,16 @@ function CombatPlayer.ScheduleReload(self: CombatPlayer)
 
 	if self.scheduledReloads == 1 then
 		task.delay(self.ammoRegen, self.Reload, self)
+	end
+end
+
+function CombatPlayer.UpdateSpeed(self: CombatPlayer)
+	-- Since Data type for slow is {number}
+	local modifier = (self.statusEffects["Slow"] or { 1 })[1]
+
+	self.movementSpeed = self.baseSpeed * modifier
+	if self.humanoid then
+		self.humanoid.WalkSpeed = self.movementSpeed
 	end
 end
 
@@ -474,9 +520,7 @@ end
 function CombatPlayer.AddBooster(self: CombatPlayer, count: number)
 	self.boosterCount += count
 
-	local baseHealth = self.heroData.Health
-
-	self:SetMaxHealth(baseHealth * (1 + self.boosterCount * Config.BoosterHealth))
+	self:SetMaxHealth(self.baseHealth * (1 + self.boosterCount * Config.BoosterHealth))
 end
 
 -- function CombatPlayer.GetAttackDamage(self: CombatPlayer, attackType: "Attack" | "Super")
@@ -509,5 +553,15 @@ export type Attack = {
 	-- HitPosition: Vector3?,
 }
 export type CombatPlayer = typeof(InitializeSelf(...))
+
+export type Modifier = {
+	Name: string,
+	Description: string,
+	Price: number?, -- No price = unbuyable. Price: 0  = free
+	Modify: (CombatPlayer) -> (), -- Called when initialized
+	Damage: (CombatPlayer) -> number, -- Called when dealing damage
+	Defence: (CombatPlayer) -> number, -- Called when taking damage
+	OnHit: (self: CombatPlayer, victim: CombatPlayer) -> (), -- Called when hitting an enemy
+}
 
 return CombatPlayer

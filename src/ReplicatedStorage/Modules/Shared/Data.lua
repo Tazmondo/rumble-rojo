@@ -6,7 +6,9 @@ local Data = {}
 Data.OwnedHeroTemplate = {
 	Trophies = 0, -- trophies earned with this hero specifically
 	SelectedSkin = "",
-	Skins = {} :: { [string]: boolean },
+
+	Skins = {} :: { [string]: boolean }, -- owned skins
+	Modifiers = {} :: { [string]: boolean }, -- owned modifiers
 }
 
 TableUtil.Lock(Data.OwnedHeroTemplate)
@@ -14,12 +16,18 @@ TableUtil.Lock(Data.OwnedHeroTemplate)
 export type OwnedHeroData = typeof(Data.OwnedHeroTemplate)
 
 Data.ProfileTemplate = {
+	Version = 2, -- version is for data migration purposes in future
+
 	Trophies = 0,
 	Money = 0,
 	Playtime = 0,
+
 	OwnedHeroes = {} :: { [string]: OwnedHeroData }, -- automatically fills with free heroes and skins
 	SelectedHero = "Taz",
-	Version = 2, -- version is for data migration purposes in future
+
+	OwnedModifiers = {} :: { [string]: boolean },
+	SelectedModifier = "",
+
 	Stats = {
 		Kills = 0,
 		KillStreak = 0,
@@ -44,6 +52,7 @@ Data.TempPlayerData = {
 	CharacterLoaded = false,
 	SelectedHero = "",
 	SelectedSkin = "",
+	SelectedModifier = "",
 	Trophies = 0,
 }
 TableUtil.Lock(Data.TempPlayerData)
