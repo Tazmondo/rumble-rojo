@@ -225,10 +225,12 @@ function CreateArcedAttack(
 		assert(attackVFXFolder[attackData.Name], "VFX did not exist for", attackData.Name):Clone()
 	local baseRotation = pelletPart.CFrame.Rotation
 
-	origin = CFrame.new(origin.Position)
-
-	pelletPart.CFrame = origin * baseRotation
+	pelletPart.CFrame = CFrame.new(origin.Position) * baseRotation
 	pelletPart.Parent = workspace
+
+	local targetCFrame = CFrame.new(target) * origin.Rotation
+
+	local totalRotation = 360 * 1.5
 
 	TriggerAllDescendantParticleEmitters(pelletPart, true)
 
@@ -239,7 +241,9 @@ function CreateArcedAttack(
 		local progress = math.clamp(timeTravelled / projectileTime, 0, 1)
 
 		-- Move projectile to end point, and have it imitate the sin curve
-		pelletPart.CFrame = origin:Lerp(CFrame.new(target), progress) * baseRotation
+		pelletPart.CFrame = origin:Lerp(targetCFrame, progress)
+				* baseRotation
+				* CFrame.Angles(math.rad(-progress * totalRotation), 0, 0)
 			+ Vector3.new(0, height * math.sin(progress * math.rad(180)))
 	end)
 
