@@ -570,6 +570,7 @@ export type Modifier = {
 } & ModifierCollection
 
 export type ModifierCollection = {
+	Modifiers: { string },
 	Modify: (CombatPlayer) -> (), -- Called when initialized
 	Damage: (CombatPlayer) -> number, -- Called when dealing damage
 	Defence: (CombatPlayer) -> number, -- Called when taking damage

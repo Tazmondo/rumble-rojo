@@ -8,6 +8,10 @@ local ModifierCollection = {}
 
 function ModifierCollection.new(modifiers: { CombatPlayer.Modifier })
 	local self = {}
+	self.Modifiers = {}
+	for i, modifier in ipairs(modifiers) do
+		table.insert(self.Modifiers, modifier.Name)
+	end
 
 	for key, value in pairs(DefaultModifier) do
 		if typeof(value) == "function" then
