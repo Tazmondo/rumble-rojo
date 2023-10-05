@@ -31,7 +31,7 @@ function _initSelf()
 	self.camera = workspace.CurrentCamera
 
 	self.normalFOV = 70
-	self.cameraOffset = CFrame.Angles(0, math.rad(-90), 0) * (Vector3.new(0, 120, 80))
+	self.cameraOffset = CFrame.Angles(0, math.rad(-90), 0) * (Vector3.new(0, 150, 80))
 	self.cameraFOV = 25
 
 	self.shakeSpring = Spring.new(1, 60, 5560)
