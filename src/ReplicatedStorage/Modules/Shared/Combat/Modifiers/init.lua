@@ -107,6 +107,15 @@ Modifiers.Fury = {
 	end,
 }
 
+Modifiers.QuickReload = {
+	Name = "Quick Reload",
+	Description = "Reload ammo 15% faster.",
+	Price = 600,
+	Modify = function(self)
+		self.baseAmmoRegen /= 1.15
+	end,
+}
+
 -- Validate modifiers
 for modifier, data in pairs(Modifiers :: any) do
 	assert(data.Name)
