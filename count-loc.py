@@ -8,7 +8,7 @@ validExts = ['lua']
 loc = 0
 
 for filename in filenames:
-    if filename.split(".")[-1] in validExts:
+    if filename.split(".")[-1] in validExts and not "Iris" in filename and not "ProfileService" in filename:
         with open(filename, "r") as f:
             length = len(f.readlines())
             loc += length
