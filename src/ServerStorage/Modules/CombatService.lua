@@ -595,17 +595,20 @@ function CombatService:PlayerAdded(player: Player)
 
 	self:LoadPlayerGuis(player)
 
-	if RunService:IsStudio() and ServerScriptService:GetAttribute("combat") then
-		local hero = ServerScriptService:GetAttribute("hero") or "Taz"
-		local skin = ServerScriptService:GetAttribute("skin")
-		if not skin or skin == "" then
-			skin = HeroDetails.HeroDetails[hero].DefaultSkin
+	if DataService.PlayerLoaded(player):Await() then
+		if RunService:IsStudio() and ServerScriptService:GetAttribute("combat") then
+			local hero = ServerScriptService:GetAttribute("hero") or "Taz"
+			local skin = ServerScriptService:GetAttribute("skin")
+			if not skin or skin == "" then
+				skin = HeroDetails.HeroDetails[hero].DefaultSkin
+			end
+
+			PlayersInCombat[player] = { HeroName = hero, SkinName = skin }
+
+			local data = assert(DataService.GetPublicData(player):Await(), "In studio, doesnt matter.")
+			data.InCombat = true
 		end
 
-		PlayersInCombat[player] = { HeroName = hero, SkinName = skin }
-	end
-
-	if DataService.PlayerLoaded(player):Await() then
 		self:SpawnCharacter(player):Await()
 
 		-- ensure nametags appear for combatplayers that already existed
