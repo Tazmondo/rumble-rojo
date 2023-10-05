@@ -131,6 +131,10 @@ function MapService:UnloadCurrentMap()
 	end)
 end
 
+function MapService:GetMap()
+	return map
+end
+
 function MapService:Initialize()
 	-- MapService:LoadNextMap():Await()
 

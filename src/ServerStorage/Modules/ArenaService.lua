@@ -14,6 +14,7 @@ local CombatService = require(script.Parent.CombatService)
 local DataService = require(script.Parent.DataService)
 local ItemService = require(script.Parent.ItemService)
 local MapService = require(script.Parent.MapService)
+local Storm = require(script.Parent.Storm)
 
 local FighterDiedEvent = require(ReplicatedStorage.Events.Arena.FighterDiedEvent):Server()
 local MatchResultsEvent = require(ReplicatedStorage.Events.Arena.MatchResultsEvent):Server()
@@ -202,6 +203,9 @@ function ArenaService.StartMatch()
 	local RoundTime = 0
 	local winner = nil
 
+	local map = assert(MapService:GetMap())
+	local storm = Storm.new(map)
+
 	while RoundTime < CONFIG.RoundLength and not winner and ArenaService.GetRegisteredPlayersLength() > 0 do
 		-- determine winner stuff
 		if ArenaService.GetRegisteredPlayersLength() == 1 then
@@ -211,10 +215,10 @@ function ArenaService.StartMatch()
 		RoundTime += task.wait()
 	end
 
-	ArenaService.EndMatch(winner)
+	ArenaService.EndMatch(winner, storm)
 end
 
-function ArenaService.EndMatch(winner: Player?)
+function ArenaService.EndMatch(winner: Player?, storm)
 	local gameData = DataService.GetGameData()
 	gameData.Status = "BattleEnded"
 
@@ -246,6 +250,9 @@ function ArenaService.EndMatch(winner: Player?)
 	registeredPlayers = {}
 
 	ItemService.CleanUp()
+	if storm then
+		storm:Destroy()
+	end
 	MapService:UnloadCurrentMap():Await()
 
 	-- Disable autoqueue

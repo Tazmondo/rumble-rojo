@@ -49,14 +49,6 @@ type PlayerCombatDetails = {
 local CombatPlayerData: { [Model]: CombatPlayer.CombatPlayer } = {}
 local PlayersInCombat: { [Player]: PlayerCombatDetails } = {}
 
-local function getAllCombatPlayerCharacters()
-	local out = {}
-	for model, combatPlayer in pairs(CombatPlayerData) do
-		table.insert(out, model)
-	end
-	return out
-end
-
 local function replicateAttack(
 	player: Player,
 	origin: CFrame,
@@ -390,6 +382,14 @@ function handleClientExplosionHit(player: Player, hitList: Types.HitList, attack
 			attackDetails
 		)
 	end
+end
+
+function CombatService:GetAllCombatPlayers()
+	local out = {}
+	for model, combatPlayer in pairs(CombatPlayerData) do
+		table.insert(out, combatPlayer)
+	end
+	return out
 end
 
 function CombatService:GetCombatPlayerForPlayer(player: Player): CombatPlayer.CombatPlayer?
