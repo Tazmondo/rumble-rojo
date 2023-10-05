@@ -6,6 +6,8 @@ local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local CharacterReplicationController = require(ReplicatedStorage.Modules.Client.CharacterReplicationController)
+local DataController = require(ReplicatedStorage.Modules.Client.DataController)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Bin = require(ReplicatedStorage.Packages.Bin)
@@ -206,42 +208,34 @@ function Render(dt: number)
 end
 
 function CombatCharacterAdded(character: Model)
-	task.defer(function()
-		-- since this can be called before body parts have loaded, we need to wait for them to be added
-		local HRP = character:WaitForChild("HumanoidRootPart", 5)
-		if not HRP then
-			-- probably a chest
-			return
-		end
+	local HRP = character:FindFirstChild("HumanoidRootPart")
+	if not HRP then
+		-- probably a chest
+		return
+	end
 
-		-- because collectionservice is silly and runs before the character is loaded
-		for part, boolean in pairs(VALIDPARTS) do
-			character:WaitForChild(part)
-		end
+	if characterData[character] then
+		warn("Combat character added twice without being removed!")
+		return
+	end
+	local baseTransparencies = {}
+	local emitters = {}
 
-		if characterData[character] then
-			warn("Combat character added twice without being removed!")
-			return
+	for i, v in pairs(character:GetDescendants()) do
+		if v:IsA("BasePart") then
+			baseTransparencies[v] = v.Transparency
+		elseif v:IsA("ParticleEmitter") then
+			emitters[v] = v.Enabled
 		end
-		local baseTransparencies = {}
-		local emitters = {}
+	end
 
-		for i, v in pairs(character:GetDescendants()) do
-			if v:IsA("BasePart") then
-				baseTransparencies[v] = v.Transparency
-			elseif v:IsA("ParticleEmitter") then
-				emitters[v] = v.Enabled
-			end
-		end
-
-		characterData[character] = {
-			BaseTransparency = baseTransparencies,
-			Emitters = emitters,
-			LastHit = 0,
-			CurrentOpacity = 1,
-			TargetOpacity = 1,
-		}
-	end)
+	characterData[character] = {
+		BaseTransparency = baseTransparencies,
+		Emitters = emitters,
+		LastHit = 0,
+		CurrentOpacity = 1,
+		TargetOpacity = 1,
+	}
 end
 
 function CombatCharacterRemoved(character: Model)
@@ -313,7 +307,15 @@ function BushController.Initialize()
 	for i, v in pairs(CombatPlayer.GetAllCombatPlayerCharacters()) do
 		CombatCharacterAdded(v)
 	end
-	CombatPlayer.CombatPlayerAdded():Connect(CombatCharacterAdded)
+
+	-- CombatCharacterAdded relies on body parts, so we need to wait for character
+	-- To fully replicate before running
+	CharacterReplicationController.Added:Connect(function(player, char)
+		local data = DataController.GetPublicDataForPlayer(player):Await()
+		if data and data.InCombat then
+			CombatCharacterAdded(char)
+		end
+	end)
 	CombatPlayer.CombatPlayerRemoved():Connect(CombatCharacterRemoved)
 
 	CollectionService:GetInstanceAddedSignal(Config.BushTag):Connect(HandleBushAdded)

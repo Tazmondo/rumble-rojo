@@ -10,6 +10,9 @@ BaseCharacter.Archivable = true
 local AnimateScript = BaseCharacter:FindFirstChild("Animate") :: LocalScript
 local LobbySpawn = workspace.Lobby:FindFirstChild("SpawnLocation", true) :: SpawnLocation
 
+local CharacterReplicationEvent =
+	require(ReplicatedStorage.Events.CharacterReplication.CharacterReplicationEvent):Server()
+
 -- Stores player characters for quick cloning instead of constantly fetching the description
 local archivedCharacters: { [Player]: Model } = {}
 
@@ -102,7 +105,9 @@ function LoadCharacterService.SpawnCharacter(player: Player, spawnCFrame: CFrame
 		end
 		assert(spawnCFrame)
 
-		return InitializeCharacter(player, characterModel, spawnCFrame):Await()
+		local char = InitializeCharacter(player, characterModel, spawnCFrame):Await()
+		CharacterReplicationEvent:FireAll(player, char)
+		return char
 	end)
 end
 
