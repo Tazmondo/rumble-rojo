@@ -639,7 +639,7 @@ function CombatService:Initialize()
 	AimEvent:On(handleAim)
 
 	for _, v in pairs(workspace:GetChildren()) do
-		if v.Name == "Rig" then
+		if v.Name == "TestDummy" then
 			local combatPlayer = CombatPlayer.new("Frankie", v) :: CombatPlayer.CombatPlayer
 			CombatPlayerData[v] = combatPlayer
 			self:InitializeNameTag(v, combatPlayer)

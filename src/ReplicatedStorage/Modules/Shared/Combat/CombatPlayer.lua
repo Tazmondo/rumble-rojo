@@ -189,10 +189,12 @@ function CombatPlayer.GetDamageBetween(attacker: CombatPlayer, victim: CombatPla
 end
 
 function CombatPlayer.GetDamageMultiplier(self: CombatPlayer, victim: CombatPlayer?)
+	-- Bigger = do more damage
 	return 1
 end
 
 function CombatPlayer.GetDefenceMultiplier(self: CombatPlayer)
+	-- Smaller = take less damage
 	return 1
 end
 
