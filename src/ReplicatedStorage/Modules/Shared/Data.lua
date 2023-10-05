@@ -55,6 +55,10 @@ Data.GameData = {
 	MaxPlayers = ServerConfig.MaxPlayers,
 	RoundTime = 0,
 	IntermissionTime = 0,
+
+	-- Debug/Admin options
+	ForceRound = false,
+	ForceEndRound = false,
 }
 TableUtil.Lock(Data.GameData)
 

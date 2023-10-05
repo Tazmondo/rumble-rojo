@@ -207,7 +207,13 @@ function ArenaService.StartMatch()
 	local storm = Storm.new(map)
 	storm:Start()
 
-	while RoundTime < CONFIG.RoundLength and not winner and ArenaService.GetRegisteredPlayersLength() > 0 do
+	while
+		not gameData.ForceEndRound
+		and (
+			(RoundTime < CONFIG.RoundLength and not winner and ArenaService.GetRegisteredPlayersLength() > 0)
+			or gameData.ForceRound
+		)
+	do
 		-- determine winner stuff
 		if ArenaService.GetRegisteredPlayersLength() == 1 then
 			winner = next(registeredPlayers)

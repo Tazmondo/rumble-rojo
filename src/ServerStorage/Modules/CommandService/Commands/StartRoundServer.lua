@@ -23,6 +23,7 @@ return function(context)
 
 	ServerConfig.MinPlayers = 1
 	DataService.GetGameData().IntermissionTime = 10
+	DataService.GetGameData().ForceRound = true
 
 	task.wait(11)
 
