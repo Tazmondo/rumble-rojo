@@ -93,6 +93,7 @@ function InitializeSelf(
 	self.baseSpeed = self.heroData.MovementSpeed
 	self.baseRegenRate = 1
 	self.baseAmmoRegen = self.heroData.Attack.AmmoRegen
+	self.baseRequiredSuperCharge = self.heroData.Super.Charge
 
 	modifiers.Modify(self)
 	self.modifiers = modifiers :: ModifierCollection
@@ -104,7 +105,7 @@ function InitializeSelf(
 	self.ammo = self.maxAmmo
 	self.ammoRegen = self.baseAmmoRegen - allowance
 	self.reloadSpeed = self.heroData.Attack.ReloadSpeed - allowance
-	self.requiredSuperCharge = self.heroData.Super.Charge
+	self.requiredSuperCharge = self.baseRequiredSuperCharge
 	self.superCharge = 0
 	self.boosterCount = 0
 

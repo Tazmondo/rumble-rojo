@@ -116,6 +116,17 @@ Modifiers.QuickReload = {
 	end,
 }
 
+Modifiers.SuperCharge = {
+	Name = "Super Charge",
+	Description = "Charge your super 15% faster.",
+	Price = 500,
+	Modify = function(self)
+		-- Use math.floor here so that it always rounds down.
+		-- For characters like frankie who have a low super requirement
+		self.baseRequiredSuperCharge = math.floor(self.baseRequiredSuperCharge / 1.15)
+	end,
+}
+
 -- Validate modifiers
 for modifier, data in pairs(Modifiers :: any) do
 	assert(data.Name)
