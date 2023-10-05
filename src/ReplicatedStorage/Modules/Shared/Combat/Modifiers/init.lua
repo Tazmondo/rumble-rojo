@@ -85,6 +85,15 @@ Modifiers.Stealth = {
 	end,
 }
 
+Modifiers.Regen = {
+	Name = "Regen",
+	Description = "Regenerate 50% more HP.",
+	Price = 500,
+	Modify = function(self)
+		self.baseRegenRate *= 1.5
+	end,
+}
+
 -- Validate modifiers
 for modifier, data in pairs(Modifiers :: any) do
 	assert(data.Name)

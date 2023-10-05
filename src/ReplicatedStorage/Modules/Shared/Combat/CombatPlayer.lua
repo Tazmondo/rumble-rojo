@@ -91,6 +91,7 @@ function InitializeSelf(
 	self.baseSuperDamage = self.heroData.Super.Damage
 	self.baseHealth = self.heroData.Health
 	self.baseSpeed = self.heroData.MovementSpeed
+	self.baseRegenRate = 1
 
 	modifiers.Modify(self)
 	self.modifiers = modifiers :: ModifierCollection
@@ -318,7 +319,7 @@ function CombatPlayer.Regen(self: CombatPlayer)
 		return
 	end
 
-	local regenAmount = self.maxHealth * Config.RegenAmount
+	local regenAmount = self.maxHealth * Config.RegenAmount * self.baseRegenRate
 	self:Heal(regenAmount)
 
 	if VFXService then
