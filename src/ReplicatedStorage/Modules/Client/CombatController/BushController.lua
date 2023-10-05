@@ -172,6 +172,12 @@ function Render(dt: number)
 		if not inBush then
 			SetOpacity(character, 1)
 		end
+		if isPlayerCharacter then
+			local combatPlayer = CombatPlayer.GetClientCombatPlayer()
+			if combatPlayer then
+				combatPlayer:SetBush(inBush)
+			end
+		end
 
 		UpdateOpacity(character)
 	end

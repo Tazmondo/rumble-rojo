@@ -41,11 +41,11 @@ if RunService:IsServer() then
 	DataService = require(ServerStorage.Modules.DataService)
 end
 
-local clientCombatPlayer
+local clientCombatPlayer: CombatPlayer?
 if RunService:IsClient() then
 	SyncEvent:On(function(func, ...)
 		if clientCombatPlayer then
-			clientCombatPlayer[func](clientCombatPlayer, ...)
+			(clientCombatPlayer :: any)[func](clientCombatPlayer, ...)
 		end
 	end)
 end
@@ -107,6 +107,7 @@ function InitializeSelf(
 	self.boosterCount = 0
 
 	self.statusEffects = {} :: { [string]: any }
+	self.inBush = false
 
 	self.character = model
 	self.character:AddTag(Config.CombatPlayerTag)
@@ -188,6 +189,11 @@ function CombatPlayer.GetAllCombatPlayerCharacters(): { Model }
 	return models
 end
 
+function CombatPlayer.GetClientCombatPlayer()
+	assert(RunService:IsClient(), "Tried to get client combat player on server!")
+	return clientCombatPlayer :: CombatPlayer?
+end
+
 function CombatPlayer.CombatPlayerAdded()
 	return CollectionService:GetInstanceAddedSignal(Config.CombatPlayerTag)
 end
@@ -266,6 +272,13 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 	end
 end
 
+function CombatPlayer.SetBush(self: CombatPlayer, hidden: boolean)
+	if self.inBush ~= hidden then
+		self.inBush = hidden
+		self.modifiers.OnHidden(self, hidden)
+	end
+end
+
 function CombatPlayer.Reload(self: CombatPlayer)
 	if RunService:IsClient() then
 		SoundController:PlayGeneralSound("ReloadAmmo")
@@ -294,6 +307,7 @@ function CombatPlayer.UpdateSpeed(self: CombatPlayer)
 	local modifier = (self.statusEffects["Slow"] or { 1 })[1]
 
 	self.movementSpeed = self.baseSpeed * modifier
+	print("Updating speed", self.movementSpeed)
 	if self.humanoid then
 		self.humanoid.WalkSpeed = self.movementSpeed
 	end
@@ -559,6 +573,7 @@ export type ModifierCollection = {
 	Modify: (CombatPlayer) -> (), -- Called when initialized
 	Damage: (CombatPlayer) -> number, -- Called when dealing damage
 	Defence: (CombatPlayer) -> number, -- Called when taking damage
+	OnHidden: (CombatPlayer, hidden: boolean) -> (), -- Called when entering/exiting bush
 	OnHit: (self: CombatPlayer, victim: CombatPlayer) -> (), -- Called when hitting an enemy
 }
 

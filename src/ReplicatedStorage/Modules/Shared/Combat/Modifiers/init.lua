@@ -11,6 +11,7 @@ local Modifiers: {
 		Damage: ((CombatPlayer.CombatPlayer) -> number)?,
 		Defence: ((CombatPlayer.CombatPlayer) -> number)?,
 		OnHit: ((self: CombatPlayer.CombatPlayer, victim: CombatPlayer.CombatPlayer) -> ())?,
+		OnHidden: ((self: CombatPlayer.CombatPlayer, hidden: boolean) -> ())?,
 	},
 } =
 	{}
@@ -70,21 +71,30 @@ Modifiers.Slow = {
 	end,
 }
 
+Modifiers.Stealth = {
+	Name = "Stealth",
+	Description = "Gain a 20% movement bonus in bushes.",
+	Price = 1000,
+	OnHidden = function(self, hidden)
+		if hidden then
+			self.baseSpeed *= 1.2
+		else
+			self.baseSpeed /= 1.2
+		end
+		self:UpdateSpeed()
+	end,
+}
+
 -- Validate modifiers
-for modifier, data in pairs((Modifiers :: any) :: { [string]: CombatPlayer.Modifier }) do
+for modifier, data in pairs(Modifiers :: any) do
 	assert(data.Name)
 	assert(data.Description)
-	if not data.Modify then
-		data.Modify = DefaultModify
-	end
-	if not data.Damage then
-		data.Damage = DefaultDamage
-	end
-	if not data.Defence then
-		data.Defence = DefaultDefence
-	end
-	if not data.OnHit then
-		data.OnHit = DefaultOnHit
+
+	-- Populate modifiers with default functions for any missing keys
+	for k, v in pairs(DefaultModifier) do
+		if typeof(v) == "function" and not data[k] then
+			data[k] = v
+		end
 	end
 end
 

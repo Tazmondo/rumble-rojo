@@ -11,4 +11,5 @@ return {
 	OnHit = function() end,
 	Damage = function() end,
 	Defence = function() end,
+	OnHidden = function() end,
 }

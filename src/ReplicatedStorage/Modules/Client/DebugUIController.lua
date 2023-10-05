@@ -2,6 +2,7 @@ local DebugUIController = {}
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local DataController = require(script.Parent.DataController)
 local Iris = require(ReplicatedStorage.Modules.Shared.Iris)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
@@ -39,6 +40,11 @@ function DebugUIController.Initialize()
                 RenderTable(DataController.GetGameData():UnwrapOr(nil :: any), "Game Data")
                 RenderTable(DataController.GetLocalData():UnwrapOr(nil :: any), "Local Data")
                 RenderTable(DataController.GetPublicData():UnwrapOr(nil :: any), "Public Data")
+
+                local combatPlayer = CombatPlayer.GetClientCombatPlayer()
+                if combatPlayer then
+                    RenderTable(combatPlayer :: any, "CombatPlayer")
+                end
                 -- Iris.TextWrapped({TableUtil.EncodeJSON(DataController.GetGameData():UnwrapOr(nil :: any))})
                 -- Iris.TextWrapped({TableUtil.EncodeJSON(DataController.GetLocalData():UnwrapOr(nil :: any))})
                 -- Iris.TextWrapped({TableUtil.EncodeJSON(DataController.GetPublicData():UnwrapOr(nil :: any))})
