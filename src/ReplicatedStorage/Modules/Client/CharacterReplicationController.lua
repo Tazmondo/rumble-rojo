@@ -9,6 +9,7 @@ local Spawn = require(ReplicatedStorage.Packages.Spawn)
 
 local CharacterReplicationEvent =
 	require(ReplicatedStorage.Events.CharacterReplication.CharacterReplicationEvent):Client()
+local ObjectReplicationEvent = require(ReplicatedStorage.Events.CharacterReplication.ObjectReplicationEvent):Client()
 
 local replicatedSignal = Signal()
 CharacterReplicationController.Added = Signal()
@@ -43,8 +44,12 @@ function HandleCharacterReplication(player: Player, char: Model)
 	replicatedSignal:Fire(player, char)
 end
 
+-- Here for when it's needed in future
+function HandleObjectReplication() end
+
 function CharacterReplicationController:Initialize()
 	CharacterReplicationEvent:On(HandleCharacterReplication)
+	ObjectReplicationEvent:On(HandleObjectReplication)
 
 	Spawn(function()
 		DataController.HasLoadedData():Await()

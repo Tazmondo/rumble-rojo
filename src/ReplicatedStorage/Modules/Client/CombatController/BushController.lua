@@ -11,6 +11,7 @@ local DataController = require(ReplicatedStorage.Modules.Client.DataController)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Bin = require(ReplicatedStorage.Packages.Bin)
+local Spawn = require(ReplicatedStorage.Packages.Spawn)
 
 local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Client()
 
@@ -20,24 +21,24 @@ local BUSHREVEALDISTANCE = 14
 local FORCEVISIBLEDISTANCE = 6
 local LERPSPEED = 0.1
 
-local VALIDPARTS = {
-	Head = true,
-	LeftFoot = true,
-	LeftHand = true,
-	LeftLowerArm = true,
-	LeftLowerLeg = true,
-	LeftUpperArm = true,
-	LeftUpperLeg = true,
-	LowerTorso = true,
-	RightFoot = true,
-	RightHand = true,
-	RightLowerArm = true,
-	RightLowerLeg = true,
-	RightUpperArm = true,
-	RightUpperLeg = true,
-	UpperTorso = true,
-	HumanoidRootPart = true,
-}
+-- local VALIDPARTS = {
+-- 	Head = true,
+-- 	LeftFoot = true,
+-- 	LeftHand = true,
+-- 	LeftLowerArm = true,
+-- 	LeftLowerLeg = true,
+-- 	LeftUpperArm = true,
+-- 	LeftUpperLeg = true,
+-- 	LowerTorso = true,
+-- 	RightFoot = true,
+-- 	RightHand = true,
+-- 	RightLowerArm = true,
+-- 	RightLowerLeg = true,
+-- 	RightUpperArm = true,
+-- 	RightUpperLeg = true,
+-- 	UpperTorso = true,
+-- 	HumanoidRootPart = true,
+-- }
 
 local player = Players.LocalPlayer
 
@@ -207,10 +208,9 @@ function Render(dt: number)
 	debug.profileend()
 end
 
-function CombatCharacterAdded(character: Model)
-	local HRP = character:FindFirstChild("HumanoidRootPart")
-	if not HRP then
-		-- probably a chest
+function CharacterAdded(player: Player, character: Model)
+	local data = DataController.GetPublicDataForPlayer(player):Await()
+	if not data or not data.InCombat then
 		return
 	end
 
@@ -304,17 +304,16 @@ function HandleBushRemoved(bush)
 end
 
 function BushController.Initialize()
-	for i, v in pairs(CombatPlayer.GetAllCombatPlayerCharacters()) do
-		CombatCharacterAdded(v)
+	for i, v in pairs(Players:GetPlayers()) do
+		if v.Character then
+			Spawn(CharacterAdded, v, v.Character)
+		end
 	end
 
 	-- CombatCharacterAdded relies on body parts, so we need to wait for character
 	-- To fully replicate before running
 	CharacterReplicationController.Added:Connect(function(player, char)
-		local data = DataController.GetPublicDataForPlayer(player):Await()
-		if data and data.InCombat then
-			CombatCharacterAdded(char)
-		end
+		CharacterAdded(player, char)
 	end)
 	CombatPlayer.CombatPlayerRemoved():Connect(CombatCharacterRemoved)
 

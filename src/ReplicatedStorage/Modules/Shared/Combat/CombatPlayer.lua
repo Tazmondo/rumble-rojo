@@ -18,6 +18,7 @@ local Config = require(script.Parent.Config)
 local SyncEvent: any
 local UpdateEvent: any
 local AimEvent: any
+local ObjectReplicationEvent: any
 
 local SoundController
 local DataController
@@ -32,6 +33,7 @@ local VFXService
 local DataService
 if RunService:IsServer() then
 	VFXService = require(ServerStorage.Modules.VFXService)
+	ObjectReplicationEvent = require(ReplicatedStorage.Events.CharacterReplication.ObjectReplicationEvent):Server()
 	SyncEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerSyncEvent):Server()
 	UpdateEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerUpdateEvent):Server()
 	DataService = require(ServerStorage.Modules.DataService)
@@ -149,6 +151,8 @@ function CombatPlayer.newChest(health: number, model: Model): CombatPlayer
 	self.health = health
 
 	self:Update()
+
+	ObjectReplicationEvent:FireAll(self.character)
 
 	return self :: CombatPlayer
 end
