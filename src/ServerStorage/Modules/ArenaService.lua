@@ -205,6 +205,7 @@ function ArenaService.StartMatch()
 
 	local map = assert(MapService:GetMap())
 	local storm = Storm.new(map)
+	storm:Start()
 
 	while RoundTime < CONFIG.RoundLength and not winner and ArenaService.GetRegisteredPlayersLength() > 0 do
 		-- determine winner stuff
