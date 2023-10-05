@@ -204,21 +204,21 @@ function CombatPlayer.CombatPlayerRemoved()
 end
 
 function CombatPlayer.GetDamageBetween(attacker: CombatPlayer, victim: CombatPlayer, attack: HeroData.AbilityData)
-	local baseDamage = attack.Damage
+	local baseDamage = if attack.AbilityType == "Attack" then attacker.baseAttackDamage else attacker.baseSuperDamage
 	local boosterDamage = math.round(baseDamage * (1 + attacker.boosterCount * Config.BoosterDamage))
 	local finalDamage = boosterDamage * attacker:GetDamageMultiplier(victim) * victim:GetDefenceMultiplier()
 
-	return finalDamage
+	return math.round(finalDamage)
 end
 
 function CombatPlayer.GetDamageMultiplier(self: CombatPlayer, victim: CombatPlayer?)
 	-- Bigger = do more damage
-	return 1
+	return self.modifiers.Damage(self)
 end
 
 function CombatPlayer.GetDefenceMultiplier(self: CombatPlayer)
 	-- Smaller = take less damage
-	return 1
+	return self.modifiers.Defence(self)
 end
 
 function CombatPlayer.Sync(self: CombatPlayer, funcName, ...)

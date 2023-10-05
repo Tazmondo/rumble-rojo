@@ -94,6 +94,19 @@ Modifiers.Regen = {
 	end,
 }
 
+Modifiers.Fury = {
+	Name = "Fury",
+	Description = "Do 15% extra damage when under 50% HP.",
+	Price = 750,
+	Damage = function(self)
+		if self.health / self.maxHealth <= 0.5 then
+			return 1.15
+		else
+			return 1
+		end
+	end,
+}
+
 -- Validate modifiers
 for modifier, data in pairs(Modifiers :: any) do
 	assert(data.Name)

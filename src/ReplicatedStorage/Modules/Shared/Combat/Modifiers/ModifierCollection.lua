@@ -16,9 +16,14 @@ function ModifierCollection.new(modifiers: { CombatPlayer.Modifier })
 	for key, value in pairs(DefaultModifier) do
 		if typeof(value) == "function" then
 			self[key] = function(...)
+				local number = 1
 				for i, modifier: CombatPlayer.ModifierCollection in ipairs(modifiers) do
-					modifier[key](...)
+					local result = modifier[key](...)
+					if typeof(result) == "number" then
+						number *= result
+					end
 				end
+				return number
 			end
 		end
 	end

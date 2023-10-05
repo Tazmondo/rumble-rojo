@@ -9,7 +9,11 @@ return {
 	Price = 0,
 	Modify = function() end,
 	OnHit = function() end,
-	Damage = function() end,
-	Defence = function() end,
+	Damage = function()
+		return 1
+	end,
+	Defence = function()
+		return 1
+	end,
 	OnHidden = function() end,
 }
