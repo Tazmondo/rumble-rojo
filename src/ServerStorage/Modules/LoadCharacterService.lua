@@ -85,7 +85,9 @@ function InitializeCharacter(player: Player, model: Model?, spawnPosition: CFram
 			-- "exception while signaling: Must be a LuaSourceContainer"
 			-- this error only occurs in studio and doesnt mean anything
 			-- it's probably a result of some internal code roblox runs when replicating player.Character
-			warn("The following error can be ignored.")
+
+			-- UPDATE: Doesn't seem to be triggering anymore
+			-- warn("The following error can be ignored.")
 		end
 		model.Parent = workspace
 		model:MoveTo(spawnPosition.Position)
