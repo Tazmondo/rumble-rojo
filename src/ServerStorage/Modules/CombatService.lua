@@ -258,8 +258,8 @@ function processHit(
 	victimCombatPlayer:TakeDamage(damage) -- Will update state to dead if this kills
 	local afterState = victimCombatPlayer:GetState()
 
-	combatPlayer.modifiers.OnHit(combatPlayer, victimCombatPlayer)
-	victimCombatPlayer.modifiers.OnReceiveHit(victimCombatPlayer, combatPlayer)
+	combatPlayer.modifiers.OnHit(combatPlayer, victimCombatPlayer, attackDetails)
+	victimCombatPlayer.modifiers.OnReceiveHit(victimCombatPlayer, combatPlayer, attackDetails)
 
 	local died = victimCombatPlayer:GetState() == "Dead" and beforeState ~= afterState
 

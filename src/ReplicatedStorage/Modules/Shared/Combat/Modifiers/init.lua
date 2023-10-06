@@ -11,8 +11,16 @@ local Modifiers: {
 		Modify: ((CombatPlayer.CombatPlayer) -> ())?,
 		Damage: ((CombatPlayer.CombatPlayer) -> number)?,
 		Defence: ((CombatPlayer.CombatPlayer) -> number)?,
-		OnHit: ((self: CombatPlayer.CombatPlayer, victim: CombatPlayer.CombatPlayer) -> ())?,
-		OnReceiveHit: ((self: CombatPlayer.CombatPlayer, attacker: CombatPlayer.CombatPlayer) -> ())?,
+		OnHit: ((
+			self: CombatPlayer.CombatPlayer,
+			victim: CombatPlayer.CombatPlayer,
+			details: CombatPlayer.Attack
+		) -> ())?,
+		OnReceiveHit: ((
+			self: CombatPlayer.CombatPlayer,
+			attacker: CombatPlayer.CombatPlayer,
+			details: CombatPlayer.Attack
+		) -> ())?,
 		OnHidden: ((self: CombatPlayer.CombatPlayer, hidden: boolean) -> ())?,
 	},
 } =
@@ -21,6 +29,7 @@ local Modifiers: {
 Modifiers.Default = TableUtil.Copy(DefaultModifier, true) :: any
 Modifiers[""] = TableUtil.Copy(DefaultModifier, true) :: any
 
+--------- REGULAR MODIFIERS ------------
 Modifiers.Fast = {
 	Name = "Fast",
 	Description = "You move 10% faster!",
@@ -43,7 +52,7 @@ Modifiers.Slow = {
 	Name = "Slow",
 	Description = "Attacks slow enemies by 15% when you are under 50% hp.",
 	Price = 1000,
-	OnHit = function(self, victim)
+	OnHit = function(self, victim, details)
 		if self.health / self.maxHealth > 0.5 then
 			return
 		end
@@ -56,7 +65,6 @@ Modifiers.Slow = {
 				victim:SetStatusEffect("Slow", nil)
 			end
 		end)
-		-- TODO
 	end,
 }
 
@@ -133,7 +141,7 @@ Modifiers.Rat = {
 	Name = "Rat",
 	Description = "Gain a burst of speed when reduced below 20% HP, once per round.",
 	Price = 500,
-	OnReceiveHit = function(self, attacker)
+	OnReceiveHit = function(self, attacker, details)
 		if self.health / self.maxHealth >= 0.2 then
 			return
 		end
@@ -157,13 +165,52 @@ Modifiers.TrueSight = {
 	Name = "TrueSight",
 	Description = "Reveal your opponents for 3 seconds after hitting them. They can't hide from you!",
 	Price = 550,
-	OnHit = function(self, victim)
+	OnHit = function(self, victim, details)
 		local value = { true }
 		victim:SetStatusEffect("TrueSight", value)
 		task.delay(3, function()
 			if victim.statusEffects["TrueSight"] == value then
 				victim:SetStatusEffect("TrueSight")
 			end
+		end)
+	end,
+}
+
+------ TALENTS ----------
+Modifiers.ShellShock = {
+	Name = "Shell Shock",
+	Description = "Slow your enemies for 2 seconds when they're hit by Super Shell!",
+	Price = 1000,
+	OnHit = function(self, victim, details)
+		if details.Data.AbilityType ~= "Super" then
+			return
+		end
+
+		-- Use a table instead of value so we can make sure it hasn't been overwritten when removing the slow
+		local slowTable = { 0.75 }
+		victim:SetStatusEffect("Slow", slowTable)
+
+		task.delay(2, function()
+			if victim.statusEffects["Slow"] == slowTable then
+				victim:SetStatusEffect("Slow", nil)
+			end
+		end)
+	end,
+}
+
+Modifiers.BandAid = {
+	Name = "Band Aid",
+	Description = "When dropping below 40% health, immediately heal for 2000 HP! This recharges after 15 seconds.",
+	Price = 1000,
+	OnReceiveHit = function(self)
+		if self.health / self.maxHealth > 0.4 or self.statusEffects["BandAidCooldown"] then
+			return
+		end
+		self:Heal(2000)
+		self.statusEffects["BandAidCooldown"] = true
+
+		task.delay(15, function()
+			self.statusEffects["BandAidCooldown"] = nil
 		end)
 	end,
 }
