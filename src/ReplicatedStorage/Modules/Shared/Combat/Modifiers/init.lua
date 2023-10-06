@@ -177,6 +177,15 @@ Modifiers.TrueSight = {
 	end,
 }
 
+Modifiers.GadgetCharge = {
+	Name = "Gadget Charge",
+	Description = "Get an extra gadget use",
+	Price = 350,
+	Modify = function(self)
+		self.gadgetUses += 1
+	end,
+}
+
 ------ TALENTS ----------
 
 -- TAZ --

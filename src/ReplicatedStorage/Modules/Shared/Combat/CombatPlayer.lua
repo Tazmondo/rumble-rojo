@@ -96,6 +96,7 @@ function InitializeSelf(
 	self.baseRegenRate = 1
 	self.baseAmmoRegen = self.heroData.Attack.AmmoRegen
 	self.requiredSuperCharge = self.heroData.Super.Charge
+	self.gadgetUses = 2
 
 	modifiers.Modify(self)
 	self.modifiers = modifiers :: ModifierCollection
@@ -569,16 +570,26 @@ export type Modifier = {
 	Name: string,
 	Description: string,
 	Price: number?, -- No price = unbuyable. Price: 0  = free
-} & ModifierCollection
+} & ModifierFunctions
 
-export type ModifierCollection = {
-	Modifiers: { string },
+type ModifierFunctions = {
 	Modify: (CombatPlayer) -> (), -- Called when initialized
 	Damage: (CombatPlayer) -> number, -- Called when dealing damage
 	Defence: (CombatPlayer) -> number, -- Called when taking damage
 	OnHidden: (CombatPlayer, hidden: boolean) -> (), -- Called when entering/exiting bush
 	OnHit: (self: CombatPlayer, victim: CombatPlayer, details: Attack) -> (), -- Called when hitting an enemy
 	OnReceiveHit: (self: CombatPlayer, attacker: CombatPlayer, details: Attack) -> (), -- Called when hit by an enemy
+}
+
+export type ModifierCollection = {
+	Modifiers: { string },
+} & ModifierFunctions
+
+export type Gadget = {
+	Name: string,
+	Description: string,
+	Price: number?, -- No price = unbuyable. Price: 0  = free,
+	OnUse: (self: CombatPlayer) -> (),
 }
 
 return CombatPlayer

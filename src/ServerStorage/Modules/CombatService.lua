@@ -637,7 +637,8 @@ function CombatService:Initialize()
 	for _, v in pairs(workspace:GetChildren()) do
 		if v.Name == "TestDummy" then
 			print("Initializing test dummy")
-			local combatPlayer = CombatPlayer.new("Frankie", v, Modifiers.Default) :: CombatPlayer.CombatPlayer
+			local combatPlayer =
+				CombatPlayer.new("Frankie", v, ModifierCollection.new({ Modifiers.Default })) :: CombatPlayer.CombatPlayer
 			CombatPlayerData[v] = combatPlayer
 		elseif v.Name == "Chest" then
 			CombatService.RegisterChest(v)
