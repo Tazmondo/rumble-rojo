@@ -3,6 +3,7 @@ local CharacterReplicationController = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Bin = require(ReplicatedStorage.Packages.Bin)
+local Future = require(ReplicatedStorage.Packages.Future)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local DataController = require(script.Parent.DataController)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
@@ -14,9 +15,25 @@ local ObjectReplicationEvent = require(ReplicatedStorage.Events.CharacterReplica
 local replicatedSignal = Signal()
 CharacterReplicationController.Added = Signal()
 
+local characters = {}
+
+function CharacterReplicationController.HasReplicated(character: Model)
+	return Future.new(function()
+		if not Players:GetPlayerFromCharacter(character) then
+			return
+		end
+
+		while characters[character] ~= true and character.Parent ~= nil do
+			task.wait()
+		end
+	end)
+end
+
 function CharacterAdded(player: Player, char: Model)
+	characters[char] = false
 	if #char:GetChildren() > 0 then
 		-- Already replicated, so skip
+		characters[char] = true
 		CharacterReplicationController.Added:Fire(player, char)
 	end
 	local Add, Remove = Bin()
@@ -25,7 +42,13 @@ function CharacterAdded(player: Player, char: Model)
 		if replicatedPlayer == player then
 			Remove()
 			if replicatedChar == char then
+				characters[char] = true
 				CharacterReplicationController.Added:Fire(player, char)
+				char.Destroying:Once(function()
+					characters[char] = nil
+				end)
+			else
+				characters[char] = nil
 			end
 		end
 	end))

@@ -6,12 +6,11 @@ local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local CharacterReplicationController = require(ReplicatedStorage.Modules.Client.CharacterReplicationController)
-local DataController = require(ReplicatedStorage.Modules.Client.DataController)
+local CombatPlayerController = require(script.Parent.CombatPlayerController)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Bin = require(ReplicatedStorage.Packages.Bin)
-local Spawn = require(ReplicatedStorage.Packages.Spawn)
 
 local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Client()
 
@@ -48,6 +47,7 @@ type CharacterData = {
 	CurrentOpacity: number,
 	TargetOpacity: number,
 	LastHit: number,
+	CombatData: Types.UpdateData,
 }
 
 local characterData: { [Model]: CharacterData } = {}
@@ -145,10 +145,6 @@ function Render(dt: number)
 			continue
 		end
 
-		if os.clock() - data.LastHit < HITREVEALTIME then
-			continue
-		end
-
 		for bush, active in pairs(activeBushes) do
 			if not active then
 				continue
@@ -169,9 +165,11 @@ function Render(dt: number)
 				break
 			end
 		end
-		if not inBush then
+
+		if not inBush or os.clock() - data.LastHit < HITREVEALTIME or data.CombatData.Revealed then
 			SetOpacity(character, 1)
 		end
+
 		if isPlayerCharacter then
 			local combatPlayer = CombatPlayer.GetClientCombatPlayer()
 			if combatPlayer then
@@ -214,12 +212,8 @@ function Render(dt: number)
 	debug.profileend()
 end
 
-function CharacterAdded(player: Player, character: Model)
-	local data = DataController.GetPublicDataForPlayer(player):Await()
-	if not data or not data.InCombat then
-		return
-	end
-
+function CharacterAdded(data: Types.UpdateData)
+	local character = data.Character
 	if characterData[character] then
 		warn("Combat character added twice without being removed!")
 		return
@@ -235,12 +229,15 @@ function CharacterAdded(player: Player, character: Model)
 		end
 	end
 
+	local combatPlayerData = assert(CombatPlayerController.GetData(character):Await())
+
 	characterData[character] = {
 		BaseTransparency = baseTransparencies,
 		Emitters = emitters,
 		LastHit = 0,
 		CurrentOpacity = 1,
 		TargetOpacity = 1,
+		CombatData = combatPlayerData,
 	}
 end
 
@@ -310,16 +307,12 @@ function HandleBushRemoved(bush)
 end
 
 function BushController.Initialize()
-	for i, v in pairs(Players:GetPlayers()) do
-		if v.Character then
-			Spawn(CharacterAdded, v, v.Character)
-		end
+	for character, data in pairs(CombatPlayerController.GetCurrentdata()) do
+		CharacterAdded(data)
 	end
 
-	-- CombatCharacterAdded relies on body parts, so we need to wait for character
-	-- To fully replicate before running
-	CharacterReplicationController.Added:Connect(function(player, char)
-		CharacterAdded(player, char)
+	CombatPlayerController.CombatPlayerAdded:Connect(function(data)
+		CharacterAdded(data)
 	end)
 	CombatPlayer.CombatPlayerRemoved():Connect(CombatCharacterRemoved)
 

@@ -249,6 +249,7 @@ function CombatPlayer.AsUpdateData(self: CombatPlayer): Types.UpdateData
 		Character = self.character,
 		Name = if self.player then self.player.DisplayName else self.character.Name,
 		State = self:GetState(),
+		Revealed = self.statusEffects["TrueSight"] ~= nil,
 	}
 end
 
@@ -270,6 +271,8 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 
 	if effect == "Slow" or effect == "Ratty" then
 		self:UpdateSpeed()
+	elseif effect == "TrueSight" then
+		self:Update()
 	else
 		error("Invalid status effect: " .. effect)
 	end

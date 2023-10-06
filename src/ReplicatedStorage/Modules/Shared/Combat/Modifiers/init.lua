@@ -153,6 +153,21 @@ Modifiers.Rat = {
 	end,
 }
 
+Modifiers.TrueSight = {
+	Name = "TrueSight",
+	Description = "Reveal your opponents for 3 seconds after hitting them. They can't hide from you!",
+	Price = 550,
+	OnHit = function(self, victim)
+		local value = { true }
+		victim:SetStatusEffect("TrueSight", value)
+		task.delay(3, function()
+			if victim.statusEffects["TrueSight"] == value then
+				victim:SetStatusEffect("TrueSight")
+			end
+		end)
+	end,
+}
+
 -- Validate modifiers
 for modifier, data in pairs(Modifiers :: any) do
 	assert(data.Name)

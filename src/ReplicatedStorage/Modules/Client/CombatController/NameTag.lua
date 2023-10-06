@@ -3,6 +3,7 @@ print("nametag controller init")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local BushController = require(script.Parent.BushController)
+local CombatPlayerController = require(script.Parent.CombatPlayerController)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
@@ -221,5 +222,12 @@ function NameTag.InitEnemy(data: Types.UpdateData)
 
 	return true
 end
+
+function NameTag.Initialize()
+	CombatPlayerController.CombatPlayerAdded:Connect(function(data)
+		NameTag.InitEnemy(data)
+	end)
+end
+NameTag.Initialize()
 
 return NameTag

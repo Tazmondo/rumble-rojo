@@ -52,7 +52,7 @@ function AttackRenderer.GetCombatPlayerFromValidPart(part: BasePart): Model?
 	if combatPlayer then
 		local dead = false
 
-		local data = CombatPlayerController.GetData(combatPlayer)
+		local data = CombatPlayerController.GetData(combatPlayer):Await()
 
 		if data then
 			dead = data.State == "Dead"
