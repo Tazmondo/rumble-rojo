@@ -114,6 +114,19 @@ Modifiers.SuperCharge = {
 	end,
 }
 
+Modifiers.Bulwark = {
+	Name = "Bulwark",
+	Description = "When under 50% HP, take 20% reduced damage.",
+	Price = 550,
+	Defence = function(self)
+		if self.health / self.maxHealth <= 0.5 then
+			return 0.8
+		else
+			return 1
+		end
+	end,
+}
+
 -- Validate modifiers
 for modifier, data in pairs(Modifiers :: any) do
 	assert(data.Name)
