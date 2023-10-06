@@ -373,51 +373,30 @@ function RenderHeroSelectScreen()
 	details:FindFirstChild("2-Name").Text = string.upper(displayedHero)
 	details:FindFirstChild("3-Description").Text = heroData.Description
 
-	local inactiveCount = 0
-	local activeCount = 0
-	for i, v in pairs(frame.Stats.Frame:FindFirstChild("1-Offence").Details.Meter:GetChildren()) do
-		if not v:IsA("ImageLabel") then
-			continue
-		end
-		if v.Name == "RedDot" and activeCount < heroData.Offence then
-			activeCount += 1
-			v.Visible = true
-		elseif v.Name == "WhiteDot" and inactiveCount < (5 - heroData.Offence) then
-			inactiveCount += 1
-			v.Visible = true
-		else
-			v.Visible = false
-		end
-	end
-
-	inactiveCount = 0
-	activeCount = 0
-	for i, v in pairs(frame.Stats.Frame:FindFirstChild("2-Defence").Details.Meter:GetChildren()) do
-		if not v:IsA("ImageLabel") then
-			continue
-		end
-		if v.Name == "GreenDot" and activeCount < heroData.Defence then
-			activeCount += 1
-			v.Visible = true
-		elseif v.Name == "WhiteDot" and inactiveCount < (5 - heroData.Defence) then
-			inactiveCount += 1
-			v.Visible = true
-		else
-			v.Visible = false
-		end
-	end
+	local statsFrame = frame.Stats.Frame
 
 	local combatData = HeroData.HeroData[displayedHero]
+
+	statsFrame.Health.Frame.Number.Text = combatData.Health
+
+	local attackData = combatData.Attack
+	local damageText = statsFrame.Damage.Frame.Number
+	if attackData.AttackType == "Shotgun" then
+		local attackData = attackData :: HeroData.ShotgunData & HeroData.AttackData
+		damageText.Text = attackData.ShotCount .. " x " .. attackData.Damage
+	else
+		damageText.Text = attackData.Damage
+	end
 
 	-- Allow for unavailable heroes to show up in shop
 	local superName = if combatData then combatData.Super.Name else "Coming soon!"
 
-	frame.Stats.Frame:FindFirstChild("3-Super").Details.SuperTitle.Text = superName
+	statsFrame:FindFirstChild("3-Super").Details.SuperTitle.Text = superName
 
-	frame.Stats.Frame.Unavailable.Visible = if heroData.Unavailable and not heroStats then true else false
-	frame.Stats.Frame.Unlock.Cost.Text = heroData.Price
-	frame.Stats.Frame.Unlock.Visible = if heroStats or heroData.Unavailable then false else true
-	frame.Stats.Frame.ChangeOutfit.Visible = if heroStats then true else false
+	details.Unavailable.Visible = if heroData.Unavailable and not heroStats then true else false
+	details.Unlock.Cost.Text = heroData.Price
+	details.Unlock.Visible = if heroStats or heroData.Unavailable then false else true
+	details.ChangeOutfit.Visible = if heroStats then true else false
 
 	-- Don't try to render skins if the hero isn't owned
 	if heroStats then
@@ -751,7 +730,7 @@ function UIController:Initialize()
 
 	local tweenInfo = TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out)
 
-	HeroSelect.Frame.Select.Stats.Frame.ChangeOutfit.Activated:Connect(function()
+	HeroSelect.Frame.Select.Information["2-Details"].ChangeOutfit.Activated:Connect(function()
 		if transitioning then
 			return
 		end
@@ -795,7 +774,7 @@ function UIController:Initialize()
 		end)
 	end)
 
-	HeroSelect.Frame.Select.Stats.Frame.Unlock.Activated:Connect(function()
+	HeroSelect.Frame.Select.Information["2-Details"].Unlock.Activated:Connect(function()
 		if not DataController.CanAffordHero(displayedHero) then
 			ShowBuyBucks()
 			return

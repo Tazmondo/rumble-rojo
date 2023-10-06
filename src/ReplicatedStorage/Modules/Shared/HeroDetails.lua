@@ -27,8 +27,6 @@ type OrderedHero = {
 	Name: string,
 	Description: string,
 	Price: number, -- if zero then free
-	Offence: number,
-	Defence: number,
 	DefaultSkin: string,
 	Unavailable: boolean?,
 	Skins: { OrderedSkin },
@@ -39,8 +37,6 @@ export type Hero = {
 	Name: string,
 	Description: string,
 	Price: number, -- if zero then free
-	Offence: number,
-	Defence: number,
 	DefaultSkin: string,
 	Unavailable: boolean?,
 	Skins: { [string]: Skin },
@@ -52,8 +48,6 @@ local orderedHeroDetails: { OrderedHero } = {
 		Name = "Taz",
 		Description = "Taz's spread-fire shotgun blasts the enemy with Buckshot. His Super destroys cover and keeps his enemies at a distance!",
 		Price = 0,
-		Offence = 4,
-		Defence = 2,
 		DefaultSkin = "Apple",
 		Skins = {
 			{
@@ -104,8 +98,6 @@ local orderedHeroDetails: { OrderedHero } = {
 		Name = "Frankie",
 		Description = "Frankie fires damaging energy waves at enemies. He throws a slime bomb for his Super, striking opponents with a powerful blast!",
 		Price = 100,
-		Offence = 2,
-		Defence = 4,
 		DefaultSkin = "Aqua",
 		Skins = {
 			{
@@ -192,8 +184,6 @@ local orderedHeroDetails: { OrderedHero } = {
 		Name = "Dino",
 		Description = "Dino's combat skills are currently being worked on by the team and will be released in our next big update. Stay tuned.",
 		Price = 500,
-		Offence = 3,
-		Defence = 4,
 		DefaultSkin = "Dino",
 		Unavailable = true,
 		Skins = {
@@ -209,8 +199,6 @@ local orderedHeroDetails: { OrderedHero } = {
 		Name = "Gobzie",
 		Description = "Gobzie's combat skills are currently being worked on by the team and will be released in our next big update. Stay tuned.",
 		Price = 500,
-		Offence = 3,
-		Defence = 4,
 		DefaultSkin = "Gobzie",
 		Unavailable = true,
 		Skins = {
