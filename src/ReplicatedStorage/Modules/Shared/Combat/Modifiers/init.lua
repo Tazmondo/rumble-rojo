@@ -3,6 +3,7 @@ local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local CombatPlayer = require(script.Parent.CombatPlayer)
 local DefaultModifier = require(script.DefaultModifier)
+local HeroData = require(script.Parent.HeroData)
 
 local Modifiers: {
 	[string]: {
@@ -177,6 +178,8 @@ Modifiers.TrueSight = {
 }
 
 ------ TALENTS ----------
+
+-- TAZ --
 Modifiers.ShellShock = {
 	Name = "Shell Shock",
 	Description = "Slow your enemies for 2 seconds when they're hit by Super Shell!",
@@ -211,6 +214,48 @@ Modifiers.BandAid = {
 
 		task.delay(15, function()
 			self.statusEffects["BandAidCooldown"] = nil
+		end)
+	end,
+}
+
+-- FRANKIE --
+Modifiers.SuperBlast = {
+	Name = "Super Blast",
+	Description = "Increases the explosion radius of Slime Bomb by 50%, and its damage by 15%.",
+	Price = 1200,
+	Modify = function(self)
+		self.baseSuperDamage *= 1.15
+		local super = self.heroData.Super :: HeroData.ArcedData & HeroData.SuperData
+		super.Radius *= 1.5
+	end,
+}
+
+Modifiers.Overslime = {
+	Name = "Overslime",
+	Description = "Increases Slime Bomb damage by 50%, but you move 10% slower.",
+	Price = 1000,
+	Modify = function(self)
+		self.baseSuperDamage *= 1.5
+		self.baseSpeed *= 0.9
+	end,
+}
+
+Modifiers.Slimed = {
+	Name = "Slimed",
+	Description = "Slime Bomb stuns your enemies for 1.5 seconds.",
+	Price = 1000,
+	OnHit = function(self, victim, attack)
+		if attack.Data.AbilityType ~= "Super" then
+			return
+		end
+
+		local value = { true }
+		victim:SetStatusEffect("Stun", value)
+
+		task.delay(1.5, function()
+			if victim.statusEffects["Stun"] == value then
+				victim:SetStatusEffect("Stun")
+			end
 		end)
 	end,
 }

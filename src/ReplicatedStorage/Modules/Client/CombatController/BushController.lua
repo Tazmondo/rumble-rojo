@@ -166,7 +166,7 @@ function Render(dt: number)
 			end
 		end
 
-		if not inBush or os.clock() - data.LastHit < HITREVEALTIME or data.CombatData.Revealed then
+		if not inBush or os.clock() - data.LastHit < HITREVEALTIME or data.CombatData.StatusEffects["TrueSight"] then
 			SetOpacity(character, 1)
 		end
 

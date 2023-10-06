@@ -28,7 +28,7 @@ export type UpdateData = {
 	Character: Model,
 	Name: string,
 	State: string,
-	Revealed: boolean,
+	StatusEffects: { [string]: any },
 }
 
 export type Leaderboard = { { Data: number, UserID: string } }

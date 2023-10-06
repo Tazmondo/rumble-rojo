@@ -13,6 +13,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Signal = require(ReplicatedStorage.Packages.Signal)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
 local DefaultModifier = require(script.Parent.Modifiers.DefaultModifier) :: Modifier
@@ -85,7 +86,8 @@ function InitializeSelf(
 		allowance = 0
 	end
 
-	self.heroData = heroData
+	-- We make a copy so that modifiers are able to change the attack details
+	self.heroData = TableUtil.Copy(heroData, true)
 
 	self.baseAttackDamage = self.heroData.Attack.Damage
 	self.baseSuperDamage = self.heroData.Super.Damage
@@ -245,7 +247,7 @@ function CombatPlayer.AsUpdateData(self: CombatPlayer): Types.UpdateData
 		Character = self.character,
 		Name = if self.player then self.player.DisplayName else self.character.Name,
 		State = self:GetState(),
-		Revealed = self.statusEffects["TrueSight"] ~= nil,
+		StatusEffects = self.statusEffects,
 	}
 end
 
@@ -265,7 +267,7 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 		self.statusEffects[effect] = nil
 	end
 
-	if effect == "Slow" or effect == "Ratty" then
+	if effect == "Slow" or effect == "Ratty" or effect == "Stun" then
 		self:UpdateSpeed()
 	elseif effect == "TrueSight" then
 		self:Update()
@@ -308,7 +310,9 @@ function CombatPlayer.UpdateSpeed(self: CombatPlayer)
 	-- Since Data type for slow is {number}
 	local slowModifier = (self.statusEffects["Slow"] or { 1 })[1]
 	local rattyModifier = (self.statusEffects["Ratty"] or 1)
-	local modifier = slowModifier * rattyModifier
+	local stunModifier = if self.statusEffects["Stun"] then 0 else 1
+
+	local modifier = slowModifier * rattyModifier * stunModifier
 
 	self.movementSpeed = self.baseSpeed * modifier
 	print("Updating speed", self.movementSpeed)
@@ -394,6 +398,7 @@ function CombatPlayer.CanAttack(self: CombatPlayer)
 		and os.clock() - self.lastAttackTime >= self.reloadSpeed
 		and self.ammo > 0
 		and self:AttackingEnabled()
+		and self.statusEffects["Stun"] == nil
 	return canAttack
 end
 -- warn("Take CanAttack function out of testing!")
