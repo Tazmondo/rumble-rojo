@@ -121,7 +121,7 @@ Modifiers.SuperCharge = {
 	Modify = function(self)
 		-- Use math.floor here so that it always rounds down.
 		-- For characters like frankie who have a low super requirement
-		self.baseRequiredSuperCharge = math.floor(self.baseRequiredSuperCharge / 1.15)
+		self.requiredSuperCharge = math.floor(self.requiredSuperCharge / 1.15)
 	end,
 }
 

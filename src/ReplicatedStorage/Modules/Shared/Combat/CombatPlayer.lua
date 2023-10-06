@@ -95,7 +95,7 @@ function InitializeSelf(
 	self.baseSpeed = self.heroData.MovementSpeed
 	self.baseRegenRate = 1
 	self.baseAmmoRegen = self.heroData.Attack.AmmoRegen
-	self.baseRequiredSuperCharge = self.heroData.Super.Charge
+	self.requiredSuperCharge = self.heroData.Super.Charge
 
 	modifiers.Modify(self)
 	self.modifiers = modifiers :: ModifierCollection
@@ -107,7 +107,6 @@ function InitializeSelf(
 	self.ammo = self.maxAmmo
 	self.ammoRegen = self.baseAmmoRegen - allowance
 	self.reloadSpeed = self.heroData.Attack.ReloadSpeed - allowance
-	self.requiredSuperCharge = self.baseRequiredSuperCharge
 	self.superCharge = 0
 	self.boosterCount = 0
 
@@ -540,12 +539,6 @@ function CombatPlayer.AddBooster(self: CombatPlayer, count: number)
 
 	self:SetMaxHealth(self.baseHealth * (1 + self.boosterCount * Config.BoosterHealth))
 end
-
--- function CombatPlayer.GetAttackDamage(self: CombatPlayer, attackType: "Attack" | "Super")
--- 	local baseDamage = if attackType == "Attack" then self.baseAttackDamage else self.baseSuperDamage
-
--- 	return math.round(baseDamage + (baseDamage * Config.BoosterDamage - baseDamage) * self.boosterCount)
--- end
 
 function CombatPlayer.Destroy(self: CombatPlayer)
 	-- warn("CombatPlayer was destroyed, but this is undefined behaviour! Killing humanoid instead.")
