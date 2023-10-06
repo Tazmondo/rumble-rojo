@@ -378,21 +378,29 @@ function RenderHeroSelectScreen()
 
 	local combatData = HeroData.HeroData[displayedHero]
 
-	statsFrame.Health.Frame.Number.Text = combatData.Health
+	local damageText
+	local healthText
 
-	local attackData = combatData.Attack
-	local damageText = statsFrame.Damage.Frame.Number
-	if attackData.AttackType == "Shotgun" then
-		local attackData = attackData :: HeroData.ShotgunData & HeroData.AttackData
-		damageText.Text = attackData.ShotCount .. " x " .. attackData.Damage
+	if combatData then
+		healthText = tostring(combatData.Health)
+		local attackData = combatData.Attack
+		if attackData.AttackType == "Shotgun" then
+			local attackData = attackData :: HeroData.ShotgunData & HeroData.AttackData
+			damageText = attackData.ShotCount .. " x " .. attackData.Damage
+		else
+			damageText = tostring(attackData.Damage)
+		end
 	else
-		damageText.Text = attackData.Damage
+		healthText = "Coming soon!"
+		damageText = "Coming soon!"
 	end
+	statsFrame.Health.Frame.Number.Text = healthText
+	statsFrame.Damage.Frame.Number.Text = damageText
 
 	-- Allow for unavailable heroes to show up in shop
 	local superName = if combatData then combatData.Super.Name else "Coming soon!"
 
-	statsFrame:FindFirstChild("3-Super").Details.SuperTitle.Text = superName
+	statsFrame.Super.Frame.SuperName.Text = superName
 
 	details.Unavailable.Visible = if heroData.Unavailable and not heroStats then true else false
 	details.Unlock.Cost.Text = heroData.Price
@@ -808,12 +816,20 @@ function UIController:Initialize()
 		ShowBuyBucks()
 	end)
 
+	BuyBucksUI.Frame.ImageLabel.Header.Title.Exit.Activated:Connect(function()
+		BuyBucksUI.Enabled = false
+	end)
+
 	MainUI.Interface.Inventory.Shop.Activated:Connect(function()
 		OpenHeroSelect()
 	end)
 
-	BuyBucksUI.Frame.ImageLabel.Header.Title.Exit.Activated:Connect(function()
-		BuyBucksUI.Enabled = false
+	HeroSelect.Frame.Select.Stats.Frame.Boosts.Activated:Connect(function()
+		HeroSelect.BoostShop.Visible = true
+	end)
+
+	HeroSelect.BoostShop.ItemShop.Header.Exit.Activated:Connect(function()
+		HeroSelect.BoostShop.Visible = false
 	end)
 
 	for i, button in pairs(BuyBucksUI.Frame.ImageLabel.BuyButtons:GetChildren()) do
