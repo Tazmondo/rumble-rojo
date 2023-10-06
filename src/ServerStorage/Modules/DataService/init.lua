@@ -25,7 +25,7 @@ local SelectHeroEvent = require(ReplicatedStorage.Events.Data.SelectHeroEvent):S
 local SelectSkinEvent = require(ReplicatedStorage.Events.Data.SelectSkinEvent):Server()
 
 -- increment this to reset the datastore
-local studioPrefix = if RunService:IsStudio() then "Studio_" else ""
+local studioPrefix = if RunService:IsStudio() then "Studio1_" else ""
 local STOREPREFIX = studioPrefix .. "Player5_"
 
 local Profiles = {} :: { [Player]: Profile }
@@ -213,7 +213,7 @@ local function reconcile(player: Player, profile)
 		end
 
 		if data.OwnedHeroes[heroName] then
-			CorrectOwnedHero(heroData, data.OwnedHeroes[heroName])
+			data.OwnedHeroes[heroName] = CorrectOwnedHero(heroData, data.OwnedHeroes[heroName])
 		end
 	end
 
