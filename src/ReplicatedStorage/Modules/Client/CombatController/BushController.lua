@@ -213,6 +213,7 @@ function Render(dt: number)
 end
 
 function CharacterAdded(data: Types.UpdateData)
+	print("Character added", data)
 	local character = data.Character
 	if characterData[character] then
 		warn("Combat character added twice without being removed!")

@@ -17,6 +17,7 @@ local combatPlayers: { [Model]: Types.UpdateData } = {}
 CombatPlayerController.CombatPlayerAdded = Signal()
 
 function MakeNewCombatPlayer(data: Types.UpdateData)
+	print("make new combat player", data)
 	if combatPlayers[data.Character] then
 		warn("Overwriting combat player with new data")
 		return
@@ -34,23 +35,16 @@ function MakeNewCombatPlayer(data: Types.UpdateData)
 end
 
 function HandleUpdate(data: Types.UpdateData)
-	print("received", data)
-	task.spawn(function()
-		if data.Character == Players.LocalPlayer.Character then
-			return
+	local oldData = combatPlayers[data.Character]
+	if not oldData then
+		CharacterReplicationController.HasReplicated(data.Character):Await()
+		oldData = MakeNewCombatPlayer(data)
+	else
+		-- Don't directly replace it to ensure tables is updated
+		for key, value in pairs(data) do
+			oldData[key] = value
 		end
-
-		local oldData = combatPlayers[data.Character]
-		if not oldData then
-			CharacterReplicationController.HasReplicated(data.Character):Await()
-			oldData = MakeNewCombatPlayer(data)
-		else
-			-- Don't directly replace it to ensure tables is updated
-			for key, value in pairs(data) do
-				oldData[key] = value
-			end
-		end
-	end)
+	end
 end
 
 function CombatPlayerController.GetData(character: Model)

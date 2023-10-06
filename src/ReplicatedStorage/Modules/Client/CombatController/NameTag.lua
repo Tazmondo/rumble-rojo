@@ -1,5 +1,6 @@
 --!nonstrict
 print("nametag controller init")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local BushController = require(script.Parent.BushController)
@@ -18,6 +19,8 @@ local HaloFolder = Instance.new("Folder", workspace)
 HaloFolder.Name = "Halo Folder"
 
 local SPINSPEED = 1.5 -- Seconds for full rotation
+
+local localPlayer = Players.LocalPlayer
 
 function NameTag.InitFriendly(combatPlayer: CombatPlayer.CombatPlayer)
 	local character = combatPlayer.character
@@ -225,6 +228,12 @@ end
 
 function NameTag.Initialize()
 	CombatPlayerController.CombatPlayerAdded:Connect(function(data)
+		if data.Character == localPlayer.Character then
+			-- Friendly initialization is done by the combat client, not handled
+			-- by the combatplayercontroller, as it does not have a complete
+			-- combatplayer object
+			return
+		end
 		NameTag.InitEnemy(data)
 	end)
 end

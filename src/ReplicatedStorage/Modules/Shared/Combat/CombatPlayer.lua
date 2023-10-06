@@ -231,11 +231,7 @@ end
 
 function CombatPlayer.Update(self: CombatPlayer)
 	if RunService:IsServer() then
-		if self.player then
-			UpdateEvent:FireAllExcept(self.player, self:AsUpdateData())
-		else
-			UpdateEvent:FireAll(self:AsUpdateData())
-		end
+		UpdateEvent:FireAll(self:AsUpdateData())
 	end
 end
 
