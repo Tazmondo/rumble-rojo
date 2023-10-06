@@ -7,7 +7,7 @@ local Client = ReplicatedStorage.Modules.Client
 
 print("Beginning loading.")
 
-local loaded = Loader.LoadChildren(Client)
+Loader.LoadChildren(Client)
 
 print("Finished loading, firing server.")
 

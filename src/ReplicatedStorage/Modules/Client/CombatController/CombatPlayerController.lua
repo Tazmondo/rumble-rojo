@@ -3,7 +3,6 @@
 print("init combatplayercontroller")
 local CombatPlayerController = {}
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CharacterReplicationController = require(ReplicatedStorage.Modules.Client.CharacterReplicationController)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
