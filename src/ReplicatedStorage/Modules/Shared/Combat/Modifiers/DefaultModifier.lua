@@ -9,6 +9,7 @@ return {
 	Price = 0,
 	Modify = function() end,
 	OnHit = function() end,
+	OnReceiveHit = function() end,
 	Damage = function()
 		return 1
 	end,

@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local CombatPlayer = require(script.Parent.CombatPlayer)
 local DefaultModifier = require(script.DefaultModifier)
@@ -11,6 +12,7 @@ local Modifiers: {
 		Damage: ((CombatPlayer.CombatPlayer) -> number)?,
 		Defence: ((CombatPlayer.CombatPlayer) -> number)?,
 		OnHit: ((self: CombatPlayer.CombatPlayer, victim: CombatPlayer.CombatPlayer) -> ())?,
+		OnReceiveHit: ((self: CombatPlayer.CombatPlayer, attacker: CombatPlayer.CombatPlayer) -> ())?,
 		OnHidden: ((self: CombatPlayer.CombatPlayer, hidden: boolean) -> ())?,
 	},
 } =
@@ -123,6 +125,30 @@ Modifiers.Bulwark = {
 			return 0.8
 		else
 			return 1
+		end
+	end,
+}
+
+Modifiers.Rat = {
+	Name = "Rat",
+	Description = "Gain a burst of speed when reduced below 20% HP, once per round.",
+	Price = 500,
+	OnReceiveHit = function(self, attacker)
+		if self.health / self.maxHealth >= 0.2 then
+			return
+		end
+
+		-- We only want to trigger the effect once
+		if not self.statusEffects["Rat"] then
+			self:SetStatusEffect("Rat", 2)
+			Spawn(function()
+				-- Run at full speed for a second, and then slow down
+				task.wait(2)
+				while self.statusEffects["Rat"] > 1 do
+					local dt = task.wait()
+					self:SetStatusEffect("Rat", math.max(1, self.statusEffects["Rat"] - (dt / 1)))
+				end
+			end)
 		end
 	end,
 }

@@ -259,6 +259,7 @@ function processHit(
 	local afterState = victimCombatPlayer:GetState()
 
 	combatPlayer.modifiers.OnHit(combatPlayer, victimCombatPlayer)
+	victimCombatPlayer.modifiers.OnReceiveHit(victimCombatPlayer, combatPlayer)
 
 	local died = victimCombatPlayer:GetState() == "Dead" and beforeState ~= afterState
 

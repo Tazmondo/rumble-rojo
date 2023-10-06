@@ -260,7 +260,7 @@ function CombatPlayer.IsDead(self: CombatPlayer)
 	return self.state == "Dead"
 end
 
-function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value: { any }?)
+function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value: any?)
 	self:Sync("SetStatusEffect", effect, value)
 	if value then
 		self.statusEffects[effect] = value
@@ -268,7 +268,7 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 		self.statusEffects[effect] = nil
 	end
 
-	if effect == "Slow" then
+	if effect == "Slow" or effect == "Ratty" then
 		self:UpdateSpeed()
 	else
 		error("Invalid status effect: " .. effect)
@@ -307,7 +307,9 @@ end
 
 function CombatPlayer.UpdateSpeed(self: CombatPlayer)
 	-- Since Data type for slow is {number}
-	local modifier = (self.statusEffects["Slow"] or { 1 })[1]
+	local slowModifier = (self.statusEffects["Slow"] or { 1 })[1]
+	local rattyModifier = (self.statusEffects["Ratty"] or 1)
+	local modifier = slowModifier * rattyModifier
 
 	self.movementSpeed = self.baseSpeed * modifier
 	print("Updating speed", self.movementSpeed)
@@ -579,6 +581,7 @@ export type ModifierCollection = {
 	Defence: (CombatPlayer) -> number, -- Called when taking damage
 	OnHidden: (CombatPlayer, hidden: boolean) -> (), -- Called when entering/exiting bush
 	OnHit: (self: CombatPlayer, victim: CombatPlayer) -> (), -- Called when hitting an enemy
+	OnReceiveHit: (self: CombatPlayer, attacker: CombatPlayer) -> (), -- Called when hit by an enemy
 }
 
 return CombatPlayer
