@@ -411,18 +411,6 @@ function CombatService:GetCombatPlayerForCharacter(character: Model): CombatPlay
 	return CombatPlayerData[character]
 end
 
-function CombatService:InitializeNameTag(character: Model, combatPlayer: CombatPlayer.CombatPlayer, player: Player?)
-	self = self :: CombatService
-
-	-- local nameTag = NameTag.Init(character, combatPlayer, player)
-	task.spawn(function()
-		while character and CombatPlayerData[character] do
-			task.wait()
-		end
-		-- nameTag:Destroy()
-	end)
-end
-
 function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 	self = self :: CombatService
 	return Future.new(function()
@@ -446,8 +434,8 @@ function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 		dataPublic.InCombat = true
 		DataService.WaitForReplication():Await()
 
-		local success = self:SpawnCharacter(player, newCFrame):Await()
-		return success
+		self:SpawnCharacter(player, newCFrame):Await()
+		return true
 	end)
 end
 
@@ -469,15 +457,7 @@ function CombatService:ExitPlayerCombat(player: Player)
 		-- Must wait for replication, otherwise the client will still think the player is in combat
 		-- when the character loads
 		DataService.WaitForReplication():Await()
-		local success, char = self:SpawnCharacter(player):Await()
-		if not success then
-			warn("Failed to spawn character!")
-			local success, char = self:SpawnCharacter(player):Await()
-			if not success then
-				warn("Failed to spawn character again!!!")
-			end
-			return char
-		end
+		local char = self:SpawnCharacter(player):Await()
 		return char
 	end)
 end
@@ -508,8 +488,6 @@ function CombatService:SetupCombatPlayer(player: Player, details: PlayerCombatDe
 		CombatPlayer.new(details.HeroName, char, ModifierCollection.new(modifiers), player) :: CombatPlayer.CombatPlayer
 	CombatPlayerData[char] = combatPlayer
 
-	self:InitializeNameTag(char, combatPlayer, player)
-
 	print("Asking client to initialize combat player")
 	CombatPlayerInitializeEvent:Fire(player, details.HeroName, details.Modifiers)
 end
@@ -518,7 +496,7 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	self = self :: CombatService
 	print("Spawning Character", player)
 
-	return Future.Try(function()
+	return Future.new(function()
 		local playerData = DataService.GetPublicData(player):Await()
 		if not playerData then
 			-- player left so dont need to continue spawning
@@ -660,7 +638,6 @@ function CombatService:Initialize()
 		if v.Name == "TestDummy" then
 			local combatPlayer = CombatPlayer.new("Frankie", v, Modifiers.Default) :: CombatPlayer.CombatPlayer
 			CombatPlayerData[v] = combatPlayer
-			self:InitializeNameTag(v, combatPlayer)
 		elseif v.Name == "Chest" then
 			CombatService.RegisterChest(v)
 		end
