@@ -10,6 +10,7 @@ local CONFIG = {
 	QueueOnJoin = true,
 	LobbyMovementSpeed = 24,
 	LobbyPlayerScale = 1.5,
+	LobbyJumpPower = 65,
 }
 
 -- don't edit this to affect the game, this is just for studio testing
@@ -23,6 +24,7 @@ local studioconfig = {
 	QueueOnJoin = false,
 	LobbyMovementSpeed = 28,
 	LobbyPlayerScale = 1.5,
+	LobbyJumpPower = 65,
 }
 
 local out = if RunService:IsStudio() then studioconfig else CONFIG

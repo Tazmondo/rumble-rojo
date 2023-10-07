@@ -524,6 +524,7 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 		else
 			character:ScaleTo(ServerConfig.LobbyPlayerScale)
 			humanoid.WalkSpeed = ServerConfig.LobbyMovementSpeed
+			humanoid.JumpPower = ServerConfig.LobbyJumpPower -- Scaled jump power (75) is too high and looks weird
 		end
 
 		-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
