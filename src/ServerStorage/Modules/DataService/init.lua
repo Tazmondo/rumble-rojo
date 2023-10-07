@@ -51,6 +51,7 @@ local DataSent = Signal()
 
 -- makes sure the owned hero table is valid, or creates it if not
 function CorrectOwnedHero(heroData: HeroDetails.Hero, ownedHero: Data.OwnedHeroData?)
+	debug.profilebegin("CorrectOwnedHero")
 	if not ownedHero then
 		ownedHero = TableUtil.Copy(Data.OwnedHeroTemplate, true)
 	else
@@ -67,6 +68,41 @@ function CorrectOwnedHero(heroData: HeroDetails.Hero, ownedHero: Data.OwnedHeroD
 	if not heroData.Skins[skin] then
 		ownedHero.SelectedSkin = heroData.DefaultSkin
 	end
+
+	local modifiers = ownedHero.SelectedModifiers
+	if #modifiers ~= 2 then
+		modifiers = { "", "" }
+	else
+		local mod1Found = false
+		local mod2Found = false
+
+		for i, modifier in ipairs(heroData.Modifiers) do
+			if modifier == modifiers[1] then
+				mod1Found = true
+			elseif modifier == modifiers[2] then
+				mod2Found = true
+			end
+			if mod1Found and mod2Found then
+				break
+			end
+		end
+		modifiers = {
+			if mod1Found then modifiers[1] else "",
+			if mod2Found then modifiers[2] else "",
+		}
+	end
+
+	local talent = ownedHero.SelectedTalent
+	if not table.find(heroData.Talents, talent) then
+		ownedHero.SelectedTalent = ""
+	end
+
+	local gadget = ownedHero.SelectedGadget
+	if not table.find(heroData.Gadgets, gadget) then
+		ownedHero.SelectedGadget = ""
+	end
+
+	debug.profileend()
 
 	return ownedHero
 end

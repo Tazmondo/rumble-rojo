@@ -30,6 +30,9 @@ type OrderedHero = {
 	DefaultSkin: string,
 	Unavailable: boolean?,
 	Skins: { OrderedSkin },
+	Modifiers: { string },
+	Talents: { string },
+	Gadgets: { string },
 	Order: number?,
 }
 
@@ -40,6 +43,9 @@ export type Hero = {
 	DefaultSkin: string,
 	Unavailable: boolean?,
 	Skins: { [string]: Skin },
+	Modifiers: { string },
+	Talents: { string },
+	Gadgets: { string },
 	Order: number,
 }
 
@@ -49,6 +55,9 @@ local orderedHeroDetails: { OrderedHero } = {
 		Description = "Taz's spread-fire shotgun blasts the enemy with Buckshot. His Super destroys cover and keeps his enemies at a distance!",
 		Price = 0,
 		DefaultSkin = "Apple",
+		Modifiers = {},
+		Talents = {},
+		Gadgets = {},
 		Skins = {
 			{
 				Name = "Apple",
@@ -99,6 +108,9 @@ local orderedHeroDetails: { OrderedHero } = {
 		Description = "Frankie fires damaging energy waves at enemies. He throws a slime bomb for his Super, striking opponents with a powerful blast!",
 		Price = 100,
 		DefaultSkin = "Aqua",
+		Modifiers = {},
+		Talents = {},
+		Gadgets = {},
 		Skins = {
 			{
 				Name = "Aqua",
@@ -186,6 +198,9 @@ local orderedHeroDetails: { OrderedHero } = {
 		Price = 500,
 		DefaultSkin = "Dino",
 		Unavailable = true,
+		Modifiers = {},
+		Talents = {},
+		Gadgets = {},
 		Skins = {
 			{
 				Name = "Dino",
@@ -201,6 +216,9 @@ local orderedHeroDetails: { OrderedHero } = {
 		Price = 500,
 		DefaultSkin = "Gobzie",
 		Unavailable = true,
+		Modifiers = {},
+		Talents = {},
+		Gadgets = {},
 		Skins = {
 			{
 				Name = "Gobzie",
