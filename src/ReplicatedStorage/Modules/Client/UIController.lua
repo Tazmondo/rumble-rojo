@@ -452,7 +452,7 @@ function RenderHeroSelectScreen()
 
 	-- RENDER BOOST SHOP
 	local boostFrame = HeroSelect.BoostShop
-	if boostFrame.Visible and updateBoost then
+	if updateBoost then
 		updateBoost = false
 
 		local contentFrame = boostFrame.ItemShop.Content
@@ -460,6 +460,7 @@ function RenderHeroSelectScreen()
 		local rightSide = contentFrame.RightSide
 		local infoFrame = rightSide.Information
 		local headerFrame = boostFrame.ItemShop.Header.Frame
+		local selectBoostsFrame = statsFrame.Boosts
 
 		headerFrame.Modifier1.Modifier.Image = if boostPage == "Modifier1"
 			then headerFrame.Modifier1.Modifier.HoverImage
@@ -470,19 +471,24 @@ function RenderHeroSelectScreen()
 		headerFrame.Skill.Modifier.Image = if boostPage == "Skill" then headerFrame.Skill.Modifier.HoverImage else ""
 		headerFrame.Talent.Modifier.Image = if boostPage == "Talent" then headerFrame.Talent.Modifier.HoverImage else ""
 
-		headerFrame.Modifier1.Modifier.Icon.Image = if heroStats.SelectedModifiers[1] ~= ""
+		-- sorry for this mess. but it does kinda make sense when u read it
+		headerFrame.Modifier1.Modifier.Icon.Image = if heroStats and heroStats.SelectedModifiers[1] ~= ""
 			then Modifiers[heroStats.SelectedModifiers[1]].UnlockedImage
 			else emptyModifier
+		selectBoostsFrame.Modifier1.Icon.Image = headerFrame.Modifier1.Modifier.Icon.Image
 
-		headerFrame.Modifier2.Modifier.Icon.Image = if heroStats.SelectedModifiers[2] ~= ""
+		headerFrame.Modifier2.Modifier.Icon.Image = if heroStats and heroStats.SelectedModifiers[2] ~= ""
 			then Modifiers[heroStats.SelectedModifiers[2]].UnlockedImage
 			else emptyModifier
+		selectBoostsFrame.Modifier2.Icon.Image = headerFrame.Modifier2.Modifier.Icon.Image
 
-		headerFrame.Talent.Modifier.Icon.Image = if heroStats.SelectedTalent ~= ""
+		headerFrame.Talent.Modifier.Icon.Image = if heroStats and heroStats.SelectedTalent ~= ""
 			then Modifiers[heroStats.SelectedTalent].UnlockedImage
 			else emptyTalent
+		selectBoostsFrame.Talent.Icon.Image = headerFrame.Talent.Modifier.Icon.Image
 
 		headerFrame.Skill.Modifier.Icon.Image = emptySkill
+		selectBoostsFrame.Skill.Icon.Image = headerFrame.Skill.Modifier.Icon.Image
 
 		for i, item in ipairs(shopDisplay:GetChildren()) do
 			if item:IsA("ImageButton") then
@@ -724,6 +730,7 @@ function RenderCharacterSelectButtons()
 				button.LayoutOrder = heroData.Order
 				button.Activated:Connect(function()
 					shouldReRenderSkinSelectButtons = true
+					updateBoost = true
 
 					displayedHero = hero
 
@@ -828,6 +835,34 @@ end
 
 function UnMute()
 	SoundController:MuteMusic(false)
+end
+
+function ShowModifier1()
+	local data = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero]
+	displayBoost = if data then data.SelectedModifiers[1] else ""
+	updateBoost = true
+	boostPage = "Modifier1"
+end
+
+function ShowModifier2()
+	local data = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero]
+	displayBoost = if data then data.SelectedModifiers[2] else ""
+	updateBoost = true
+	boostPage = "Modifier2"
+end
+
+function ShowSkill()
+	local data = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero]
+	displayBoost = if data then data.SelectedSkill else ""
+	updateBoost = true
+	boostPage = "Skill"
+end
+
+function ShowTalent()
+	local data = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero]
+	displayBoost = if data then data.SelectedTalent else ""
+	updateBoost = true
+	boostPage = "Talent"
 end
 
 function UIController:Initialize()
@@ -987,16 +1022,6 @@ function UIController:Initialize()
 		OpenHeroSelect()
 	end)
 
-	HeroSelect.Frame.Select.Stats.Frame.Boosts.Activated:Connect(function()
-		updateBoost = true
-		HeroSelect.BoostShop.Visible = true
-	end)
-
-	HeroSelect.BoostShop.ItemShop.Header.Exit.Activated:Connect(function()
-		updateBoost = true
-		HeroSelect.BoostShop.Visible = false
-	end)
-
 	for i, button in pairs(BuyBucksUI.Frame.ImageLabel.BuyButtons:GetChildren()) do
 		if not button:IsA("ImageButton") then
 			continue
@@ -1014,6 +1039,7 @@ function UIController:Initialize()
 	-- Boost Shop
 	local boostHeaderFrame = HeroSelect.BoostShop.ItemShop.Header.Frame
 	local boostShopButtons = HeroSelect.BoostShop.ItemShop.Content.RightSide
+	local selectBoostIcons = HeroSelect.Frame.Select.Stats.Frame.Boosts
 
 	boostShopButtons.Unlock.Activated:Connect(function()
 		if not displayBoost then
@@ -1061,25 +1087,36 @@ function UIController:Initialize()
 		end
 	end)
 
-	boostHeaderFrame.Modifier1.Modifier.Icon.Activated:Connect(function()
-		displayBoost = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero].SelectedModifiers[1]
+	boostHeaderFrame.Modifier1.Modifier.Icon.Activated:Connect(ShowModifier1)
+	boostHeaderFrame.Modifier2.Modifier.Icon.Activated:Connect(ShowModifier2)
+	boostHeaderFrame.Skill.Modifier.Icon.Activated:Connect(ShowSkill)
+	boostHeaderFrame.Talent.Modifier.Icon.Activated:Connect(ShowTalent)
+
+	HeroSelect.Frame.Select.Stats.Frame.Boosts.Activated:Connect(function()
 		updateBoost = true
-		boostPage = "Modifier1"
+		HeroSelect.BoostShop.Visible = true
 	end)
-	boostHeaderFrame.Modifier2.Modifier.Icon.Activated:Connect(function()
-		displayBoost = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero].SelectedModifiers[2]
+
+	HeroSelect.BoostShop.ItemShop.Header.Exit.Activated:Connect(function()
 		updateBoost = true
-		boostPage = "Modifier2"
+		HeroSelect.BoostShop.Visible = false
 	end)
-	boostHeaderFrame.Skill.Modifier.Icon.Activated:Connect(function()
-		displayBoost = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero].SelectedSkill
-		updateBoost = true
-		boostPage = "Skill"
+
+	selectBoostIcons.Modifier1.Icon.Activated:Connect(function()
+		HeroSelect.BoostShop.Visible = true
+		ShowModifier1()
 	end)
-	boostHeaderFrame.Talent.Modifier.Icon.Activated:Connect(function()
-		displayBoost = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero].SelectedTalent
-		updateBoost = true
-		boostPage = "Talent"
+	selectBoostIcons.Modifier2.Icon.Activated:Connect(function()
+		HeroSelect.BoostShop.Visible = true
+		ShowModifier2()
+	end)
+	selectBoostIcons.Talent.Icon.Activated:Connect(function()
+		HeroSelect.BoostShop.Visible = true
+		ShowTalent()
+	end)
+	selectBoostIcons.Skill.Icon.Activated:Connect(function()
+		HeroSelect.BoostShop.Visible = true
+		ShowSkill()
 	end)
 end
 
