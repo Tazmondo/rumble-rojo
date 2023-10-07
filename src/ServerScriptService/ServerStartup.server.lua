@@ -17,7 +17,7 @@ for i, moduleScript in ipairs(scripts) do
 	end)
 
 	if yielded then
-		error("Yielded while requiring" .. moduleScript:GetFullName())
+		warn("Yielded while requiring" .. moduleScript:GetFullName())
 	end
 end
 -- Loader.SpawnAll(loaded, "Start")
