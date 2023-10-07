@@ -508,18 +508,14 @@ function RenderHeroSelectScreen()
 				if displayBoost == modifierName then
 					newButton.Image = newButton.HoverImage
 					newButton.HoverImage = ""
+				else
+					newButton.Icon.Activated:Connect(function()
+						updateBoost = true
+						displayBoost = modifierName
+					end)
 				end
 
 				newButton.Parent = shopDisplay
-
-				newButton.Icon.Activated:Connect(function()
-					updateBoost = true
-					if displayBoost == modifierName then
-						displayBoost = nil
-						return
-					end
-					displayBoost = modifierName
-				end)
 			end
 
 			if displayBoost and displayBoost ~= "" then
