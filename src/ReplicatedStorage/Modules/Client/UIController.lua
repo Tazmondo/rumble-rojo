@@ -972,6 +972,7 @@ function UIController:Initialize()
 
 		if boostPage == "Modifier1" or boostPage == "Modifier2" then
 			if not DataController.CanAffordModifier(displayBoost) then
+				ShowBuyBucks()
 				return
 			end
 			DataController.PurchaseModifier(displayedHero, displayBoost)
