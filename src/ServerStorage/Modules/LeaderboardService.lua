@@ -367,7 +367,7 @@ function LeaderboardService.Initialize()
 		Spawn(PlayerAdded, v)
 	end
 
-	Load()
+	Spawn(Load)
 	Spawn(DataStoreLoop)
 	Spawn(DataServiceLoop)
 end
