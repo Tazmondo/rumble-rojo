@@ -39,6 +39,7 @@ local FighterDiedEvent = require(ReplicatedStorage.Events.Arena.FighterDiedEvent
 local MatchResultsEvent = require(ReplicatedStorage.Events.Arena.MatchResultsEvent):Client()
 
 local modifierTemplate = ReplicatedStorage.Assets.UI.Modifier
+local talentTemplate = ReplicatedStorage.Assets.UI.Talent
 
 local heroSelectOpen = false
 local displayResults = false
@@ -543,6 +544,60 @@ function RenderHeroSelectScreen()
 				rightSide.Equip.Visible = false
 				rightSide.Unlock.Visible = false
 			end
+		elseif boostPage == "Talent" then
+			local talents = heroData.Talents
+			for i, talentName in ipairs(talents) do
+				if talentName == "" or heroStats.SelectedTalent == talentName then
+					continue
+				end
+
+				local owned = heroStats.Talents[talentName] == true
+				local talentData = Modifiers[talentName]
+
+				local newButton = talentTemplate:Clone()
+				newButton.LayoutOrder = i
+
+				newButton.Icon.Image = if owned then talentData.UnlockedImage else talentData.LockedImage
+
+				-- If selected then show the hover
+				if displayBoost == talentName then
+					newButton.Image = newButton.HoverImage
+					newButton.HoverImage = ""
+				else
+					newButton.Icon.Activated:Connect(function()
+						updateBoost = true
+						displayBoost = talentName
+					end)
+				end
+
+				newButton.Parent = shopDisplay
+			end
+
+			if displayBoost and displayBoost ~= "" then
+				local equipped = heroStats.SelectedTalent == displayBoost
+				local owned = heroStats.Talents[displayBoost] == true
+
+				local talentData = Modifiers[displayBoost]
+
+				infoFrame.Title.Text = talentData.Name
+				infoFrame.Description.Text = talentData.Description
+
+				rightSide:FindFirstChild("Remove").Visible = owned and equipped
+				rightSide.Equip.Visible = owned and not equipped
+				rightSide.Unlock.Visible = not owned and talentData.Price
+
+				if rightSide.Unlock.Visible then
+					rightSide.Unlock.Cost.Text = talentData.Price
+				end
+			else
+				infoFrame.Title.Text = "Talents"
+				infoFrame.Description.Text =
+					"Talents are powerful, unique abilities with large effects. Choose them carefully."
+
+				rightSide:FindFirstChild("Remove").Visible = false
+				rightSide.Equip.Visible = false
+				rightSide.Unlock.Visible = false
+			end
 		end
 	end
 
@@ -972,6 +1027,12 @@ function UIController:Initialize()
 				return
 			end
 			DataController.PurchaseModifier(displayedHero, displayBoost)
+		elseif boostPage == "Talent" then
+			if not DataController.CanAffordTalent(displayBoost) then
+				ShowBuyBucks()
+				return
+			end
+			DataController.PurchaseTalent(displayedHero, displayBoost)
 		end
 	end)
 
@@ -984,6 +1045,8 @@ function UIController:Initialize()
 		if boostPage == "Modifier1" or boostPage == "Modifier2" then
 			local slot = if boostPage == "Modifier1" then 1 else 2
 			DataController.SelectModifier(displayedHero, displayBoost, slot)
+		elseif boostPage == "Talent" then
+			DataController.SelectTalent(displayedHero, displayBoost)
 		end
 	end)
 
@@ -993,6 +1056,8 @@ function UIController:Initialize()
 		if boostPage == "Modifier1" or boostPage == "Modifier2" then
 			local slot = if boostPage == "Modifier1" then 1 else 2
 			DataController.SelectModifier(displayedHero, "", slot)
+		elseif boostPage == "Talent" then
+			DataController.SelectTalent(displayedHero, "")
 		end
 	end)
 

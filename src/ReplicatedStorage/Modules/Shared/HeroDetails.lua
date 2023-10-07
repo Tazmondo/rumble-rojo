@@ -72,7 +72,7 @@ local orderedHeroDetails: { OrderedHero } = {
 		Price = 0,
 		DefaultSkin = "Apple",
 		Modifiers = table.clone(DefaultModifiers),
-		Talents = {},
+		Talents = { "ShellShock", "BandAid" },
 		Skills = {},
 		Skins = {
 			{
@@ -125,7 +125,7 @@ local orderedHeroDetails: { OrderedHero } = {
 		Price = 100,
 		DefaultSkin = "Aqua",
 		Modifiers = table.clone(DefaultModifiers),
-		Talents = {},
+		Talents = { "SuperBlast", "Overslime", "Slimed" },
 		Skills = {},
 		Skins = {
 			{

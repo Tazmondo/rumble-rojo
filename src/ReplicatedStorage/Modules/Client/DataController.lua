@@ -9,7 +9,6 @@ local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Signal = require(ReplicatedStorage.Packages.Signal)
--- Receives data sync from server when the Red folder cannot be used and exposes it to the other client controllers
 
 local PrivateDataEvent = require(ReplicatedStorage.Events.Data.PrivateDataEvent):Client()
 local GameDataEvent = require(ReplicatedStorage.Events.Data.GameDataEvent):Client()
@@ -17,9 +16,11 @@ local PublicDataEvent = require(ReplicatedStorage.Events.Data.PublicDataEvent):C
 local PurchaseHeroEvent = require(ReplicatedStorage.Events.Data.PurchaseHeroEvent):Client()
 local PurchaseSkinEvent = require(ReplicatedStorage.Events.Data.PurchaseSkinEvent):Client()
 local PurchaseModifierEvent = require(ReplicatedStorage.Events.Data.PurchaseModifierEvent):Client()
+local PurchaseTalentEvent = require(ReplicatedStorage.Events.Data.PurchaseTalentEvent):Client()
 local SelectHeroEvent = require(ReplicatedStorage.Events.Data.SelectHeroEvent):Client()
 local SelectSkinEvent = require(ReplicatedStorage.Events.Data.SelectSkinEvent):Client()
 local SelectModifierEvent = require(ReplicatedStorage.Events.Data.SelectModifierEvent):Client()
+local SelectTalentEvent = require(ReplicatedStorage.Events.Data.SelectTalentEvent):Client()
 
 local PrivateData: Data.PrivatePlayerData
 local PublicData: Data.PlayersData = {}
@@ -64,6 +65,14 @@ function DataController.SelectModifier(hero: string, modifier: string, slot: num
 	data.Public.SelectedModifiers[slot] = modifier
 end
 
+function DataController.SelectTalent(hero: string, talent: string)
+	SelectTalentEvent:Fire(hero, talent)
+
+	local data = DataController.GetLocalData():Unwrap()
+	data.Private.OwnedHeroes[hero].SelectedTalent = talent
+	data.Public.SelectedTalent = talent
+end
+
 function DataController.PurchaseHero(hero: string, select: boolean?)
 	PurchaseHeroEvent:Fire(hero, select)
 	if select then
@@ -85,6 +94,13 @@ function DataController.PurchaseModifier(hero: string, modifier: string)
 
 	local data = DataController.GetLocalData():Await()
 	data.Private.OwnedHeroes[hero].Modifiers[modifier] = true
+end
+
+function DataController.PurchaseTalent(hero: string, talent: string)
+	PurchaseTalentEvent:Fire(hero, talent)
+
+	local data = DataController.GetLocalData():Await()
+	data.Private.OwnedHeroes[hero].Talents[talent] = true
 end
 
 function DataController.IsModifierEquipped(hero: string, modifier: string)
@@ -130,6 +146,10 @@ function DataController.CanAffordModifier(modifier: string)
 	end
 
 	return DataController.GetMoney() >= price
+end
+
+function DataController.CanAffordTalent(talent: string)
+	return DataController.CanAffordModifier(talent)
 end
 
 -- These functions only yield if called very early on.

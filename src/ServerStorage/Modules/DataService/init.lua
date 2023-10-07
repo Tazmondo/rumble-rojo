@@ -23,9 +23,11 @@ local PublicDataEvent = require(ReplicatedStorage.Events.Data.PublicDataEvent):S
 local PurchaseHeroEvent = require(ReplicatedStorage.Events.Data.PurchaseHeroEvent):Server()
 local PurchaseSkinEvent = require(ReplicatedStorage.Events.Data.PurchaseSkinEvent):Server()
 local PurchaseModifierEvent = require(ReplicatedStorage.Events.Data.PurchaseModifierEvent):Server()
+local PurchaseTalentEvent = require(ReplicatedStorage.Events.Data.PurchaseTalentEvent):Server()
 local SelectHeroEvent = require(ReplicatedStorage.Events.Data.SelectHeroEvent):Server()
 local SelectSkinEvent = require(ReplicatedStorage.Events.Data.SelectSkinEvent):Server()
 local SelectModifierEvent = require(ReplicatedStorage.Events.Data.SelectModifierEvent):Server()
+local SelectTalentEvent = require(ReplicatedStorage.Events.Data.SelectTalentEvent):Server()
 
 -- increment this to reset the datastore
 local studioPrefix = if RunService:IsStudio() then "Studio1_" else ""
@@ -367,6 +369,21 @@ function HandleSelectModifier(player: Player, hero: string, modifier: string, sl
 	end
 end
 
+function HandleSelectTalent(player, hero, talent)
+	local privateData = DataService.GetPrivateData(player):Await()
+
+	if not privateData then
+		return
+	end
+
+	local isDefault = talent == ""
+	if privateData.OwnedHeroes[hero] and (privateData.OwnedHeroes[hero].Talents[talent] or isDefault) then
+		privateData.OwnedHeroes[hero].SelectedTalent = talent
+	else
+		warn("Tried to select modifier without owning it, or the hero, or already selecting it in the other slot.")
+	end
+end
+
 function HandlePurchaseHero(player: Player, hero: string, select: boolean?)
 	local privateData = DataService.GetPrivateData(player):Await()
 
@@ -448,6 +465,38 @@ function HandlePurchaseModifier(player: Player, hero: string, modifier: string)
 	privateData.OwnedHeroes[hero].Modifiers[modifier] = true
 end
 
+function HandlePurchaseTalent(player, hero, talent)
+	local privateData = DataService.GetPrivateData(player):Await()
+
+	if not privateData then
+		return
+	end
+
+	local heroData = HeroDetails.HeroDetails[hero]
+	if not heroData then
+		warn("Hero does not exist", hero)
+		return
+	end
+
+	local talentData = Modifiers[talent]
+	if
+		not talentData
+		or not privateData.OwnedHeroes[hero]
+		or privateData.OwnedHeroes[hero].Talents[talent]
+		or not talentData.Price
+	then
+		warn("Invalid data when purchasing modifier: ", hero, talent)
+		return
+	end
+
+	if privateData.Money < talentData.Price then
+		return
+	end
+
+	privateData.Money -= talentData.Price
+	privateData.OwnedHeroes[hero].Talents[talent] = true
+end
+
 function StartEventLoop()
 	RunService.Stepped:Connect(function()
 		if scheduledUpdates.Game then
@@ -510,9 +559,11 @@ function DataService.Initialize()
 	SelectHeroEvent:On(HandleSelectHero)
 	SelectSkinEvent:On(HandleSelectSkin)
 	SelectModifierEvent:On(HandleSelectModifier)
+	SelectTalentEvent:On(HandleSelectTalent)
 	PurchaseHeroEvent:On(HandlePurchaseHero)
 	PurchaseSkinEvent:On(HandlePurchaseSkin)
 	PurchaseModifierEvent:On(HandlePurchaseModifier)
+	PurchaseTalentEvent:On(HandlePurchaseTalent)
 
 	StartEventLoop()
 end

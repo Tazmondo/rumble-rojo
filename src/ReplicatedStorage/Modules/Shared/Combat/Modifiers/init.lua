@@ -267,8 +267,8 @@ Modifiers.Overslime = {
 	Name = "Overslime",
 	Description = "Increases Slime Bomb damage by 50%, but you move 10% slower.",
 	Price = 1000,
-	UnlockedImage = "rbxassetid://14996726794",
-	LockedImage = "rbxassetid://14996726794",
+	UnlockedImage = "rbxassetid://14996726056",
+	LockedImage = "rbxassetid://14996726996",
 	Modify = function(self)
 		self.baseSuperDamage *= 1.5
 		self.baseSpeed *= 0.9
@@ -279,8 +279,8 @@ Modifiers.Slimed = {
 	Name = "Slimed",
 	Description = "Slime Bomb stuns your enemies for 1.5 seconds.",
 	Price = 1000,
-	UnlockedImage = "rbxassetid://14996726271",
-	LockedImage = "rbxassetid://14996726271",
+	UnlockedImage = "rbxassetid://14997401119",
+	LockedImage = "rbxassetid://14996727184",
 	OnHit = function(self, victim, attack)
 		if attack.Data.AbilityType ~= "Super" then
 			return
@@ -305,7 +305,7 @@ for modifier, data in pairs(Modifiers :: any) do
 
 	assert(data.Name)
 	assert(data.Description)
-	if not data.LockedImage or not data.UnlockedImage then
+	if not data.LockedImage or not data.UnlockedImage or data.LockedImage == data.UnlockedImage then
 		warn("Could not find image assets for", modifier)
 		data.LockedImage = "rbxassetid://14983743747"
 		data.UnlockedImage = "rbxassetid://14995177430"
