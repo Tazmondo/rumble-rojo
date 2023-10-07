@@ -45,6 +45,8 @@ type PlayerCombatDetails = {
 	HeroName: string,
 	SkinName: string,
 	Modifiers: { string },
+	Talent: string,
+	Skill: string,
 }
 
 -- Only for players currently fighting.
@@ -428,8 +430,16 @@ function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 		local hero = data.SelectedHero
 
 		local modifiers = data.OwnedHeroes[hero].SelectedModifiers
-		PlayersInCombat[player] =
-			{ HeroName = hero, SkinName = data.OwnedHeroes[hero].SelectedSkin, Modifiers = modifiers }
+		local talent = data.OwnedHeroes[hero].SelectedTalent
+		local skill = data.OwnedHeroes[hero].SelectedSkill
+
+		PlayersInCombat[player] = {
+			HeroName = hero,
+			SkinName = data.OwnedHeroes[hero].SelectedSkin,
+			Modifiers = modifiers,
+			Talent = talent,
+			Skill = skill,
+		}
 
 		dataPublic.InCombat = true
 		DataService.WaitForReplication():Await()
@@ -482,14 +492,15 @@ function CombatService:SetupCombatPlayer(player: Player, details: PlayerCombatDe
 	print("Setting up", player.Name, "as", details.HeroName)
 	local char = assert(player.Character, "no character")
 
-	local modifiers = { Modifiers[details.Modifiers[1]], Modifiers[details.Modifiers[2]] }
+	local modifierStrings = { details.Modifiers[1], details.Modifiers[2], details.Talent }
+	local modifiers = { Modifiers[details.Modifiers[1]], Modifiers[details.Modifiers[2]], Modifiers[details.Talent] }
 
 	local combatPlayer =
 		CombatPlayer.new(details.HeroName, char, ModifierCollection.new(modifiers), player) :: CombatPlayer.CombatPlayer
 	CombatPlayerData[char] = combatPlayer
 
 	print("Asking client to initialize combat player")
-	CombatPlayerInitializeEvent:Fire(player, details.HeroName, details.Modifiers)
+	CombatPlayerInitializeEvent:Fire(player, details.HeroName, modifierStrings)
 end
 
 function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
@@ -597,7 +608,13 @@ function CombatService:PlayerAdded(player: Player)
 				skin = HeroDetails.HeroDetails[hero].DefaultSkin
 			end
 
-			PlayersInCombat[player] = { HeroName = hero, SkinName = skin, Modifiers = modifiers }
+			PlayersInCombat[player] = {
+				HeroName = hero,
+				SkinName = skin,
+				Modifiers = modifiers,
+				Talent = ServerScriptService:GetAttribute("talent") or "",
+				Skill = ServerScriptService:GetAttribute("skill") or "",
+			}
 
 			local data = assert(DataService.GetPublicData(player):Await(), "In studio, doesnt matter.")
 			data.InCombat = true
