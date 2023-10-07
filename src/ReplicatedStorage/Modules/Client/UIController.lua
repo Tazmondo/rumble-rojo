@@ -9,7 +9,7 @@ local UIController = {}
 
 local Player = game.Players.LocalPlayer :: Player
 
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local PlayerGui = Player:WaitForChild("PlayerGui") :: PlayerGui
 
 local MainUI = PlayerGui:WaitForChild("MainUI") :: any
 local ArenaUI = PlayerGui:WaitForChild("ArenaUI") :: any
@@ -24,6 +24,7 @@ local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
@@ -1100,6 +1101,21 @@ function UIController:Initialize()
 	HeroSelect.BoostShop.ItemShop.Header.Exit.Activated:Connect(function()
 		updateBoost = true
 		HeroSelect.BoostShop.Visible = false
+	end)
+
+	-- For clicking on the background to close the booster shop
+	-- It's a frame, not a button, so I can't use .Activated
+	UserInputService.InputEnded:Connect(function(input, processed)
+		if
+			input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
+			local position = input.Position
+			local objects = PlayerGui:GetGuiObjectsAtPosition(position.X, position.Y)
+			if objects[1] == HeroSelect.BoostShop then
+				HeroSelect.BoostShop.Visible = false
+			end
+		end
 	end)
 
 	selectBoostIcons.Modifier1.Icon.Activated:Connect(function()
