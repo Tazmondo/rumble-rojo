@@ -26,6 +26,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
+local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local DataController = require(script.Parent.DataController)
 local PurchaseController = require(script.Parent.PurchaseController)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
@@ -37,6 +38,8 @@ local QueueEvent = require(ReplicatedStorage.Events.Arena.QueueEvent):Client()
 local FighterDiedEvent = require(ReplicatedStorage.Events.Arena.FighterDiedEvent):Client()
 local MatchResultsEvent = require(ReplicatedStorage.Events.Arena.MatchResultsEvent):Client()
 
+local modifierTemplate = ReplicatedStorage.Assets.UI.Modifier
+
 local heroSelectOpen = false
 local displayResults = false
 
@@ -47,6 +50,8 @@ local selectedSkin: string
 local displayedSkin: string
 
 local boostPage: "Modifier1" | "Modifier2" | "Skill" | "Talent" = "Modifier1"
+local displayBoost = nil :: string?
+local updateBoost = true
 
 local shouldTryHide = false
 local UIState = ""
@@ -442,9 +447,72 @@ function RenderHeroSelectScreen()
 
 	-- RENDER BOOST SHOP
 	local boostFrame = HeroSelect.BoostShop
-	if boostFrame.Visible then
+	if boostFrame.Visible and updateBoost then
+		updateBoost = false
+
+		local contentFrame = boostFrame.ItemShop.Content
+		local shopDisplay = contentFrame.LeftSide.ScrollingFrame
+		local rightSide = contentFrame.RightSide
+		local infoFrame = rightSide.Information
+
+		for i, item in ipairs(shopDisplay:GetChildren()) do
+			if item:IsA("ImageButton") then
+				item:Destroy()
+			end
+		end
+
 		if boostPage == "Modifier1" or boostPage == "Modifier2" then
 			local modifiers = heroData.Modifiers
+			for i, modifierName in ipairs(modifiers) do
+				local newButton = modifierTemplate:Clone()
+				newButton.LayoutOrder = i
+
+				newButton.Icon.Image = "rbxassetid://14987692882"
+
+				-- If selected then show the hover
+				if displayBoost == modifierName then
+					newButton.Image = newButton.HoverImage
+					newButton.HoverImage = ""
+				end
+
+				newButton.Parent = shopDisplay
+
+				newButton.Icon.Activated:Connect(function()
+					updateBoost = true
+					if displayBoost == modifierName then
+						displayBoost = nil
+						return
+					end
+					displayBoost = modifierName
+				end)
+			end
+
+			if displayBoost then
+				local equipped = data.Public.SelectedModifiers[1] == displayBoost
+					or data.Public.SelectedModifiers[2] == displayBoost
+				local owned = data.Private.OwnedHeroes[displayedHero].Modifiers[displayBoost] == true
+
+				local modifierData = Modifiers[displayBoost]
+
+				infoFrame.Title.Text = modifierData.Name
+				infoFrame.Description.Text = modifierData.Description
+
+				rightSide.Equipped.Visible = owned and equipped
+				rightSide.Equip.Visible = owned and not equipped
+				rightSide.Unlock.Visible = not owned
+
+				if not owned then
+					rightSide.Unlock.Cost.Text = modifierData.Price
+				end
+			else
+				infoFrame.Title.Text = "Modifiers"
+				infoFrame.Description.Text =
+					"Modifiers allow you to augment your character with new abilities! Mix and match, and create a build that truly fits your playstyle."
+
+				rightSide.Equipped.Visible = false
+				rightSide.Equip.Visible = false
+				rightSide.Unlock.Visible = false
+			end
 		end
 	end
 
@@ -835,10 +903,12 @@ function UIController:Initialize()
 	end)
 
 	HeroSelect.Frame.Select.Stats.Frame.Boosts.Activated:Connect(function()
+		updateBoost = true
 		HeroSelect.BoostShop.Visible = true
 	end)
 
 	HeroSelect.BoostShop.ItemShop.Header.Exit.Activated:Connect(function()
+		updateBoost = true
 		HeroSelect.BoostShop.Visible = false
 	end)
 

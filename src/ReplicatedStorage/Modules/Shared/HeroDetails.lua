@@ -50,10 +50,20 @@ export type Hero = {
 	Order: number,
 }
 
-local DefaultModifiers = {}
-for modifier, data in pairs(Modifiers) do
-	table.insert(DefaultModifiers, modifier)
-end
+local DefaultModifiers = {
+	"Fast",
+	"Health",
+	"Slow",
+	"Stealth",
+	"Regen",
+	"Fury",
+	"QuickReload",
+	"SuperCharge",
+	"Bulwark",
+	"Rat",
+	"TrueSight",
+	"SkillCharge",
+}
 
 local orderedHeroDetails: { OrderedHero } = {
 	{
