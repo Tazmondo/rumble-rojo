@@ -1,7 +1,6 @@
 --!strict
 --!nolint LocalShadow
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 -- Defines hero prices and skin prices
 

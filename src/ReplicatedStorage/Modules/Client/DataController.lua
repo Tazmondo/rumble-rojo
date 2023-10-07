@@ -8,7 +8,6 @@ local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Future = require(ReplicatedStorage.Packages.Future)
-local Guard = require(ReplicatedStorage.Packages.Guard)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 -- Receives data sync from server when the Red folder cannot be used and exposes it to the other client controllers
 

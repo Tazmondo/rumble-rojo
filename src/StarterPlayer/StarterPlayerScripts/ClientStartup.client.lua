@@ -1,6 +1,5 @@
 --!nonstrict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Loader = require(ReplicatedStorage.Packages.Loader)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 
 local LoadedEvent = require(ReplicatedStorage.Events.Loaded):Client()
