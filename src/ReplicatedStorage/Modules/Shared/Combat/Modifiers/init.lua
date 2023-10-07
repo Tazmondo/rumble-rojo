@@ -9,6 +9,8 @@ local Modifiers: {
 	[string]: {
 		Name: string,
 		Description: string,
+		UnlockedImage: string?,
+		LockedImage: string?,
 		Modify: ((Types.CombatPlayer) -> ())?,
 		Damage: ((Types.CombatPlayer) -> number)?,
 		Defence: ((Types.CombatPlayer) -> number)?,
@@ -19,7 +21,7 @@ local Modifiers: {
 } =
 	{}
 
-Modifiers.Default = TableUtil.Copy(DefaultModifier, true) :: any
+-- Modifiers.Default = TableUtil.Copy(DefaultModifier, true) :: any
 Modifiers[""] = TableUtil.Copy(DefaultModifier, true) :: any
 
 --------- REGULAR MODIFIERS ------------
@@ -27,6 +29,8 @@ Modifiers.Fast = {
 	Name = "Fast",
 	Description = "You move 10% faster!",
 	Price = 500,
+	UnlockedImage = "rbxassetid://14996723454",
+	LockedImage = "rbxassetid://14996721221",
 	Modify = function(combatPlayer)
 		combatPlayer.baseSpeed *= 1.1
 	end,
@@ -36,6 +40,8 @@ Modifiers.Health = {
 	Name = "Health",
 	Description = "Gain a 10% health bonus!",
 	Price = 400,
+	UnlockedImage = "rbxassetid://14996720234",
+	LockedImage = "rbxassetid://14996725052",
 	Modify = function(combatPlayer)
 		combatPlayer.baseHealth *= 1.1
 	end,
@@ -45,6 +51,8 @@ Modifiers.Slow = {
 	Name = "Slow",
 	Description = "Attacks slow enemies by 15% when you are under 50% hp.",
 	Price = 1000,
+	LockedImage = "rbxassetid://14996720951",
+	UnlockedImage = "rbxassetid://14996723454",
 	OnHit = function(self, victim, details)
 		if self.health / self.maxHealth > 0.5 then
 			return
@@ -65,6 +73,8 @@ Modifiers.Stealth = {
 	Name = "Stealth",
 	Description = "Gain a 20% movement bonus in bushes.",
 	Price = 1000,
+	LockedImage = "rbxassetid://14996722725",
+	UnlockedImage = "rbxassetid://14996724818",
 	OnHidden = function(self, hidden)
 		if hidden then
 			self.baseSpeed *= 1.2
@@ -79,6 +89,8 @@ Modifiers.Regen = {
 	Name = "Regen",
 	Description = "Regenerate 50% more HP.",
 	Price = 500,
+	UnlockedImage = "rbxassetid://14996727762",
+	LockedImage = "rbxassetid://14996727561",
 	Modify = function(self)
 		self.baseRegenRate *= 1.5
 	end,
@@ -88,6 +100,8 @@ Modifiers.Fury = {
 	Name = "Fury",
 	Description = "Do 15% extra damage when under 50% HP.",
 	Price = 750,
+	UnlockedImage = "rbxassetid://14996717503",
+	LockedImage = "rbxassetid://14996717970",
 	Damage = function(self)
 		if self.health / self.maxHealth <= 0.5 then
 			return 1.15
@@ -101,6 +115,8 @@ Modifiers.QuickReload = {
 	Name = "Quick Reload",
 	Description = "Reload ammo 15% faster.",
 	Price = 600,
+	UnlockedImage = "rbxassetid://14996722878",
+	LockedImage = "rbxassetid://14996720377",
 	Modify = function(self)
 		self.baseAmmoRegen /= 1.15
 	end,
@@ -110,6 +126,8 @@ Modifiers.SuperCharge = {
 	Name = "Super Charge",
 	Description = "Charge your super 15% faster.",
 	Price = 500,
+	LockedImage = "rbxassetid://14996722575",
+	UnlockedImage = "rbxassetid://14996724478",
 	Modify = function(self)
 		-- Use math.floor here so that it always rounds down.
 		-- For characters like frankie who have a low super requirement
@@ -121,6 +139,8 @@ Modifiers.Bulwark = {
 	Name = "Bulwark",
 	Description = "When under 50% HP, take 20% reduced damage.",
 	Price = 550,
+	UnlockedImage = "rbxassetid://14996719891",
+	LockedImage = "rbxassetid://14996720544",
 	Defence = function(self)
 		if self.health / self.maxHealth <= 0.5 then
 			return 0.8
@@ -134,6 +154,8 @@ Modifiers.Rat = {
 	Name = "Rat",
 	Description = "Gain a burst of speed when reduced below 20% HP, once per round.",
 	Price = 500,
+	LockedImage = "rbxassetid://14996722010",
+	UnlockedImage = "rbxassetid://14997014496",
 	OnReceiveHit = function(self, attacker, details)
 		if self.health / self.maxHealth >= 0.2 then
 			return
@@ -158,6 +180,8 @@ Modifiers.TrueSight = {
 	Name = "TrueSight",
 	Description = "Reveal your opponents for 3 seconds after hitting them. They can't hide from you!",
 	Price = 550,
+	UnlockedImage = "rbxassetid://14996718562",
+	LockedImage = "rbxassetid://14987676748",
 	OnHit = function(self, victim, details)
 		local value = { true }
 		victim:SetStatusEffect("TrueSight", value)
@@ -172,6 +196,8 @@ Modifiers.TrueSight = {
 Modifiers.SkillCharge = {
 	Name = "Skill Charge",
 	Description = "Get an extra skill use",
+	UnlockedImage = "rbxassetid://14996724264",
+	LockedImage = "rbxassetid://14996722355",
 	Price = 350,
 	Modify = function(self)
 		self.skillUses += 1
@@ -185,6 +211,8 @@ Modifiers.ShellShock = {
 	Name = "Shell Shock",
 	Description = "Slow your enemies for 2 seconds when they're hit by Super Shell!",
 	Price = 1000,
+	UnlockedImage = "rbxassetid://14996725426",
+	LockedImage = "rbxassetid://14996726470",
 	OnHit = function(self, victim, details)
 		if details.Data.AbilityType ~= "Super" then
 			return
@@ -206,6 +234,8 @@ Modifiers.BandAid = {
 	Name = "Band Aid",
 	Description = "When dropping below 40% health, immediately heal for 2000 HP! This recharges after 15 seconds.",
 	Price = 1000,
+	UnlockedImage = "rbxassetid://14996725566",
+	LockedImage = "rbxassetid://14996726622",
 	OnReceiveHit = function(self)
 		if self.health / self.maxHealth > 0.4 or self.statusEffects["BandAidCooldown"] then
 			return
@@ -224,6 +254,8 @@ Modifiers.SuperBlast = {
 	Name = "Super Blast",
 	Description = "Increases the explosion radius of Slime Bomb by 50%, and its damage by 15%.",
 	Price = 1200,
+	UnlockedImage = "rbxassetid://14996725763",
+	LockedImage = "rbxassetid://14996726794",
 	Modify = function(self)
 		self.baseSuperDamage *= 1.15
 		local super = self.heroData.Super :: HeroData.ArcedData & HeroData.SuperData
@@ -235,6 +267,8 @@ Modifiers.Overslime = {
 	Name = "Overslime",
 	Description = "Increases Slime Bomb damage by 50%, but you move 10% slower.",
 	Price = 1000,
+	UnlockedImage = "rbxassetid://14996726794",
+	LockedImage = "rbxassetid://14996726794",
 	Modify = function(self)
 		self.baseSuperDamage *= 1.5
 		self.baseSpeed *= 0.9
@@ -245,6 +279,8 @@ Modifiers.Slimed = {
 	Name = "Slimed",
 	Description = "Slime Bomb stuns your enemies for 1.5 seconds.",
 	Price = 1000,
+	UnlockedImage = "rbxassetid://14996726271",
+	LockedImage = "rbxassetid://14996726271",
 	OnHit = function(self, victim, attack)
 		if attack.Data.AbilityType ~= "Super" then
 			return
@@ -263,8 +299,17 @@ Modifiers.Slimed = {
 
 -- Validate modifiers
 for modifier, data in pairs(Modifiers :: any) do
+	if modifier == "" then
+		continue
+	end
+
 	assert(data.Name)
 	assert(data.Description)
+	if not data.LockedImage or not data.UnlockedImage then
+		warn("Could not find image assets for", modifier)
+		data.LockedImage = "rbxassetid://14983743747"
+		data.UnlockedImage = "rbxassetid://14995177430"
+	end
 
 	-- Populate modifiers with default functions for any missing keys
 	for k, v in pairs(DefaultModifier) do

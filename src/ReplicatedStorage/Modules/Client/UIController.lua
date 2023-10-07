@@ -469,10 +469,19 @@ function RenderHeroSelectScreen()
 		headerFrame.Skill.Modifier.Image = if boostPage == "Skill" then headerFrame.Skill.Modifier.HoverImage else ""
 		headerFrame.Talent.Modifier.Image = if boostPage == "Talent" then headerFrame.Talent.Modifier.HoverImage else ""
 
-		headerFrame.Modifier1.Modifier.Icon.Image = emptyModifier
-		headerFrame.Modifier2.Modifier.Icon.Image = emptyModifier
+		headerFrame.Modifier1.Modifier.Icon.Image = if heroStats.SelectedModifiers[1] ~= ""
+			then Modifiers[heroStats.SelectedModifiers[1]].UnlockedImage
+			else emptyModifier
+
+		headerFrame.Modifier2.Modifier.Icon.Image = if heroStats.SelectedModifiers[2] ~= ""
+			then Modifiers[heroStats.SelectedModifiers[2]].UnlockedImage
+			else emptyModifier
+
+		headerFrame.Talent.Modifier.Icon.Image = if heroStats.SelectedTalent ~= ""
+			then Modifiers[heroStats.SelectedTalent].UnlockedImage
+			else emptyTalent
+
 		headerFrame.Skill.Modifier.Icon.Image = emptySkill
-		headerFrame.Talent.Modifier.Icon.Image = emptyTalent
 
 		for i, item in ipairs(shopDisplay:GetChildren()) do
 			if item:IsA("ImageButton") then
@@ -487,10 +496,13 @@ function RenderHeroSelectScreen()
 					continue
 				end
 
+				local owned = heroStats.Modifiers[modifierName] == true
+				local modifierData = Modifiers[modifierName]
+
 				local newButton = modifierTemplate:Clone()
 				newButton.LayoutOrder = i
 
-				newButton.Icon.Image = "rbxassetid://14987692882"
+				newButton.Icon.Image = if owned then modifierData.UnlockedImage else modifierData.LockedImage
 
 				-- If selected then show the hover
 				if displayBoost == modifierName then
@@ -512,7 +524,7 @@ function RenderHeroSelectScreen()
 
 			if displayBoost and displayBoost ~= "" then
 				local equipped = DataController.IsModifierEquipped(displayedHero, displayBoost)
-				local owned = data.Private.OwnedHeroes[displayedHero].Modifiers[displayBoost] == true
+				local owned = heroStats.Modifiers[displayBoost] == true
 
 				local modifierData = Modifiers[displayBoost]
 

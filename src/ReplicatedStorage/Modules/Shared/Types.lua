@@ -54,6 +54,8 @@ export type LeaderboardData = {
 export type Modifier = {
 	Name: string,
 	Description: string,
+	LockedImage: string,
+	UnlockedImage: string,
 	Price: number?, -- No price = unbuyable. Price: 0  = free
 } & ModifierFunctions
 
