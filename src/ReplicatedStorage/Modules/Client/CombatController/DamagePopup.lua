@@ -9,7 +9,7 @@ DamagePopup.__index = DamagePopup
 
 local LIFETIME = 2
 
-local combatGuiTemplate = ReplicatedStorage.Assets.CombatGUI
+local combatGuiTemplate = ReplicatedStorage.Assets.UI.CombatGUI
 local hitHighlightTemplate = ReplicatedStorage.Assets.VFX.General.HitHighlight
 local fillTransparency = hitHighlightTemplate.fillTransparency
 local outlineTransparency = hitHighlightTemplate.outlineTransparency

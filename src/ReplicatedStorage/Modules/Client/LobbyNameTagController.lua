@@ -9,7 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local DataController = require(script.Parent.DataController)
 
-local lobbyNameTagTemplate: BillboardGui = ReplicatedStorage.Assets.LobbyNameTag
+local lobbyNameTagTemplate: BillboardGui = ReplicatedStorage.Assets.UI.LobbyNameTag
 
 local nameTags: { [Player]: any } = {}
 

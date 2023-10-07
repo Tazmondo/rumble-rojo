@@ -11,7 +11,7 @@ local Types = require(ReplicatedStorage.Modules.Shared.Types)
 
 local NameTag = {}
 
-local combatGUITemplate: BillboardGui = ReplicatedStorage.Assets.CombatGUI
+local combatGUITemplate: BillboardGui = ReplicatedStorage.Assets.UI.CombatGUI
 local superHaloTemplate: Part = ReplicatedStorage.Assets.VFX.General.SuperHalo
 local playerHaloTemplate: Part = ReplicatedStorage.Assets.VFX.General.PlayerHalo
 

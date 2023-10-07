@@ -6,7 +6,7 @@ ViewportFrameController.__index = ViewportFrameController
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local headButtonTemplate = ReplicatedStorage.Assets.HeadButtonTemplate :: ImageButton
+local headButtonTemplate = ReplicatedStorage.Assets.UI.HeadButtonTemplate :: ImageButton
 
 local CAMERACFRAME = CFrame.new(
 	-6.13745117,
