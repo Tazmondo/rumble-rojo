@@ -23,10 +23,9 @@ function _initSelf(combatPlayer: CombatPlayer.CombatPlayer, character: Model)
 
 	self.mainUI = PlayerGui.CombatUI
 	self.attackFrame = self.mainUI.Attacks
-	self.attackButton = self.attackFrame.BasicAttack
-	self.superAttackCharge = self.attackFrame.SuperAttackCharge.CanvasGroup
-	self.readySuperButton = self.attackFrame.SuperAttackReady
-	self.activeSuperButton = self.attackFrame.SuperAttackActive
+	self.superAttackCharge = self.attackFrame.Super.Charge.CanvasGroup
+	self.readySuperButton = self.attackFrame.Super.Ready
+	self.activeSuperButton = self.attackFrame.Super:FindFirstChild("Active")
 
 	self.mainUI.Enabled = true
 	self.attackFrame.Visible = true
