@@ -10,11 +10,11 @@ Data.OwnedHeroTemplate = {
 	Skins = {} :: { [string]: boolean }, -- owned skins
 	Modifiers = {} :: { [string]: boolean }, -- owned modifiers
 	Talents = {} :: { [string]: boolean },
-	Gadgets = {} :: { [string]: boolean },
+	Skills = {} :: { [string]: boolean },
 
 	SelectedModifiers = { "", "" } :: { string },
 	SelectedTalent = "",
-	SelectedGadget = "",
+	SelectedSkill = "",
 }
 
 TableUtil.Lock(Data.OwnedHeroTemplate)
@@ -58,7 +58,7 @@ Data.TempPlayerData = {
 	SelectedSkin = "",
 	SelectedModifiers = { "", "" },
 	SelectedTalent = "",
-	SelectedGadget = "",
+	SelectedSkill = "",
 
 	Trophies = 0,
 }
@@ -114,10 +114,10 @@ function Data.ReplicateToPublic(privateData: PrivatePlayerData, publicData: Publ
 		publicData.SelectedTalent = newTalent
 	end
 
-	local newGadget = heroData.SelectedGadget
-	if newGadget ~= heroData.SelectedGadget then
+	local newSkill = heroData.SelectedSkill
+	if newSkill ~= heroData.SelectedSkill then
 		changed = true
-		heroData.SelectedGadget = newGadget
+		heroData.SelectedSkill = newSkill
 	end
 
 	return changed

@@ -96,7 +96,7 @@ function InitializeSelf(
 	self.baseRegenRate = 1
 	self.baseAmmoRegen = self.heroData.Attack.AmmoRegen
 	self.requiredSuperCharge = self.heroData.Super.Charge
-	self.gadgetUses = 2
+	self.skillUses = 2
 
 	modifiers.Modify(self)
 	self.modifiers = modifiers :: ModifierCollection
@@ -585,7 +585,7 @@ export type ModifierCollection = {
 	Modifiers: { string },
 } & ModifierFunctions
 
-export type Gadget = {
+export type Skill = {
 	Name: string,
 	Description: string,
 	Price: number?, -- No price = unbuyable. Price: 0  = free,

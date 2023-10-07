@@ -177,12 +177,12 @@ Modifiers.TrueSight = {
 	end,
 }
 
-Modifiers.GadgetCharge = {
-	Name = "Gadget Charge",
-	Description = "Get an extra gadget use",
+Modifiers.SkillCharge = {
+	Name = "Skill Charge",
+	Description = "Get an extra skill use",
 	Price = 350,
 	Modify = function(self)
-		self.gadgetUses += 1
+		self.skillUses += 1
 	end,
 }
 

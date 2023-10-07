@@ -32,7 +32,7 @@ type OrderedHero = {
 	Skins: { OrderedSkin },
 	Modifiers: { string },
 	Talents: { string },
-	Gadgets: { string },
+	Skills: { string },
 	Order: number?,
 }
 
@@ -45,7 +45,7 @@ export type Hero = {
 	Skins: { [string]: Skin },
 	Modifiers: { string },
 	Talents: { string },
-	Gadgets: { string },
+	Skills: { string },
 	Order: number,
 }
 
@@ -57,7 +57,7 @@ local orderedHeroDetails: { OrderedHero } = {
 		DefaultSkin = "Apple",
 		Modifiers = {},
 		Talents = {},
-		Gadgets = {},
+		Skills = {},
 		Skins = {
 			{
 				Name = "Apple",
@@ -110,7 +110,7 @@ local orderedHeroDetails: { OrderedHero } = {
 		DefaultSkin = "Aqua",
 		Modifiers = {},
 		Talents = {},
-		Gadgets = {},
+		Skills = {},
 		Skins = {
 			{
 				Name = "Aqua",
@@ -200,7 +200,7 @@ local orderedHeroDetails: { OrderedHero } = {
 		Unavailable = true,
 		Modifiers = {},
 		Talents = {},
-		Gadgets = {},
+		Skills = {},
 		Skins = {
 			{
 				Name = "Dino",
@@ -218,7 +218,7 @@ local orderedHeroDetails: { OrderedHero } = {
 		Unavailable = true,
 		Modifiers = {},
 		Talents = {},
-		Gadgets = {},
+		Skills = {},
 		Skins = {
 			{
 				Name = "Gobzie",

@@ -97,9 +97,9 @@ function CorrectOwnedHero(heroData: HeroDetails.Hero, ownedHero: Data.OwnedHeroD
 		ownedHero.SelectedTalent = ""
 	end
 
-	local gadget = ownedHero.SelectedGadget
-	if not table.find(heroData.Gadgets, gadget) then
-		ownedHero.SelectedGadget = ""
+	local skill = ownedHero.SelectedSkill
+	if not table.find(heroData.Skills, skill) then
+		ownedHero.SelectedSkill = ""
 	end
 
 	debug.profileend()
