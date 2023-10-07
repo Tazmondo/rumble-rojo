@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local Migration = require(script.Migration)
 local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
@@ -21,8 +22,10 @@ local GameDataEvent = require(ReplicatedStorage.Events.Data.GameDataEvent):Serve
 local PublicDataEvent = require(ReplicatedStorage.Events.Data.PublicDataEvent):Server()
 local PurchaseHeroEvent = require(ReplicatedStorage.Events.Data.PurchaseHeroEvent):Server()
 local PurchaseSkinEvent = require(ReplicatedStorage.Events.Data.PurchaseSkinEvent):Server()
+local PurchaseModifierEvent = require(ReplicatedStorage.Events.Data.PurchaseModifierEvent):Server()
 local SelectHeroEvent = require(ReplicatedStorage.Events.Data.SelectHeroEvent):Server()
 local SelectSkinEvent = require(ReplicatedStorage.Events.Data.SelectSkinEvent):Server()
+local SelectModifierEvent = require(ReplicatedStorage.Events.Data.SelectModifierEvent):Server()
 
 -- increment this to reset the datastore
 local studioPrefix = if RunService:IsStudio() then "Studio1_" else ""
@@ -324,10 +327,6 @@ function HandleSelectHero(player: Player, hero: string)
 
 	if privateData.OwnedHeroes[hero] then
 		privateData.SelectedHero = hero
-
-		local publicData = assert(DataService.GetPublicData(player):Await())
-		publicData.SelectedHero = hero
-		publicData.SelectedSkin = privateData.OwnedHeroes[hero].SelectedSkin
 	else
 		warn("Tried to select hero without owning it.")
 	end
@@ -342,11 +341,29 @@ function HandleSelectSkin(player: Player, hero: string, skin: string)
 
 	if privateData.OwnedHeroes[hero] and privateData.OwnedHeroes[hero].Skins[skin] then
 		privateData.OwnedHeroes[hero].SelectedSkin = skin
-
-		local publicData = assert(DataService.GetPublicData(player):Await())
-		publicData.SelectedSkin = skin
 	else
 		warn("Tried to select skin without owning it.")
+	end
+end
+
+function HandleSelectModifier(player: Player, hero: string, modifier: string, slot: number)
+	local privateData = DataService.GetPrivateData(player):Await()
+
+	if not privateData then
+		return
+	end
+
+	local otherSlot = 3 - slot
+	local isDefault = modifier == ""
+	if
+		privateData.OwnedHeroes[hero]
+		and (privateData.OwnedHeroes[hero].Modifiers[modifier] or isDefault)
+		-- Same modifier cannot be in more than one slot, unless it is the default modifier
+		and (privateData.OwnedHeroes[hero].SelectedModifiers[otherSlot] ~= modifier or isDefault)
+	then
+		privateData.OwnedHeroes[hero].SelectedModifiers[slot] = modifier
+	else
+		warn("Tried to select modifier without owning it, or the hero, or already selecting it in the other slot.")
 	end
 end
 
@@ -397,6 +414,38 @@ function HandlePurchaseSkin(player: Player, hero: string, skin: string)
 
 	privateData.Money -= skinData.Price
 	privateData.OwnedHeroes[hero].Skins[skin] = true
+end
+
+function HandlePurchaseModifier(player: Player, hero: string, modifier: string)
+	local privateData = DataService.GetPrivateData(player):Await()
+
+	if not privateData then
+		return
+	end
+
+	local heroData = HeroDetails.HeroDetails[hero]
+	if not heroData then
+		warn("Hero does not exist", hero)
+		return
+	end
+
+	local modifierData = Modifiers[modifier]
+	if
+		not modifierData
+		or not privateData.OwnedHeroes[hero]
+		or privateData.OwnedHeroes[hero].Modifiers[modifier]
+		or not modifierData.Price
+	then
+		warn("Invalid data when purchasing modifier: ", hero, modifier)
+		return
+	end
+
+	if privateData.Money < modifierData.Price then
+		return
+	end
+
+	privateData.Money -= modifierData.Price
+	privateData.OwnedHeroes[hero].Modifiers[modifier] = true
 end
 
 function StartEventLoop()
@@ -460,8 +509,10 @@ function DataService.Initialize()
 
 	SelectHeroEvent:On(HandleSelectHero)
 	SelectSkinEvent:On(HandleSelectSkin)
+	SelectModifierEvent:On(HandleSelectModifier)
 	PurchaseHeroEvent:On(HandlePurchaseHero)
 	PurchaseSkinEvent:On(HandlePurchaseSkin)
+	PurchaseModifierEvent:On(HandlePurchaseModifier)
 
 	StartEventLoop()
 end

@@ -4,9 +4,11 @@ local DataController = {}
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Future = require(ReplicatedStorage.Packages.Future)
+local Guard = require(ReplicatedStorage.Packages.Guard)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 -- Receives data sync from server when the Red folder cannot be used and exposes it to the other client controllers
 
@@ -15,8 +17,10 @@ local GameDataEvent = require(ReplicatedStorage.Events.Data.GameDataEvent):Clien
 local PublicDataEvent = require(ReplicatedStorage.Events.Data.PublicDataEvent):Client()
 local PurchaseHeroEvent = require(ReplicatedStorage.Events.Data.PurchaseHeroEvent):Client()
 local PurchaseSkinEvent = require(ReplicatedStorage.Events.Data.PurchaseSkinEvent):Client()
+local PurchaseModifierEvent = require(ReplicatedStorage.Events.Data.PurchaseModifierEvent):Client()
 local SelectHeroEvent = require(ReplicatedStorage.Events.Data.SelectHeroEvent):Client()
 local SelectSkinEvent = require(ReplicatedStorage.Events.Data.SelectSkinEvent):Client()
+local SelectModifierEvent = require(ReplicatedStorage.Events.Data.SelectModifierEvent):Client()
 
 local PrivateData: Data.PrivatePlayerData
 local PublicData: Data.PlayersData = {}
@@ -42,6 +46,7 @@ function DataController.SelectHero(hero: string)
 
 	local data = DataController.GetLocalData():Await()
 	data.Private.SelectedHero = hero
+	data.Public.SelectedHero = hero
 end
 
 function DataController.SelectSkin(hero: string, skin: string)
@@ -49,6 +54,15 @@ function DataController.SelectSkin(hero: string, skin: string)
 
 	local data = DataController.GetLocalData():Await()
 	data.Private.OwnedHeroes[hero].SelectedSkin = skin
+	data.Public.SelectedSkin = skin
+end
+
+function DataController.SelectModifier(hero: string, modifier: string, slot: number)
+	SelectModifierEvent:Fire(hero, modifier, slot)
+
+	local data = DataController.GetLocalData():Unwrap()
+	data.Private.OwnedHeroes[hero].SelectedModifiers[slot] = modifier
+	data.Public.SelectedModifiers[slot] = modifier
 end
 
 function DataController.PurchaseHero(hero: string, select: boolean?)
@@ -56,6 +70,7 @@ function DataController.PurchaseHero(hero: string, select: boolean?)
 	if select then
 		local data = DataController.GetLocalData():Await()
 		data.Private.SelectedHero = hero
+		data.Public.SelectedHero = hero
 	end
 end
 
@@ -64,6 +79,19 @@ function DataController.PurchaseSkin(hero: string, skin: string)
 
 	local data = DataController.GetLocalData():Await()
 	data.Private.OwnedHeroes[hero].Skins[skin] = true
+end
+
+function DataController.PurchaseModifier(hero: string, modifier: string)
+	PurchaseModifierEvent:Fire(hero, modifier)
+
+	local data = DataController.GetLocalData():Await()
+	data.Private.OwnedHeroes[hero].Modifiers[modifier] = true
+end
+
+function DataController.IsModifierEquipped(hero: string, modifier: string)
+	local data = DataController.GetLocalData():Await().Private.OwnedHeroes[hero].SelectedModifiers
+
+	return data[1] == modifier or data[2] == modifier
 end
 
 function DataController.GetMoney()
@@ -88,6 +116,21 @@ function DataController.CanAffordSkin(hero: string, skin: string)
 		return false
 	end
 	return DataController.GetMoney() >= HeroDetails.HeroDetails[hero].Skins[skin].Price
+end
+
+function DataController.CanAffordModifier(modifier: string)
+	if not Modifiers[modifier] then
+		warn("Tried to get an invalid modifier CanAffordModifier", modifier)
+		return false
+	end
+	local price = Modifiers[modifier].Price
+
+	if not price then
+		-- Unbuyable
+		return false
+	end
+
+	return DataController.GetMoney() >= price
 end
 
 -- These functions only yield if called very early on.

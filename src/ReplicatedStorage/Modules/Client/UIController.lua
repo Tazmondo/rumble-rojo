@@ -53,6 +53,10 @@ local boostPage: "Modifier1" | "Modifier2" | "Skill" | "Talent" = "Modifier1"
 local displayBoost = nil :: string?
 local updateBoost = true
 
+local emptyModifier = "rbxassetid://14996185517"
+local emptySkill = "rbxassetid://14988101503"
+local emptyTalent = "rbxassetid://14988074815"
+
 local shouldTryHide = false
 local UIState = ""
 
@@ -454,6 +458,21 @@ function RenderHeroSelectScreen()
 		local shopDisplay = contentFrame.LeftSide.ScrollingFrame
 		local rightSide = contentFrame.RightSide
 		local infoFrame = rightSide.Information
+		local headerFrame = boostFrame.ItemShop.Header.Frame
+
+		headerFrame.Modifier1.Modifier.Image = if boostPage == "Modifier1"
+			then headerFrame.Modifier1.Modifier.HoverImage
+			else ""
+		headerFrame.Modifier2.Modifier.Image = if boostPage == "Modifier2"
+			then headerFrame.Modifier2.Modifier.HoverImage
+			else ""
+		headerFrame.Skill.Modifier.Image = if boostPage == "Skill" then headerFrame.Skill.Modifier.HoverImage else ""
+		headerFrame.Talent.Modifier.Image = if boostPage == "Talent" then headerFrame.Talent.Modifier.HoverImage else ""
+
+		headerFrame.Modifier1.Modifier.Icon.Image = emptyModifier
+		headerFrame.Modifier2.Modifier.Icon.Image = emptyModifier
+		headerFrame.Skill.Modifier.Icon.Image = emptySkill
+		headerFrame.Talent.Modifier.Icon.Image = emptyTalent
 
 		for i, item in ipairs(shopDisplay:GetChildren()) do
 			if item:IsA("ImageButton") then
@@ -464,6 +483,10 @@ function RenderHeroSelectScreen()
 		if boostPage == "Modifier1" or boostPage == "Modifier2" then
 			local modifiers = heroData.Modifiers
 			for i, modifierName in ipairs(modifiers) do
+				if modifierName == "" or DataController.IsModifierEquipped(displayedHero, modifierName) then
+					continue
+				end
+
 				local newButton = modifierTemplate:Clone()
 				newButton.LayoutOrder = i
 
@@ -487,9 +510,8 @@ function RenderHeroSelectScreen()
 				end)
 			end
 
-			if displayBoost then
-				local equipped = data.Public.SelectedModifiers[1] == displayBoost
-					or data.Public.SelectedModifiers[2] == displayBoost
+			if displayBoost and displayBoost ~= "" then
+				local equipped = DataController.IsModifierEquipped(displayedHero, displayBoost)
 				local owned = data.Private.OwnedHeroes[displayedHero].Modifiers[displayBoost] == true
 
 				local modifierData = Modifiers[displayBoost]
@@ -497,11 +519,11 @@ function RenderHeroSelectScreen()
 				infoFrame.Title.Text = modifierData.Name
 				infoFrame.Description.Text = modifierData.Description
 
-				rightSide.Equipped.Visible = owned and equipped
+				rightSide:FindFirstChild("Remove").Visible = owned and equipped
 				rightSide.Equip.Visible = owned and not equipped
-				rightSide.Unlock.Visible = not owned
+				rightSide.Unlock.Visible = not owned and modifierData.Price
 
-				if not owned then
+				if rightSide.Unlock.Visible then
 					rightSide.Unlock.Cost.Text = modifierData.Price
 				end
 			else
@@ -509,7 +531,7 @@ function RenderHeroSelectScreen()
 				infoFrame.Description.Text =
 					"Modifiers allow you to augment your character with new abilities! Mix and match, and create a build that truly fits your playstyle."
 
-				rightSide.Equipped.Visible = false
+				rightSide:FindFirstChild("Remove").Visible = false
 				rightSide.Equip.Visible = false
 				rightSide.Unlock.Visible = false
 			end
@@ -925,6 +947,66 @@ function UIController:Initialize()
 			PurchaseController.Purchase(idNum)
 		end)
 	end
+
+	-- Boost Shop
+	local boostHeaderFrame = HeroSelect.BoostShop.ItemShop.Header.Frame
+	local boostShopButtons = HeroSelect.BoostShop.ItemShop.Content.RightSide
+
+	boostShopButtons.Unlock.Activated:Connect(function()
+		if not displayBoost then
+			return
+		end
+		updateBoost = true
+
+		if boostPage == "Modifier1" or boostPage == "Modifier2" then
+			if not DataController.CanAffordModifier(displayBoost) then
+				return
+			end
+			DataController.PurchaseModifier(displayedHero, displayBoost)
+		end
+	end)
+
+	boostShopButtons.Equip.Activated:Connect(function()
+		if not displayBoost then
+			return
+		end
+		updateBoost = true
+
+		if boostPage == "Modifier1" or boostPage == "Modifier2" then
+			local slot = if boostPage == "Modifier1" then 1 else 2
+			DataController.SelectModifier(displayedHero, displayBoost, slot)
+		end
+	end)
+
+	boostShopButtons:FindFirstChild("Remove").Activated:Connect(function()
+		updateBoost = true
+
+		if boostPage == "Modifier1" or boostPage == "Modifier2" then
+			local slot = if boostPage == "Modifier1" then 1 else 2
+			DataController.SelectModifier(displayedHero, "", slot)
+		end
+	end)
+
+	boostHeaderFrame.Modifier1.Modifier.Icon.Activated:Connect(function()
+		displayBoost = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero].SelectedModifiers[1]
+		updateBoost = true
+		boostPage = "Modifier1"
+	end)
+	boostHeaderFrame.Modifier2.Modifier.Icon.Activated:Connect(function()
+		displayBoost = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero].SelectedModifiers[2]
+		updateBoost = true
+		boostPage = "Modifier2"
+	end)
+	boostHeaderFrame.Skill.Modifier.Icon.Activated:Connect(function()
+		displayBoost = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero].SelectedSkill
+		updateBoost = true
+		boostPage = "Skill"
+	end)
+	boostHeaderFrame.Talent.Modifier.Icon.Activated:Connect(function()
+		displayBoost = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero].SelectedTalent
+		updateBoost = true
+		boostPage = "Talent"
+	end)
 end
 
 -- In a new thread since we don't want to delay client loading,

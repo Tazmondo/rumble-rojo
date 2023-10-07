@@ -51,6 +51,7 @@ export type Hero = {
 }
 
 local DefaultModifiers = {
+	"", -- No modifier
 	"Fast",
 	"Health",
 	"Slow",
