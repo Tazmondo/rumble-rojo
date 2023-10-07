@@ -46,6 +46,8 @@ local displayedHero: string
 local selectedSkin: string
 local displayedSkin: string
 
+local boostPage: "Modifier1" | "Modifier2" | "Skill" | "Talent" = "Modifier1"
+
 local shouldTryHide = false
 local UIState = ""
 
@@ -436,6 +438,14 @@ function RenderHeroSelectScreen()
 
 		skinInfo.Unlock.Cost.Text = skinData.Price
 		skinInfo.Unlock.Visible = not owned
+	end
+
+	-- RENDER BOOST SHOP
+	local boostFrame = HeroSelect.BoostShop
+	if boostFrame.Visible then
+		if boostPage == "Modifier1" or boostPage == "Modifier2" then
+			local modifiers = heroData.Modifiers
+		end
 	end
 
 	-- RENDER PREVIEW

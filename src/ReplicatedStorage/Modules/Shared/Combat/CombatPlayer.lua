@@ -11,12 +11,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
+local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
-local DefaultModifier = require(script.Parent.Modifiers.DefaultModifier) :: Modifier
+local DefaultModifier = require(script.Parent.Modifiers.DefaultModifier) :: Types.Modifier
 
 local SyncEvent: any
 local UpdateEvent: any
@@ -54,8 +55,6 @@ end
 local CombatPlayer = {}
 CombatPlayer.__index = CombatPlayer
 
-export type State = "Idle" | "Dead"
-
 -- On the server, when processing certain things we want to allow for some latency, so laggy players don't have a bad experience
 -- But too much will give leeway for exploiters
 -- It does not need to be the player's ping, just their latency variation
@@ -75,11 +74,11 @@ end
 function InitializeSelf(
 	heroData: HeroData.HeroData,
 	model: Model,
-	modifiers: ModifierCollection,
+	modifiers: Types.ModifierCollection,
 	player: Player?,
 	object: boolean?
 )
-	local self = setmetatable({}, CombatPlayer)
+	local self = {} :: Types.CombatPlayer
 
 	local allowance = LATENCYALLOWANCE
 	if not player then
@@ -99,7 +98,7 @@ function InitializeSelf(
 	self.skillUses = 2
 
 	modifiers.Modify(self)
-	self.modifiers = modifiers :: ModifierCollection
+	self.modifiers = modifiers
 
 	self.maxHealth = self.baseHealth
 	self.health = self.maxHealth
@@ -131,15 +130,13 @@ function InitializeSelf(
 		self.humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	end
 
-	self.state = "Idle" :: State
+	self.state = "Idle"
 	self.lastAttackTime = 0 -- os.clock based
 	self.attackId = 1
-	self.attacks = {} :: { [number]: Attack }
+	self.attacks = {} :: { [number]: Types.Attack }
 	self.player = player
 
-	self.aiming = nil :: string?
-
-	self.damageDealt = 0
+	self.aiming = nil
 
 	self.DamageDealtSignal = Signal()
 	self.TookDamageSignal = Signal()
@@ -149,11 +146,16 @@ function InitializeSelf(
 	self.scheduledReloads = 0
 	self.scheduledRegen = nil :: {}?
 
-	return self
+	return (setmetatable(self, CombatPlayer) :: any) :: CombatPlayer
 end
 
 -- Player is optional as NPCs can be combatplayers
-function CombatPlayer.new(heroName: string, model: Model, modifiers: ModifierCollection, player: Player?): CombatPlayer
+function CombatPlayer.new(
+	heroName: string,
+	model: Model,
+	modifiers: Types.ModifierCollection,
+	player: Player?
+): CombatPlayer
 	local heroData = assert(HeroData.HeroData[heroName], "Invalid hero name:", heroName)
 	local self = InitializeSelf(heroData, model, modifiers, player)
 
@@ -168,7 +170,7 @@ end
 
 function CombatPlayer.newChest(health: number, model: Model): CombatPlayer
 	local heroData = HeroData.ChestData
-	local self = InitializeSelf(heroData, model, DefaultModifier, nil, true)
+	local self = InitializeSelf(heroData, model, ModifierCollection.new({ DefaultModifier }), nil, true)
 	self.maxHealth = health
 	self.health = health
 
@@ -361,13 +363,13 @@ function CombatPlayer.ScheduleRegen(self: CombatPlayer, delay)
 	end)
 end
 
-function CombatPlayer.ChangeState(self: CombatPlayer, newState: State)
+function CombatPlayer.ChangeState(self: CombatPlayer, newState: Types.State)
 	self.state = newState
 	self.scheduledChange = nil
 	self:Update()
 end
 
-function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, newState: State)
+function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, newState: Types.State)
 	local stateChange = { newState }
 	self.scheduledChange = stateChange
 
@@ -517,7 +519,6 @@ function CombatPlayer.SuperAttack(self: CombatPlayer)
 end
 
 function CombatPlayer.DealDamage(self: CombatPlayer, damage: number, targetCharacter: Model?)
-	self.damageDealt += damage
 	self:Sync("DealDamage", damage, targetCharacter)
 	self.DamageDealtSignal:Fire(damage, targetCharacter)
 
@@ -556,34 +557,7 @@ function CombatPlayer.Destroy(self: CombatPlayer)
 	clientCombatPlayer = nil :: any
 end
 
-export type Attack = {
-	AttackId: number,
-	FiredTime: number,
-	FiredCFrame: CFrame,
-	Speed: number,
-	Data: HeroData.AbilityData,
-	-- HitPosition: Vector3?,
-}
-export type CombatPlayer = typeof(InitializeSelf(...))
-
-export type Modifier = {
-	Name: string,
-	Description: string,
-	Price: number?, -- No price = unbuyable. Price: 0  = free
-} & ModifierFunctions
-
-type ModifierFunctions = {
-	Modify: (CombatPlayer) -> (), -- Called when initialized
-	Damage: (CombatPlayer) -> number, -- Called when dealing damage
-	Defence: (CombatPlayer) -> number, -- Called when taking damage
-	OnHidden: (CombatPlayer, hidden: boolean) -> (), -- Called when entering/exiting bush
-	OnHit: (self: CombatPlayer, victim: CombatPlayer, details: Attack) -> (), -- Called when hitting an enemy
-	OnReceiveHit: (self: CombatPlayer, attacker: CombatPlayer, details: Attack) -> (), -- Called when hit by an enemy
-}
-
-export type ModifierCollection = {
-	Modifiers: { string },
-} & ModifierFunctions
+export type CombatPlayer = Types.CombatPlayer & typeof(CombatPlayer)
 
 export type Skill = {
 	Name: string,

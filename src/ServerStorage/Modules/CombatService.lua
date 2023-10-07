@@ -203,7 +203,7 @@ function processHit(
 	combatPlayer: CombatPlayer.CombatPlayer,
 	victimCharacter: Model,
 	victimCombatPlayer: CombatPlayer.CombatPlayer,
-	attackDetails: CombatPlayer.Attack
+	attackDetails: Types.Attack
 )
 	print("processing hit")
 	if (target.Position - localTargetPosition).Magnitude > Config.MaximumPlayerPositionDifference then

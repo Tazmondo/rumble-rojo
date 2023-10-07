@@ -1,6 +1,7 @@
 --!strict
 --!nolint LocalShadow
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 -- Defines hero prices and skin prices
 
@@ -49,13 +50,18 @@ export type Hero = {
 	Order: number,
 }
 
+local DefaultModifiers = {}
+for modifier, data in pairs(Modifiers) do
+	table.insert(DefaultModifiers, modifier)
+end
+
 local orderedHeroDetails: { OrderedHero } = {
 	{
 		Name = "Taz",
 		Description = "Taz's spread-fire shotgun blasts the enemy with Buckshot. His Super destroys cover and keeps his enemies at a distance!",
 		Price = 0,
 		DefaultSkin = "Apple",
-		Modifiers = {},
+		Modifiers = DefaultModifiers,
 		Talents = {},
 		Skills = {},
 		Skins = {
@@ -108,7 +114,7 @@ local orderedHeroDetails: { OrderedHero } = {
 		Description = "Frankie fires damaging energy waves at enemies. He throws a slime bomb for his Super, striking opponents with a powerful blast!",
 		Price = 100,
 		DefaultSkin = "Aqua",
-		Modifiers = {},
+		Modifiers = DefaultModifiers,
 		Talents = {},
 		Skills = {},
 		Skins = {

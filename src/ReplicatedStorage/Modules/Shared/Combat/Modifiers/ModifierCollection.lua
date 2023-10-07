@@ -1,12 +1,13 @@
 -- Class for easily collecting multiple modifiers together and running them all at once
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local DefaultModifier = require(script.Parent.DefaultModifier)
-local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 
 local ModifierCollection = {}
 
-function ModifierCollection.new(modifiers: { CombatPlayer.Modifier })
+function ModifierCollection.new(modifiers: { Types.Modifier })
 	local self = {}
 	self.Modifiers = {}
 	for i, modifier in ipairs(modifiers) do
@@ -28,7 +29,7 @@ function ModifierCollection.new(modifiers: { CombatPlayer.Modifier })
 		end
 	end
 
-	return self :: CombatPlayer.ModifierCollection
+	return self :: Types.ModifierCollection
 end
 
 return ModifierCollection

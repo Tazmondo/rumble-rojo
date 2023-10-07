@@ -1,7 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
-local CombatPlayer = require(script.Parent.CombatPlayer)
 local DefaultModifier = require(script.DefaultModifier)
 local HeroData = require(script.Parent.HeroData)
 
@@ -9,20 +9,12 @@ local Modifiers: {
 	[string]: {
 		Name: string,
 		Description: string,
-		Modify: ((CombatPlayer.CombatPlayer) -> ())?,
-		Damage: ((CombatPlayer.CombatPlayer) -> number)?,
-		Defence: ((CombatPlayer.CombatPlayer) -> number)?,
-		OnHit: ((
-			self: CombatPlayer.CombatPlayer,
-			victim: CombatPlayer.CombatPlayer,
-			details: CombatPlayer.Attack
-		) -> ())?,
-		OnReceiveHit: ((
-			self: CombatPlayer.CombatPlayer,
-			attacker: CombatPlayer.CombatPlayer,
-			details: CombatPlayer.Attack
-		) -> ())?,
-		OnHidden: ((self: CombatPlayer.CombatPlayer, hidden: boolean) -> ())?,
+		Modify: ((Types.CombatPlayer) -> ())?,
+		Damage: ((Types.CombatPlayer) -> number)?,
+		Defence: ((Types.CombatPlayer) -> number)?,
+		OnHit: ((self: Types.CombatPlayer, victim: Types.CombatPlayer, details: Types.Attack) -> ())?,
+		OnReceiveHit: ((self: Types.CombatPlayer, attacker: Types.CombatPlayer, details: Types.Attack) -> ())?,
+		OnHidden: ((self: Types.CombatPlayer, hidden: boolean) -> ())?,
 	},
 } =
 	{}
@@ -284,4 +276,4 @@ end
 
 TableUtil.Lock(Modifiers)
 
-return (Modifiers :: any) :: { [string]: CombatPlayer.Modifier }
+return (Modifiers :: any) :: { [string]: Types.Modifier }
