@@ -119,6 +119,9 @@ export type CombatPlayer = {
 	scheduledReloads: number,
 	scheduledRegen: {}?,
 
+	-- Not all functions listed, just the ones needed for modifiers
+	-- This is to resolve the circular dependency, so its a bit hacky and weird
+	-- But its not the end of the world, at least it works.
 	SetStatusEffect: (CombatPlayer, string, any) -> (),
 	UpdateSpeed: (CombatPlayer) -> (),
 	Heal: (CombatPlayer, number) -> (),

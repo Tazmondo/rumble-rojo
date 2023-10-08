@@ -285,6 +285,30 @@ function CombatPlayer.SetBush(self: CombatPlayer, hidden: boolean)
 	end
 end
 
+-- aim is an attacktype enum
+function CombatPlayer.SetAiming(self: CombatPlayer, aim: string?)
+	self.aiming = aim
+	self:Update()
+	if RunService:IsClient() then
+		AimEvent:Fire(aim)
+	end
+end
+
+function CombatPlayer.UpdateSpeed(self: CombatPlayer)
+	-- Since Data type for slow is {number}
+	local slowModifier = (self.statusEffects["Slow"] or { 1 })[1]
+	local rattyModifier = (self.statusEffects["Ratty"] or 1)
+	local stunModifier = if self.statusEffects["Stun"] then 0 else 1
+
+	local modifier = slowModifier * rattyModifier * stunModifier
+
+	self.movementSpeed = self.baseSpeed * modifier
+	print("Updating speed", self.movementSpeed)
+	if self.humanoid then
+		self.humanoid.WalkSpeed = self.movementSpeed
+	end
+end
+
 function CombatPlayer.Reload(self: CombatPlayer)
 	if RunService:IsClient() then
 		SoundController:PlayGeneralSound("ReloadAmmo")
@@ -305,21 +329,6 @@ function CombatPlayer.ScheduleReload(self: CombatPlayer)
 
 	if self.scheduledReloads == 1 then
 		task.delay(self.ammoRegen, self.Reload, self)
-	end
-end
-
-function CombatPlayer.UpdateSpeed(self: CombatPlayer)
-	-- Since Data type for slow is {number}
-	local slowModifier = (self.statusEffects["Slow"] or { 1 })[1]
-	local rattyModifier = (self.statusEffects["Ratty"] or 1)
-	local stunModifier = if self.statusEffects["Stun"] then 0 else 1
-
-	local modifier = slowModifier * rattyModifier * stunModifier
-
-	self.movementSpeed = self.baseSpeed * modifier
-	print("Updating speed", self.movementSpeed)
-	if self.humanoid then
-		self.humanoid.WalkSpeed = self.movementSpeed
 	end
 end
 
@@ -363,6 +372,16 @@ function CombatPlayer.ScheduleRegen(self: CombatPlayer, delay)
 	end)
 end
 
+function CombatPlayer.Heal(self: CombatPlayer, amount: number)
+	if self.state == "Dead" then
+		return
+	end
+
+	self.health = math.round(math.clamp(self.health + amount, 0, self.maxHealth))
+	self:Sync("Heal", amount)
+	self:Update()
+end
+
 function CombatPlayer.ChangeState(self: CombatPlayer, newState: Types.State)
 	self.state = newState
 	self.scheduledChange = nil
@@ -386,6 +405,15 @@ end
 function CombatPlayer.GetNextAttackId(self: CombatPlayer): number
 	self.attackId += 1
 	return self.attackId
+end
+
+function CombatPlayer.DealDamage(self: CombatPlayer, damage: number, targetCharacter: Model?)
+	self:Sync("DealDamage", damage, targetCharacter)
+	self.DamageDealtSignal:Fire(damage, targetCharacter)
+
+	if self.health < self.maxHealth then
+		self:ScheduleRegen(Config.InitialRegenTime)
+	end
 end
 
 function CombatPlayer:AttackingEnabled()
@@ -414,79 +442,6 @@ function CombatPlayer.Attack(self: CombatPlayer)
 
 	-- TODO: Is this state system necessary?
 	-- self:ScheduleStateChange(0.1, StateEnum.Idle)
-end
-
--- Different from attack since attacks with multiple bullets will "attack" once but call this for each bullet fired
-function CombatPlayer.RegisterBullet(
-	self: CombatPlayer,
-	attackId: number,
-	attackCF: CFrame,
-	attackSpeed: number,
-	attackData: HeroData.AbilityData
-)
-	self.attacks[attackId] = {
-		AttackId = attackId,
-		FiredTime = os.clock(),
-		FiredCFrame = attackCF,
-		Speed = attackSpeed,
-		Data = attackData,
-		HitPosition = nil,
-	}
-	task.delay(Config.MaxAttackTimeout, function()
-		self.attacks[attackId] = nil
-	end)
-end
-
--- function CombatPlayer.HandleAttackHit(self: CombatPlayer, cast, position)
--- 	local id = cast.UserData.Id
--- 	if self.attacks[id] and not self.attacks[id].HitPosition then
--- 		self.attacks[id].HitPosition = position
--- 	end
--- end
-
-function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
-	self.health = math.round(math.clamp(self.health - amount, 0, self.maxHealth))
-	self:Sync("TakeDamage", amount)
-	self.TookDamageSignal:Fire(amount)
-
-	self:ScheduleRegen(Config.InitialRegenTime)
-
-	if self.health <= 0 then
-		if self.humanoid then
-			self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
-		end
-		self:ChangeState("Dead")
-		self.DiedSignal:Fire()
-	end
-
-	self:Update()
-end
-
-function CombatPlayer.Heal(self: CombatPlayer, amount: number)
-	if self.state == "Dead" then
-		return
-	end
-
-	self.health = math.round(math.clamp(self.health + amount, 0, self.maxHealth))
-	self:Sync("Heal", amount)
-	self:Update()
-end
-
-function CombatPlayer.CanTakeDamage(self: CombatPlayer)
-	-- TODO: return false if has a barrier or shield or something
-	return self.state ~= "Dead"
-end
-
-function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
-	local previousHealthPercentage = self.health / self.maxHealth
-
-	self.maxHealth = math.round(newMaxHealth) -- prevent decimals
-	self.health = math.round(math.clamp(self.maxHealth * previousHealthPercentage, 0, newMaxHealth))
-
-	self:ScheduleRegen(Config.InitialRegenTime)
-
-	self:Sync("SetMaxHealth", newMaxHealth)
-	self:Update()
 end
 
 function CombatPlayer.ChargeSuper(self: CombatPlayer, amount: number)
@@ -518,22 +473,60 @@ function CombatPlayer.SuperAttack(self: CombatPlayer)
 	self:Update()
 end
 
-function CombatPlayer.DealDamage(self: CombatPlayer, damage: number, targetCharacter: Model?)
-	self:Sync("DealDamage", damage, targetCharacter)
-	self.DamageDealtSignal:Fire(damage, targetCharacter)
-
-	if self.health < self.maxHealth then
-		self:ScheduleRegen(Config.InitialRegenTime)
-	end
+-- Different from attack since attacks with multiple bullets will "attack" once but call this for each bullet fired
+function CombatPlayer.RegisterBullet(
+	self: CombatPlayer,
+	attackId: number,
+	attackCF: CFrame,
+	attackSpeed: number,
+	attackData: HeroData.AbilityData
+)
+	self.attacks[attackId] = {
+		AttackId = attackId,
+		FiredTime = os.clock(),
+		FiredCFrame = attackCF,
+		Speed = attackSpeed,
+		Data = attackData,
+		HitPosition = nil,
+	}
+	task.delay(Config.MaxAttackTimeout, function()
+		self.attacks[attackId] = nil
+	end)
 end
 
--- aim is an attacktype enum
-function CombatPlayer.SetAiming(self: CombatPlayer, aim: string?)
-	self.aiming = aim
-	self:Update()
-	if RunService:IsClient() then
-		AimEvent:Fire(aim)
+function CombatPlayer.CanTakeDamage(self: CombatPlayer)
+	-- TODO: return false if has a barrier or shield or something
+	return self.state ~= "Dead"
+end
+
+function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
+	self.health = math.round(math.clamp(self.health - amount, 0, self.maxHealth))
+	self:Sync("TakeDamage", amount)
+	self.TookDamageSignal:Fire(amount)
+
+	self:ScheduleRegen(Config.InitialRegenTime)
+
+	if self.health <= 0 then
+		if self.humanoid then
+			self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
+		end
+		self:ChangeState("Dead")
+		self.DiedSignal:Fire()
 	end
+
+	self:Update()
+end
+
+function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
+	local previousHealthPercentage = self.health / self.maxHealth
+
+	self.maxHealth = math.round(newMaxHealth) -- prevent decimals
+	self.health = math.round(math.clamp(self.maxHealth * previousHealthPercentage, 0, newMaxHealth))
+
+	self:ScheduleRegen(Config.InitialRegenTime)
+
+	self:Sync("SetMaxHealth", newMaxHealth)
+	self:Update()
 end
 
 function CombatPlayer.AddBooster(self: CombatPlayer, count: number)
@@ -558,12 +551,5 @@ function CombatPlayer.Destroy(self: CombatPlayer)
 end
 
 export type CombatPlayer = Types.CombatPlayer & typeof(CombatPlayer)
-
-export type Skill = {
-	Name: string,
-	Description: string,
-	Price: number?, -- No price = unbuyable. Price: 0  = free,
-	OnUse: (self: CombatPlayer) -> (),
-}
 
 return CombatPlayer
