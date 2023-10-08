@@ -500,7 +500,7 @@ function RenderHeroSelectScreen()
 		if boostPage == "Modifier1" or boostPage == "Modifier2" then
 			local modifiers = heroData.Modifiers
 			for i, modifierName in ipairs(modifiers) do
-				if modifierName == "" or DataController.IsModifierEquipped(displayedHero, modifierName) then
+				if modifierName == "" then
 					continue
 				end
 
@@ -537,7 +537,7 @@ function RenderHeroSelectScreen()
 
 				rightSide:FindFirstChild("Remove").Visible = owned and equipped
 				rightSide.Equip.Visible = owned and not equipped
-				rightSide.Unlock.Visible = not owned and modifierData.Price
+				rightSide.Unlock.Visible = not owned and modifierData.Price and heroStats
 
 				if rightSide.Unlock.Visible then
 					rightSide.Unlock.Cost.Text = modifierData.Price
@@ -554,7 +554,7 @@ function RenderHeroSelectScreen()
 		elseif boostPage == "Talent" then
 			local talents = heroData.Talents
 			for i, talentName in ipairs(talents) do
-				if talentName == "" or (heroStats and heroStats.SelectedTalent == talentName) then
+				if talentName == "" then
 					continue
 				end
 
