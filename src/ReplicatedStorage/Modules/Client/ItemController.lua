@@ -34,6 +34,7 @@ type Item = {
 	Id: number,
 	Item: Model,
 	Enabled: boolean,
+	SpawnRender: RBXScriptConnection?,
 }
 
 -- time taken for spawned items to jump from origin to new position
@@ -48,7 +49,7 @@ function SpawnItem(type: string, id: number, origin: Vector3, position: Vector3)
 	local startCF = CFrame.new(origin)
 	local endCF = CFrame.new(position)
 
-	local item = RegisterItem(type, id, origin)
+	local item = RegisterItem(type, id, position)
 	local model = item.Item
 
 	local timeTaken = 0
@@ -60,9 +61,13 @@ function SpawnItem(type: string, id: number, origin: Vector3, position: Vector3)
 
 		model:PivotTo(RenderFunctions.RenderArc(startCF, endCF, itemHeight, alpha, true) * rotation)
 	end)
+	item.SpawnRender = render
 
 	task.delay(spawnTime, function()
-		render:Disconnect()
+		if render.Connected then
+			render:Disconnect()
+		end
+		item.SpawnRender = nil
 	end)
 end
 
@@ -126,6 +131,9 @@ function AbsorbItem(item: Item, part: BasePart)
 	BeginAbsorbEvent:Fire(item.Id)
 
 	Spawn(function()
+		if item.SpawnRender then
+			item.SpawnRender:Disconnect()
+		end
 		RenderAbsorption(model, part):Await()
 		if spawnedItems[item.Id] and spawnedItems[item.Id].Item == model then
 			CollectItemEvent:Fire(item.Id)
