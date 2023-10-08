@@ -231,7 +231,7 @@ function CreateArcedAttack(
 
 	local targetCFrame = CFrame.new(target) * origin.Rotation
 
-	local totalRotation = 360 * 1.5
+	local totalRotation = attackData.Rotation or 360 * 1.5
 
 	TriggerAllDescendantParticleEmitters(pelletPart, true)
 

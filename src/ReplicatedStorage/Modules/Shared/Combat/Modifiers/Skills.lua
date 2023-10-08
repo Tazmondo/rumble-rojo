@@ -60,6 +60,7 @@ local BombAttack: Types.SkillAttack & HeroData.ArcedData = {
 	AttackType = "Arced" :: "Arced",
 	Radius = Enums.Radius.Large,
 	Height = 3,
+	Rotation = 90,
 	ProjectileSpeed = 20,
 	TimeToDetonate = 1,
 }

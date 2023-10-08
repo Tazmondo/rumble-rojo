@@ -50,6 +50,7 @@ export type ArcedData = {
 	TimeToDetonate: number, -- Can be zero for instant explosion, but allows for a grenade like effect
 	Height: number,
 	Radius: number,
+	Rotation: number?,
 }
 
 export type AttackType = ShotgunData | ShotData | ArcedData
