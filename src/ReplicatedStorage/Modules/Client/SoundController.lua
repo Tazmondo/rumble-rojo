@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local DataController = require(script.Parent.DataController)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 
 local SoundController = {}
 
@@ -96,7 +97,7 @@ function SoundController:PlayHeroAttack(heroName: string, super: boolean, charac
 
 	local part = if character then character:FindFirstChild("HumanoidRootPart") else nil
 
-	local attackData: HeroData.AbilityData = if super then heroData.Super else heroData.Attack
+	local attackData: Types.AbilityData = if super then heroData.Super else heroData.Attack
 	if attackData.AttackType == "Arced" then
 		local sound = soundFolder.Attack.General.BombThrow
 		self:_PlaySound(sound, part)

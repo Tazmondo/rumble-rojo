@@ -57,8 +57,6 @@ export type AttackType = ShotgunData | ShotData | ArcedData
 export type AttackData = BaseAttack & AttackType
 export type SuperData = BaseSuper & AttackType
 
-export type AbilityData = AttackData | SuperData
-
 -- to keep the system simple, chests are fully fledged combat players, they just can't attack and won't move.
 local ChestData: HeroData = {
 	Name = "Chest",

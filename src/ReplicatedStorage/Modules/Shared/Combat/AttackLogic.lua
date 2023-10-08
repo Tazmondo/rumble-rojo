@@ -1,7 +1,9 @@
 --!strict
 --!nolint LocalShadow
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Used by server and client to generate data deterministically for attacks (using seeding)
 
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local CombatPlayer = require(script.Parent.CombatPlayer)
 local Config = require(script.Parent.Config)
 local HeroData = require(script.Parent.HeroData)
@@ -19,14 +21,14 @@ function AttackLogic.MakeAttack(
 	target: Vector3?,
 	seed: number?
 ): AttackDetails
-	attackData = attackData :: HeroData.AbilityData
+	attackData = attackData :: Types.AbilityData
 
 	local idFunction: any = function()
 		return combatPlayer:GetNextAttackId()
 	end
 
 	if attackData.AttackType == "Shotgun" then
-		local attackData = attackData :: HeroData.ShotgunData & HeroData.AbilityData
+		local attackData = attackData :: HeroData.ShotgunData & Types.AbilityData
 
 		return AttackLogic.Shotgun(
 			attackData.Angle,
@@ -40,7 +42,7 @@ function AttackLogic.MakeAttack(
 		return AttackLogic.Shot(origin, idFunction())
 	elseif attackData.AttackType == "Arced" then
 		assert(target, "Tried to fire arced attack without a target!")
-		local attackData = attackData :: HeroData.ArcedData & HeroData.AbilityData
+		local attackData = attackData :: HeroData.ArcedData & Types.AbilityData
 
 		return AttackLogic.Arced(origin, idFunction(), target, attackData.ProjectileSpeed)
 	else

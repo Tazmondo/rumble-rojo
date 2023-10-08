@@ -1,17 +1,23 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
+local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
-local Skill: { [string]: Types.Skill } = {}
+local Skills: { [string]: Types.Skill } = {}
 
-Skill[""] = {
+Skills[""] = {
 	Name = "Default",
 	Description = "Default skill",
+	Activation = "Instant",
+	Type = "Ability",
 	Activated = function() end,
 }
 
-Skill.Dash = {
+Skills.Dash = {
 	Name = "Dash",
 	Description = "Dash forwards",
+	Activation = "Instant",
+	Type = "Ability",
 	Activated = function(combatPlayer)
 		if RunService:IsServer() then
 			-- We only want to do movement on the client
@@ -45,4 +51,25 @@ Skill.Dash = {
 	end,
 }
 
-return Skill
+local BombAttack: Types.SkillAttack & HeroData.ArcedData = {
+	AbilityType = "Skill" :: "Skill",
+	Name = "Bomb",
+	Damage = 1500,
+	Range = 1,
+
+	AttackType = "Arced" :: "Arced",
+	Radius = Enums.Radius.Large,
+	Height = 0,
+	ProjectileSpeed = 1000,
+	TimeToDetonate = 1,
+}
+Skills.Bomb = {
+	Name = "Bomb",
+	Description = "Drop a bomb. Go out with a bang!",
+	Activation = "Instant",
+	Type = "Attack",
+	AttackData = BombAttack,
+	Activated = function(self) end,
+}
+
+return Skills

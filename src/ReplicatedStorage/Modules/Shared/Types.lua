@@ -20,7 +20,7 @@ export type HitList = {
 export type KillData = {
 	Killer: Player?,
 	Victim: Player,
-	Attack: HeroData.AttackData | HeroData.SuperData?,
+	Attack: AbilityData?,
 }
 
 export type Attack = {
@@ -28,7 +28,7 @@ export type Attack = {
 	FiredTime: number,
 	FiredCFrame: CFrame,
 	Speed: number,
-	Data: HeroData.AbilityData,
+	Data: AbilityData,
 	-- HitPosition: Vector3?,
 }
 
@@ -72,12 +72,25 @@ export type ModifierCollection = {
 	Modifiers: { string },
 } & ModifierFunctions
 
+export type SkillAttack = {
+	AbilityType: "Skill",
+	Name: string,
+	Damage: number,
+	Range: number,
+}
 export type Skill = {
 	Name: string,
 	Description: string,
 	Price: number?,
+	Type: "Ability" | "Attack",
+	Activation: "Instant" | "Aim",
 	Activated: (CombatPlayer) -> (),
+	AttackData: SkillData?,
 }
+
+export type SkillData = SkillAttack & HeroData.AttackType
+
+export type AbilityData = HeroData.AttackData | HeroData.SuperData | SkillData
 
 export type State = "Idle" | "Dead"
 export type CombatPlayer = {
@@ -114,6 +127,7 @@ export type CombatPlayer = {
 	skillUses: number,
 	skillActive: boolean,
 	skill: Skill,
+	skillCooldown: number,
 
 	modifiers: ModifierCollection,
 	statusEffects: { [string]: any },

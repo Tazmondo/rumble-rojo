@@ -58,7 +58,7 @@ local function replicateAttack(
 	player: Player,
 	origin: CFrame,
 	combatPlayer: CombatPlayer.CombatPlayer,
-	attackData: HeroData.AbilityData,
+	attackData: Types.AbilityData,
 	localAttackDetails: AttackLogic.AttackDetails
 )
 	local character = assert(player.Character, "character does not exist")
@@ -174,6 +174,36 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 	SoundService:PlayHeroAttack(player, combatPlayer.heroData, true, player.Character)
 
 	combatPlayer:SuperAttack()
+
+	return combatPlayer.attackId
+end
+
+function handleAttackSkill(player: Player, origin: CFrame, localAttackDetails)
+	if not player.Character then
+		warn(player, "Tried to super without a character!")
+		return 0
+	end
+
+	local combatPlayer = CombatPlayerData[player.Character]
+	if not combatPlayer then
+		return 0
+	end
+
+	if not combatPlayer:CanUseSkill() then
+		warn(player, "Tried to use skill when they couldn't")
+		return combatPlayer.attackId
+	end
+	local skillData = combatPlayer.skill.AttackData
+	if not skillData then
+		warn(player, "Tried to attack with a skill without an attack data:", combatPlayer.skill.Name)
+		return combatPlayer.attackId
+	end
+
+	replicateAttack(player, origin, combatPlayer, skillData, localAttackDetails)
+
+	SoundService:PlayHeroAttack(player, combatPlayer.heroData, true, player.Character)
+
+	combatPlayer:UseSkill()
 
 	return combatPlayer.attackId
 end
@@ -364,7 +394,7 @@ function handleClientExplosionHit(player: Player, hitList: Types.HitList, attack
 		end
 
 		local victimCombatPlayer = CombatPlayerData[victimCharacter]
-		local data = attackDetails.Data :: HeroData.ArcedData & HeroData.AbilityData
+		local data = attackDetails.Data :: HeroData.ArcedData & Types.AbilityData
 		if ((hitData.position - explosionCentre) * Vector3.new(1, 0, 1)).Magnitude > data.Radius * 1.1 then
 			warn("Likely exploiting! Hit player was not in explosion radius!", player)
 			return
@@ -636,12 +666,17 @@ function CombatService:Initialize()
 	end
 
 	AttackFunction:SetCallback(
-		function(player: Player, super: boolean, origin: CFrame, details: AttackLogic.AttackDetails)
-			if super then
+		function(player: Player, type: string, origin: CFrame, details: AttackLogic.AttackDetails)
+			if type == "Super" then
 				return handleSuper(player, origin, details)
-			else
+			elseif type == "Attack" then
 				return handleAttack(player, origin, details)
+			elseif type == "Skill" then
+				return handleAttackSkill(player, origin, details)
+			else
+				warn("Invalid type passed", type)
 			end
+			return 0
 		end
 	)
 	HitEvent:On(handleClientHit)

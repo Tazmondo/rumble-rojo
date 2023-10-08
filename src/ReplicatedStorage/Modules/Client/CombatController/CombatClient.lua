@@ -30,6 +30,7 @@ local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
 local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
 local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Client()
 local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Client()
@@ -303,7 +304,7 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 	self.aimRenderer:Disable()
 	self.superAimRenderer:Disable()
 	self.combatPlayer:SetAiming(nil)
-	self:Attack(Ray.new(self.HRP.Position, self.lastAimDirection), self.usingSuper)
+	self:Attack(if self.usingSuper then "Super" else "Attack")
 
 	self.usingSuper = false
 	self.combatUI:UpdateSuperActive(self.usingSuper)
@@ -342,7 +343,13 @@ function CombatClient.HandleSuperUp(self: CombatClient)
 end
 
 function CombatClient.HandleSkillDown(self: CombatClient)
-	self.combatPlayer:UseSkill()
+	if self.combatPlayer:CanUseSkill() then
+		local skill = self.combatPlayer.skill
+		self.combatPlayer:UseSkill()
+		if skill.Type == "Attack" then
+			self:Attack("Skill")
+		end
+	end
 end
 
 function CombatClient.GetInputs(self: CombatClient)
@@ -389,11 +396,13 @@ function CombatClient.GetInputs(self: CombatClient)
 	-- end)
 end
 
-function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean)
-	local attackData: HeroData.AbilityData
+function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Skill")
+	local trajectory = Ray.new(self.HRP.Position, self.lastAimDirection or Vector3.new(0, 0, 1))
+
+	local attackData: Types.AbilityData
 	local target = self:GetRealTarget()
 
-	if not super then
+	if type == "Attack" then
 		if not self.combatPlayer:CanAttack() then
 			print("Tried to attack but can't.", self.combatPlayer.ammo)
 			return
@@ -401,7 +410,7 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 		self.combatPlayer:Attack()
 		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, false)
 		attackData = self.combatPlayer.heroData.Attack
-	else
+	elseif type == "Super" then
 		if not self.combatPlayer:CanSuperAttack() then
 			print("Tried to super attack but can't.", self.combatPlayer.superCharge)
 			return
@@ -409,15 +418,19 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 		self.combatPlayer:SuperAttack()
 		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, true)
 		attackData = self.combatPlayer.heroData.Super
+	elseif type == "Skill" then
+		attackData = assert(self.combatPlayer.skill.AttackData)
 	end
 
 	-- Constrain target to range of attack
 	if attackData.AttackType == "Arced" then
-		local attackData = attackData :: HeroData.ArcedData & HeroData.AbilityData
+		local attackData = attackData :: HeroData.ArcedData & Types.AbilityData
 
 		local HRPToTarget = target - self.HRP.Position
 		target = self.HRP.Position
-			+ HRPToTarget.Unit * math.min(attackData.Range - attackData.Radius * 2, HRPToTarget.Magnitude)
+			+ HRPToTarget.Unit
+				-- Get smallest of max range or target, but cant be any smaller than 0.
+				* math.max(0, math.min(attackData.Range - attackData.Radius * 2, HRPToTarget.Magnitude))
 	end
 
 	trajectory = trajectory.Unit
@@ -435,7 +448,7 @@ function CombatClient.Attack(self: CombatClient, trajectory: Ray, super: boolean
 
 	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction)
 
-	self.combatPlayer.attackId = AttackFunction:Call(super, origin, attackDetails):Await()
+	self.combatPlayer.attackId = AttackFunction:Call(type, origin, attackDetails):Await()
 end
 
 export type CombatClient = typeof(CombatClient.new(...)) & typeof(CombatClient)

@@ -141,6 +141,7 @@ function InitializeSelf(
 	self.lastSkillTime = 0
 	self.skillActive = false
 	self.skillUses = 2
+	self.skillCooldown = Config.SkillCooldown - allowance
 
 	self.aiming = nil
 
@@ -216,7 +217,7 @@ function CombatPlayer.CombatPlayerRemoved()
 	return CollectionService:GetInstanceRemovedSignal(Config.CombatPlayerTag)
 end
 
-function CombatPlayer.GetDamageBetween(attacker: CombatPlayer, victim: CombatPlayer, attack: HeroData.AbilityData)
+function CombatPlayer.GetDamageBetween(attacker: CombatPlayer, victim: CombatPlayer, attack: Types.AbilityData)
 	local baseDamage = if attack.AbilityType == "Attack" then attacker.baseAttackDamage else attacker.baseSuperDamage
 	local boosterDamage = math.round(baseDamage * (1 + attacker.boosterCount * Config.BoosterDamage))
 	local finalDamage = boosterDamage * attacker:GetDamageMultiplier(victim) * victim:GetDefenceMultiplier()
@@ -486,6 +487,7 @@ function CombatPlayer.CanUseSkill(self: CombatPlayer)
 		and self.skillUses > 0
 		and self:AbilitiesEnabled()
 		and not self.skillActive
+		and self.skill.Name ~= "Default"
 end
 
 function CombatPlayer.UseSkill(self: CombatPlayer)
@@ -502,7 +504,7 @@ function CombatPlayer.RegisterBullet(
 	attackId: number,
 	attackCF: CFrame,
 	attackSpeed: number,
-	attackData: HeroData.AbilityData
+	attackData: Types.AbilityData
 )
 	self.attacks[attackId] = {
 		AttackId = attackId,

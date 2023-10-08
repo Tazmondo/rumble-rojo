@@ -15,6 +15,7 @@ local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local RaycastHitbox = require(ReplicatedStorage.Packages.RaycastHitbox)
 
 local localPlayer = game:GetService("Players").LocalPlayer
@@ -126,7 +127,7 @@ end
 
 function CreateAttackProjectile(
 	player: Player,
-	attackData: HeroData.AbilityData,
+	attackData: Types.AbilityData,
 	origin: CFrame,
 	speed: number,
 	id: number,
@@ -213,7 +214,7 @@ end
 
 function CreateArcedAttack(
 	player: Player,
-	attackData: HeroData.AbilityData & HeroData.ArcedData,
+	attackData: Types.AbilityData & HeroData.ArcedData,
 	origin: CFrame,
 	projectileTime: number,
 	speed: number,
@@ -297,7 +298,7 @@ end
 
 function AttackRenderer.RenderAttack(
 	player: Player,
-	attackData: HeroData.AbilityData,
+	attackData: Types.AbilityData,
 	origin: CFrame,
 	attackDetails: AttackLogic.AttackDetails,
 	onHit: HitFunction? | MultiHit?
@@ -326,7 +327,7 @@ function AttackRenderer.RenderAttack(
 
 		CreateArcedAttack(
 			player,
-			attackData :: HeroData.AbilityData & HeroData.ArcedData,
+			attackData :: Types.AbilityData & HeroData.ArcedData,
 			origin,
 			details.timeToLand,
 			attackData.ProjectileSpeed,
@@ -339,7 +340,7 @@ end
 
 function AttackRenderer.RenderOtherClientAttack(
 	player: Player,
-	attackData: HeroData.AbilityData,
+	attackData: Types.AbilityData,
 	origin: CFrame,
 	attackDetails: AttackLogic.AttackDetails
 )
