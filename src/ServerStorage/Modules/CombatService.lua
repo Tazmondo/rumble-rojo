@@ -95,12 +95,7 @@ local function replicateAttack(
 			return
 		end
 
-		combatPlayer:RegisterBullet(
-			localAttackDetails.id,
-			localAttackDetails.origin,
-			attackData.ProjectileSpeed,
-			attackData
-		)
+		combatPlayer:RegisterBullet(attackDetails.id, attackDetails.origin, attackData.ProjectileSpeed, attackData)
 
 		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
 	elseif attackData.AttackType == "Arced" then
@@ -114,12 +109,7 @@ local function replicateAttack(
 			return
 		end
 
-		combatPlayer:RegisterBullet(
-			localAttackDetails.id,
-			localAttackDetails.origin,
-			attackData.ProjectileSpeed,
-			attackData
-		)
+		combatPlayer:RegisterBullet(attackDetails.id, attackDetails.origin, attackData.ProjectileSpeed, attackData)
 
 		print("registered arc", localAttackDetails.id)
 
