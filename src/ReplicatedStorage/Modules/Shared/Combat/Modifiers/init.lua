@@ -297,6 +297,17 @@ Modifiers.Slimed = {
 	end,
 }
 
+Modifiers.Missile = {
+	Name = "Missile",
+	Description = "Slime Bomb detonates immediately.",
+	Price = 1000,
+	Modify = function(self)
+		local data = self.heroData
+		local super = data.Super :: HeroData.SuperData & HeroData.ArcedData
+		super.TimeToDetonate = 0
+	end,
+}
+
 -- Validate modifiers
 for modifier, data in pairs(Modifiers :: any) do
 	if modifier == "" then
@@ -306,7 +317,7 @@ for modifier, data in pairs(Modifiers :: any) do
 	assert(data.Name)
 	assert(data.Description)
 	if not data.LockedImage or not data.UnlockedImage or data.LockedImage == data.UnlockedImage then
-		warn("Could not find image assets for", modifier)
+		warn("Could not find image assets for modifier/talent", modifier)
 		data.LockedImage = "rbxassetid://14983743747"
 		data.UnlockedImage = "rbxassetid://14995177430"
 	end

@@ -125,7 +125,7 @@ local orderedHeroDetails: { OrderedHero } = {
 		Price = 100,
 		DefaultSkin = "Aqua",
 		Modifiers = table.clone(DefaultModifiers),
-		Talents = { "SuperBlast", "Overslime", "Slimed" },
+		Talents = { "SuperBlast", "Overslime", "Slimed", "Missile" },
 		Skills = {},
 		Skins = {
 			{
