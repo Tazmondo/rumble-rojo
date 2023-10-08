@@ -74,12 +74,16 @@ function SetEmittersEnabled(character: Model, enabled: boolean)
 		return
 	end
 
-	for emitter, defaultEnabled in pairs(data.Emitters) do
-		if enabled then
-			emitter.Enabled = defaultEnabled
-		else
-			emitter:Clear()
-			emitter.Enabled = false
+	for i, emitter in pairs(character:GetDescendants()) do
+		if emitter:IsA("ParticleEmitter") then
+			local defaultEnabled = data.Emitters[emitter]
+
+			if defaultEnabled and enabled then
+				emitter.Enabled = defaultEnabled
+			elseif not enabled then
+				emitter:Clear()
+				emitter.Enabled = false
+			end
 		end
 	end
 end
