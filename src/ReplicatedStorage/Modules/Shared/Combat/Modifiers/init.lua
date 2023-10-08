@@ -265,13 +265,12 @@ Modifiers.SuperBlast = {
 
 Modifiers.Overslime = {
 	Name = "Overslime",
-	Description = "Increases Slime Bomb damage by 50%, but you move 10% slower.",
+	Description = "Increases Slime Bomb damage by 40%.",
 	Price = 1000,
 	UnlockedImage = "rbxassetid://14996726056",
 	LockedImage = "rbxassetid://14996726996",
 	Modify = function(self)
-		self.baseSuperDamage *= 1.5
-		self.baseSpeed *= 0.9
+		self.baseSuperDamage *= 1.4
 	end,
 }
 
