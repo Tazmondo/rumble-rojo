@@ -12,7 +12,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
-local Skill = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skill)
+local Skill = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
@@ -77,7 +77,8 @@ function InitializeSelf(
 	model: Model,
 	modifiers: Types.ModifierCollection,
 	player: Player?,
-	object: boolean?
+	object: boolean?,
+	skill: Types.Skill?
 )
 	local self = {} :: Types.CombatPlayer
 
@@ -136,7 +137,7 @@ function InitializeSelf(
 	self.attacks = {} :: { [number]: Types.Attack }
 	self.player = player
 
-	self.skill = Skill.Dash
+	self.skill = skill or Skill[""] -- If no skill given then use default
 	self.lastSkillTime = 0
 	self.skillActive = false
 	self.skillUses = 2
@@ -159,10 +160,11 @@ function CombatPlayer.new(
 	heroName: string,
 	model: Model,
 	modifiers: Types.ModifierCollection,
-	player: Player?
+	player: Player?,
+	skill: Types.Skill?
 ): CombatPlayer
 	local heroData = assert(HeroData.HeroData[heroName], "Invalid hero name:", heroName)
-	local self = InitializeSelf(heroData, model, modifiers, player)
+	local self = InitializeSelf(heroData, model, modifiers, player, false, skill)
 
 	self:Update()
 

@@ -34,6 +34,7 @@ local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Server()
 local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
 local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
+local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Server()
 local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Server()
 local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Server()
@@ -495,12 +496,17 @@ function CombatService:SetupCombatPlayer(player: Player, details: PlayerCombatDe
 	local modifierStrings = { details.Modifiers[1], details.Modifiers[2], details.Talent }
 	local modifiers = { Modifiers[details.Modifiers[1]], Modifiers[details.Modifiers[2]], Modifiers[details.Talent] }
 
-	local combatPlayer =
-		CombatPlayer.new(details.HeroName, char, ModifierCollection.new(modifiers), player) :: CombatPlayer.CombatPlayer
+	local combatPlayer = CombatPlayer.new(
+		details.HeroName,
+		char,
+		ModifierCollection.new(modifiers),
+		player,
+		Skills[details.Skill]
+	) :: CombatPlayer.CombatPlayer
 	CombatPlayerData[char] = combatPlayer
 
 	print("Asking client to initialize combat player")
-	CombatPlayerInitializeEvent:Fire(player, details.HeroName, modifierStrings)
+	CombatPlayerInitializeEvent:Fire(player, details.HeroName, modifierStrings, details.Skill)
 end
 
 function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)

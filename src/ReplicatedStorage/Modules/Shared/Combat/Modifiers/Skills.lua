@@ -18,7 +18,7 @@ Skill.Dash = {
 			return
 		end
 
-		local dashTime = 0.35
+		local dashTime = 0.2
 		local dashDistance = 15
 
 		local character = combatPlayer.character
