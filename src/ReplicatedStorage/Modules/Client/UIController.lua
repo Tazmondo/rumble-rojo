@@ -380,7 +380,7 @@ function RenderHeroSelectScreen()
 		return
 	end
 
-	local heroStats = ownedHeroes[displayedHero]
+	local heroStats = ownedHeroes[displayedHero] or nil -- for making it an optional type
 	local trophyCount = if heroStats then heroStats.Trophies else 0
 
 	details:FindFirstChild("Trophies").TrophyCount.Text = trophyCount
@@ -504,7 +504,7 @@ function RenderHeroSelectScreen()
 					continue
 				end
 
-				local owned = heroStats.Modifiers[modifierName] == true
+				local owned = heroStats and heroStats.Modifiers[modifierName] == true
 				local modifierData = Modifiers[modifierName]
 
 				local newButton = modifierTemplate:Clone()
@@ -528,7 +528,7 @@ function RenderHeroSelectScreen()
 
 			if displayBoost and displayBoost ~= "" then
 				local equipped = DataController.IsModifierEquipped(displayedHero, displayBoost)
-				local owned = heroStats.Modifiers[displayBoost] == true
+				local owned = heroStats and heroStats.Modifiers[displayBoost] == true
 
 				local modifierData = Modifiers[displayBoost]
 
@@ -554,11 +554,11 @@ function RenderHeroSelectScreen()
 		elseif boostPage == "Talent" then
 			local talents = heroData.Talents
 			for i, talentName in ipairs(talents) do
-				if talentName == "" or heroStats.SelectedTalent == talentName then
+				if talentName == "" or (heroStats and heroStats.SelectedTalent == talentName) then
 					continue
 				end
 
-				local owned = heroStats.Talents[talentName] == true
+				local owned = heroStats and heroStats.Talents[talentName] == true
 				local talentData = Modifiers[talentName]
 
 				local newButton = talentTemplate:Clone()
@@ -581,8 +581,8 @@ function RenderHeroSelectScreen()
 			end
 
 			if displayBoost and displayBoost ~= "" then
-				local equipped = heroStats.SelectedTalent == displayBoost
-				local owned = heroStats.Talents[displayBoost] == true
+				local equipped = heroStats and heroStats.SelectedTalent == displayBoost
+				local owned = heroStats and heroStats.Talents[displayBoost] == true
 
 				local talentData = Modifiers[displayBoost]
 
@@ -591,7 +591,7 @@ function RenderHeroSelectScreen()
 
 				rightSide:FindFirstChild("Remove").Visible = owned and equipped
 				rightSide.Equip.Visible = owned and not equipped
-				rightSide.Unlock.Visible = not owned and talentData.Price
+				rightSide.Unlock.Visible = not owned and talentData.Price and heroStats
 
 				if rightSide.Unlock.Visible then
 					rightSide.Unlock.Cost.Text = talentData.Price

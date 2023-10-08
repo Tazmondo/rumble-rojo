@@ -104,9 +104,12 @@ function DataController.PurchaseTalent(hero: string, talent: string)
 end
 
 function DataController.IsModifierEquipped(hero: string, modifier: string)
-	local data = DataController.GetLocalData():Await().Private.OwnedHeroes[hero].SelectedModifiers
+	local data = DataController.GetLocalData():Await().Private.OwnedHeroes[hero]
+	if not data then
+		return false
+	end
 
-	return data[1] == modifier or data[2] == modifier
+	return data.SelectedModifiers[1] == modifier or data.SelectedModifiers[2] == modifier
 end
 
 function DataController.GetMoney()
