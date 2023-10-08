@@ -427,7 +427,12 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 		local attackData = attackData :: HeroData.ArcedData & Types.AbilityData
 
 		local HRPToTarget = target - self.HRP.Position
+		local yDiff = HRPToTarget.Y
+
+		HRPToTarget *= Vector3.new(1, 0, 1)
+
 		target = self.HRP.Position
+			+ Vector3.new(0, yDiff, 0)
 			+ HRPToTarget.Unit
 				-- Get smallest of max range or target, but cant be any smaller than 0.
 				* math.max(0, math.min(attackData.Range - attackData.Radius * 2, HRPToTarget.Magnitude))

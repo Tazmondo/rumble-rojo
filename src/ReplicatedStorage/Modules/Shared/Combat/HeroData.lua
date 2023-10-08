@@ -146,7 +146,7 @@ local HeroData: { [string]: HeroData } = {
 
 			AttackType = "Arced" :: "Arced",
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
-			Height = Enums.ArcHeight.Low,
+			Height = Enums.ArcHeight.Medium,
 			TimeToDetonate = 0.6,
 			Radius = Enums.Radius.Medium,
 		},

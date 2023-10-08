@@ -140,7 +140,7 @@ function InitializeSelf(
 	self.skill = skill or Skill[""] -- If no skill given then use default
 	self.lastSkillTime = 0
 	self.skillActive = false
-	self.skillUses = 2
+	self.skillUses = 3
 	self.skillCooldown = Config.SkillCooldown - allowance
 
 	self.aiming = nil

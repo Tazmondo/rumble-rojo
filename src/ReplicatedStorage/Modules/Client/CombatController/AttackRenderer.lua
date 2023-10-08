@@ -235,7 +235,7 @@ function CreateArcedAttack(
 
 	TriggerAllDescendantParticleEmitters(pelletPart, true)
 
-	local height = 10
+	local height = attackData.Height
 	local timeTravelled = 0
 	local movementTick = RunService.PreSimulation:Connect(function(dt: number)
 		timeTravelled += dt
