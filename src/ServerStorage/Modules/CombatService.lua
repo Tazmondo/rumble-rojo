@@ -32,6 +32,7 @@ local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Server()
 local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
+local SkillAbilityEvent = require(ReplicatedStorage.Events.Combat.SkillAbilityEvent):Server()
 local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
 local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
@@ -206,6 +207,24 @@ function handleAttackSkill(player: Player, origin: CFrame, localAttackDetails)
 	combatPlayer:UseSkill()
 
 	return combatPlayer.attackId
+end
+
+function handleAbilitySkill(player: Player)
+	if not player.Character then
+		return
+	end
+
+	local combatPlayer = CombatPlayerData[player.Character]
+	if not combatPlayer then
+		return
+	end
+
+	if not combatPlayer:CanUseSkill() then
+		warn("Tried to use a skill when it could not be used.")
+		return
+	end
+
+	combatPlayer:UseSkill()
 end
 
 function handleAim(player: Player, aim: string?)
@@ -682,6 +701,7 @@ function CombatService:Initialize()
 	HitEvent:On(handleClientHit)
 	HitMultipleEvent:On(handleClientExplosionHit)
 	AimEvent:On(handleAim)
+	SkillAbilityEvent:On(handleAbilitySkill)
 
 	for _, v in pairs(workspace:GetChildren()) do
 		if v.Name == "TestDummy" then

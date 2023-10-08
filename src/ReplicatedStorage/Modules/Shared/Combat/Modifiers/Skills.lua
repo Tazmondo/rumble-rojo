@@ -70,7 +70,16 @@ Skills.Bomb = {
 	Activation = "Instant",
 	Type = "Attack",
 	AttackData = BombAttack,
-	Activated = function(self) end,
+}
+
+Skills.Heal = {
+	Name = "Heal",
+	Description = "Instantly 30% of your health.",
+	Activation = "Instant",
+	Type = "Ability",
+	Activated = function(self)
+		self:Heal(self.maxHealth * 0.3)
+	end,
 }
 
 return Skills

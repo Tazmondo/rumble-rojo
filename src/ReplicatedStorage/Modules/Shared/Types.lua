@@ -84,7 +84,7 @@ export type Skill = {
 	Price: number?,
 	Type: "Ability" | "Attack",
 	Activation: "Instant" | "Aim",
-	Activated: (CombatPlayer) -> (),
+	Activated: ((CombatPlayer) -> ())?,
 	AttackData: SkillData?,
 }
 

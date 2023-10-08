@@ -25,13 +25,14 @@ local NameTag = require(script.Parent.NameTag)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
 local AttackLogic = require(combatFolder.AttackLogic)
 local CombatPlayer = require(combatFolder.CombatPlayer)
-
 local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
 local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
 local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
+
+local SkillAbilityEvent = require(ReplicatedStorage.Events.Combat.SkillAbilityEvent):Client()
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Client()
 local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Client()
 
@@ -343,12 +344,16 @@ function CombatClient.HandleSuperUp(self: CombatClient)
 end
 
 function CombatClient.HandleSkillDown(self: CombatClient)
-	if self.combatPlayer:CanUseSkill() then
-		local skill = self.combatPlayer.skill
-		self.combatPlayer:UseSkill()
-		if skill.Type == "Attack" then
-			self:Attack("Skill")
-		end
+	if not self.combatPlayer:CanUseSkill() then
+		return
+	end
+
+	local skill = self.combatPlayer.skill
+	self.combatPlayer:UseSkill()
+	if skill.Type == "Attack" then
+		self:Attack("Skill")
+	elseif skill.Type == "Ability" then
+		SkillAbilityEvent:Fire()
 	end
 end
 

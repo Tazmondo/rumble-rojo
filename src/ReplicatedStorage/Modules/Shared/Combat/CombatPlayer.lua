@@ -387,7 +387,16 @@ function CombatPlayer.Heal(self: CombatPlayer, amount: number)
 	end
 
 	self.health = math.round(math.clamp(self.health + amount, 0, self.maxHealth))
-	self:Sync("Heal", amount)
+	self:Sync("SetHealth", self.health)
+	self:Update()
+end
+
+function CombatPlayer.SetHealth(self: CombatPlayer, amount: number)
+	if self.state == "Dead" then
+		return
+	end
+	self.health = amount
+	self:Sync("SetHealth", amount)
 	self:Update()
 end
 
@@ -493,7 +502,7 @@ end
 function CombatPlayer.UseSkill(self: CombatPlayer)
 	self.lastSkillTime = os.clock()
 	self.skillUses -= 1
-	if self.skill then
+	if self.skill.Activated then
 		self.skill.Activated(self)
 	end
 end
