@@ -8,7 +8,7 @@ local CONFIG = {
 	MaxPlayers = 6,
 
 	QueueOnJoin = true,
-	LobbyMovementSpeed = 24,
+	LobbyMovementSpeed = 34,
 	LobbyPlayerScale = 2,
 	LobbyJumpPower = 65,
 }
