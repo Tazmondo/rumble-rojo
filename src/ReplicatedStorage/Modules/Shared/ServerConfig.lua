@@ -9,7 +9,7 @@ local CONFIG = {
 
 	QueueOnJoin = true,
 	LobbyMovementSpeed = 24,
-	LobbyPlayerScale = 1.5,
+	LobbyPlayerScale = 2,
 	LobbyJumpPower = 65,
 }
 
@@ -22,9 +22,9 @@ local studioconfig = {
 	MaxPlayers = 6,
 
 	QueueOnJoin = false,
-	LobbyMovementSpeed = 28,
-	LobbyPlayerScale = 1.5,
-	LobbyJumpPower = 65,
+	LobbyMovementSpeed = CONFIG.LobbyMovementSpeed,
+	LobbyPlayerScale = CONFIG.LobbyPlayerScale,
+	LobbyJumpPower = CONFIG.LobbyJumpPower,
 }
 
 local out = if RunService:IsStudio() then studioconfig else CONFIG
