@@ -52,7 +52,7 @@ Modifiers.Slow = {
 	Description = "Attacks slow enemies by 15% when you are under 50% hp.",
 	Price = 1000,
 	LockedImage = "rbxassetid://14996720951",
-	UnlockedImage = "rbxassetid://14996723454",
+	UnlockedImage = "rbxassetid://14996723265",
 	OnHit = function(self, victim, details)
 		if self.health / self.maxHealth > 0.5 then
 			return

@@ -334,6 +334,10 @@ function CombatClient.HandleSuperUp(self: CombatClient)
 	-- end
 end
 
+function CombatClient.HandleSkillDown(self: CombatClient)
+	self.combatPlayer:UseSkill()
+end
+
 function CombatClient.GetInputs(self: CombatClient)
 	self.janitor:Add(UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
 		if processed then
@@ -354,6 +358,8 @@ function CombatClient.GetInputs(self: CombatClient)
 			self:HandleMouseDown()
 		elseif input.KeyCode == Config.SuperKey then
 			self:HandleSuperDown()
+		elseif input.KeyCode == Config.SkillKey then
+			self:HandleSkillDown()
 		end
 	end))
 

@@ -30,6 +30,9 @@ local Config = {
 	-- Key to use super
 	SuperKey = Enum.KeyCode.E,
 
+	-- Key to use skill
+	SkillKey = Enum.KeyCode.Space,
+
 	-- How long before health regen begins after taking or dealing damage
 	InitialRegenTime = 5,
 
@@ -38,6 +41,9 @@ local Config = {
 
 	-- Regeneration amount as a multiplier of maximum health
 	RegenAmount = 0.2,
+
+	-- Cooldown between skill use (seconds)
+	SkillCooldown = 5,
 
 	-- trophy values
 	TrophyWin = 10,

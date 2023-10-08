@@ -145,7 +145,7 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails):
 			os.clock() - combatPlayer.lastAttackTime,
 			combatPlayer.reloadSpeed,
 			combatPlayer:GetState(),
-			combatPlayer:AttackingEnabled()
+			combatPlayer:AbilitiesEnabled()
 		)
 		return combatPlayer.attackId
 	end

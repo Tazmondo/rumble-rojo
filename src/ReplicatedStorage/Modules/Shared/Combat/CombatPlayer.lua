@@ -12,6 +12,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
+local Skill = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skill)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
@@ -95,7 +96,6 @@ function InitializeSelf(
 	self.baseRegenRate = 1
 	self.baseAmmoRegen = self.heroData.Attack.AmmoRegen
 	self.requiredSuperCharge = self.heroData.Super.Charge
-	self.skillUses = 2
 
 	modifiers.Modify(self)
 	self.modifiers = modifiers
@@ -135,6 +135,11 @@ function InitializeSelf(
 	self.attackId = 1
 	self.attacks = {} :: { [number]: Types.Attack }
 	self.player = player
+
+	self.skill = Skill.Dash
+	self.lastSkillTime = 0
+	self.skillActive = false
+	self.skillUses = 2
 
 	self.aiming = nil
 
@@ -269,7 +274,7 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 		self.statusEffects[effect] = nil
 	end
 
-	if effect == "Slow" or effect == "Ratty" or effect == "Stun" then
+	if effect == "Slow" or effect == "Ratty" or effect == "Stun" or effect == "Dash" then
 		self:UpdateSpeed()
 	elseif effect == "TrueSight" then
 		self:Update()
@@ -299,8 +304,9 @@ function CombatPlayer.UpdateSpeed(self: CombatPlayer)
 	local slowModifier = (self.statusEffects["Slow"] or { 1 })[1]
 	local rattyModifier = (self.statusEffects["Ratty"] or 1)
 	local stunModifier = if self.statusEffects["Stun"] then 0 else 1
+	local dashModifier = if self.statusEffects["Dash"] then 0 else 1
 
-	local modifier = slowModifier * rattyModifier * stunModifier
+	local modifier = slowModifier * rattyModifier * stunModifier * dashModifier
 
 	self.movementSpeed = self.baseSpeed * modifier
 	print("Updating speed", self.movementSpeed)
@@ -416,7 +422,7 @@ function CombatPlayer.DealDamage(self: CombatPlayer, damage: number, targetChara
 	end
 end
 
-function CombatPlayer:AttackingEnabled()
+function CombatPlayer:AbilitiesEnabled()
 	self = self :: CombatPlayer
 	return (
 		GetGameState() ~= "BattleStarting" or (RunService:IsStudio() and ServerScriptService:GetAttribute("combat"))
@@ -427,7 +433,7 @@ function CombatPlayer.CanAttack(self: CombatPlayer)
 	local canAttack = self.state == "Idle"
 		and os.clock() - self.lastAttackTime >= self.reloadSpeed
 		and self.ammo > 0
-		and self:AttackingEnabled()
+		and self:AbilitiesEnabled()
 		and self.statusEffects["Stun"] == nil
 	return canAttack
 end
@@ -463,7 +469,7 @@ end
 
 function CombatPlayer.CanSuperAttack(self: CombatPlayer)
 	local canAttack = self.state == "Idle"
-		and self:AttackingEnabled() -- Make sure round is in-progress
+		and self:AbilitiesEnabled() -- Make sure round is in-progress
 		and self.superCharge >= self.requiredSuperCharge
 	return canAttack
 end
@@ -471,6 +477,21 @@ end
 function CombatPlayer.SuperAttack(self: CombatPlayer)
 	self.superCharge = 0
 	self:Update()
+end
+
+function CombatPlayer.CanUseSkill(self: CombatPlayer)
+	return os.clock() - self.lastSkillTime > Config.SkillCooldown
+		and self.skillUses > 0
+		and self:AbilitiesEnabled()
+		and not self.skillActive
+end
+
+function CombatPlayer.UseSkill(self: CombatPlayer)
+	self.lastSkillTime = os.clock()
+	self.skillUses -= 1
+	if self.skill then
+		self.skill.Activated(self)
+	end
 end
 
 -- Different from attack since attacks with multiple bullets will "attack" once but call this for each bullet fired

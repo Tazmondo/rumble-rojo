@@ -72,6 +72,13 @@ export type ModifierCollection = {
 	Modifiers: { string },
 } & ModifierFunctions
 
+export type Skill = {
+	Name: string,
+	Description: string,
+	Price: number?,
+	Activated: (CombatPlayer) -> (),
+}
+
 export type State = "Idle" | "Dead"
 export type CombatPlayer = {
 	heroData: HeroData.HeroData,
@@ -102,7 +109,11 @@ export type CombatPlayer = {
 	lastAttackTime: number,
 	inBush: boolean,
 	state: State,
+
+	lastSkillTime: number,
 	skillUses: number,
+	skillActive: boolean,
+	skill: Skill,
 
 	modifiers: ModifierCollection,
 	statusEffects: { [string]: any },
