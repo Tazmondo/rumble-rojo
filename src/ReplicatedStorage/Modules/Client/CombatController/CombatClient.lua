@@ -440,7 +440,7 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 			+ Vector3.new(0, yDiff, 0)
 			+ HRPToTarget.Unit
 				-- Get smallest of max range or target, but cant be any smaller than 0.
-				* math.max(0, math.min(attackData.Range - attackData.Radius * 2, HRPToTarget.Magnitude))
+				* math.max(0, math.min(attackData.Range - attackData.Radius, HRPToTarget.Magnitude))
 	end
 
 	trajectory = trajectory.Unit
