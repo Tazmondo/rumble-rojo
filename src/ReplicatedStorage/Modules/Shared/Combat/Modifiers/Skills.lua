@@ -82,4 +82,20 @@ Skills.Heal = {
 	end,
 }
 
+Skills.Shield = {
+	Name = "Shield",
+	Description = "Gain a temporary shield which blocks one hit.",
+	Activation = "Instant",
+	Type = "Ability",
+	Activated = function(self)
+		local value = { true }
+		self:SetStatusEffect("Shield", value)
+		task.delay(5, function()
+			if self.statusEffects["Shield"] == value then
+				self:SetStatusEffect("Shield")
+			end
+		end)
+	end,
+}
+
 return Skills

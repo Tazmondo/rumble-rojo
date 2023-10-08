@@ -281,8 +281,6 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 		self:UpdateSpeed()
 	elseif effect == "TrueSight" then
 		self:Update()
-	else
-		error("Invalid status effect: " .. effect)
 	end
 end
 
@@ -534,8 +532,13 @@ function CombatPlayer.CanTakeDamage(self: CombatPlayer)
 end
 
 function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
-	self.health = math.round(math.clamp(self.health - amount, 0, self.maxHealth))
 	self:Sync("TakeDamage", amount)
+	if self.statusEffects["Shield"] then
+		self.TookDamageSignal:Fire(0)
+		self:SetStatusEffect("Shield")
+		return
+	end
+	self.health = math.round(math.clamp(self.health - amount, 0, self.maxHealth))
 	self.TookDamageSignal:Fire(amount)
 
 	self:ScheduleRegen(Config.InitialRegenTime)
@@ -557,7 +560,8 @@ function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
 	self.maxHealth = math.round(newMaxHealth) -- prevent decimals
 	self.health = math.round(math.clamp(self.maxHealth * previousHealthPercentage, 0, newMaxHealth))
 
-	self:ScheduleRegen(Config.InitialRegenTime)
+	-- Don't need to regen as health percentage is preserved
+	-- self:ScheduleRegen(Config.InitialRegenTime)
 
 	self:Sync("SetMaxHealth", newMaxHealth)
 	self:Update()
