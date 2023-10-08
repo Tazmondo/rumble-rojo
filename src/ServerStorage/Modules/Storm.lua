@@ -7,7 +7,7 @@ local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local Storm = {}
 Storm.__index = Storm
 
-local STARTDELAY = 14
+local STARTDELAY = 12
 local PROGRESSDELAY = 8
 
 -- Damage percent of max hp per second
@@ -16,7 +16,7 @@ local DAMAGEDELAY = 0.75
 -- Last layer that storm will reach
 local MINLAYER = 3
 
-local MAPLENGTH = 24
+local MAPLENGTH = 32
 
 local BLOCKSIZE = 8
 
