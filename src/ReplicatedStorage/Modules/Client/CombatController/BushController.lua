@@ -140,6 +140,9 @@ end
 function Render(dt: number)
 	debug.profilebegin("BushRender")
 
+	local localCharacter = player.Character
+	local clientHRP = if localCharacter then localCharacter:FindFirstChild("HumanoidRootPart") :: BasePart else nil
+
 	for character, data in pairs(characterData) do
 		local inBush = false
 		local isPlayerCharacter = character == player.Character
@@ -155,7 +158,6 @@ function Render(dt: number)
 			end
 			-- Make sure middle of HRP is inside the bush
 			if IsPointInVolume(HRP.Position, bush.CFrame, bush.Size) then
-				local clientHRP = player.Character:FindFirstChild("HumanoidRootPart") :: BasePart
 				if
 					isPlayerCharacter
 					or not inCombat
