@@ -29,7 +29,6 @@ type BaseSuper = {
 	Charge: number,
 	Damage: number,
 	Range: number,
-	Modifiers: { [number]: string },
 
 	AttackType: Enums.AttackType,
 }
@@ -100,7 +99,7 @@ local HeroData: { [string]: HeroData } = {
 		Attack = {
 			AbilityType = "Attack" :: "Attack",
 			Name = "Buckshot",
-			Damage = 200,
+			Damage = 230,
 			Ammo = 3,
 			AmmoRegen = 2,
 			Range = Enums.AttackRange.Short,
@@ -108,16 +107,15 @@ local HeroData: { [string]: HeroData } = {
 
 			AttackType = "Shotgun" :: "Shotgun",
 			ShotCount = 10,
-			Angle = 30,
+			Angle = 27,
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 		},
 		Super = {
 			AbilityType = "Super" :: "Super",
 			Name = "Super Shell",
-			Charge = 18,
+			Charge = 16,
 			Damage = 250,
 			Range = Enums.AttackRange.Short,
-			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
 
 			AttackType = "Shotgun" :: "Shotgun",
 			ShotCount = 10,
@@ -147,7 +145,6 @@ local HeroData: { [string]: HeroData } = {
 			Charge = 4,
 			Damage = 2000,
 			Range = Enums.AttackRange.Medium,
-			Modifiers = { Enums.Modifiers.Knockback, Enums.Modifiers.BreakBarrier },
 
 			AttackType = "Arced" :: "Arced",
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
