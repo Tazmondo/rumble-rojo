@@ -218,9 +218,18 @@ function CombatPlayer.CombatPlayerRemoved()
 end
 
 function CombatPlayer.GetDamageBetween(attacker: CombatPlayer, victim: CombatPlayer, attack: Types.AbilityData)
+	local shieldMultiplier = 1
+	if victim.statusEffects["Shield"] then
+		shieldMultiplier = 0
+		victim:SetStatusEffect("Shield")
+	end
+
 	local baseDamage = if attack.AbilityType == "Attack" then attacker.baseAttackDamage else attacker.baseSuperDamage
 	local boosterDamage = math.round(baseDamage * (1 + attacker.boosterCount * Config.BoosterDamage))
-	local finalDamage = boosterDamage * attacker:GetDamageMultiplier(victim) * victim:GetDefenceMultiplier()
+	local finalDamage = boosterDamage
+		* attacker:GetDamageMultiplier(victim)
+		* victim:GetDefenceMultiplier()
+		* shieldMultiplier
 
 	return math.round(finalDamage)
 end
@@ -527,17 +536,11 @@ function CombatPlayer.RegisterBullet(
 end
 
 function CombatPlayer.CanTakeDamage(self: CombatPlayer)
-	-- TODO: return false if has a barrier or shield or something
 	return self.state ~= "Dead"
 end
 
 function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 	self:Sync("TakeDamage", amount)
-	if self.statusEffects["Shield"] then
-		self.TookDamageSignal:Fire(0)
-		self:SetStatusEffect("Shield")
-		return
-	end
 	self.health = math.round(math.clamp(self.health - amount, 0, self.maxHealth))
 	self.TookDamageSignal:Fire(amount)
 
@@ -552,6 +555,7 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 	end
 
 	self:Update()
+	return amount
 end
 
 function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)

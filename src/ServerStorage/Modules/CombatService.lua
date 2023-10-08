@@ -284,21 +284,23 @@ function processHit(
 		combatPlayer:ChargeSuper(1)
 	end
 	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
-	local damage = CombatPlayer.GetDamageBetween(combatPlayer, victimCombatPlayer, attackDetails.Data)
-	combatPlayer:DealDamage(damage, victimCharacter)
+	local beforeState = victimCombatPlayer:GetState()
 
-	DamagedEvent:FireAll(victimCharacter, damage)
+	local damage = CombatPlayer.GetDamageBetween(combatPlayer, victimCombatPlayer, attackDetails.Data)
+	local actualDamage = victimCombatPlayer:TakeDamage(damage) -- Will update state to dead if this kills
+
+	combatPlayer:DealDamage(actualDamage, victimCharacter)
+
+	local afterState = victimCombatPlayer:GetState()
+
+	DamagedEvent:FireAll(victimCharacter, actualDamage)
 
 	-- Update Data
 	DataService.GetPrivateData(player):After(function(data)
 		if data then
-			data.Stats.DamageDealt += damage
+			data.Stats.DamageDealt += actualDamage
 		end
 	end)
-
-	local beforeState = victimCombatPlayer:GetState()
-	victimCombatPlayer:TakeDamage(damage) -- Will update state to dead if this kills
-	local afterState = victimCombatPlayer:GetState()
 
 	combatPlayer.modifiers.OnHit(combatPlayer, victimCombatPlayer, attackDetails)
 	victimCombatPlayer.modifiers.OnReceiveHit(victimCombatPlayer, combatPlayer, attackDetails)

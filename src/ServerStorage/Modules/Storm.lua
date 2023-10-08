@@ -171,6 +171,7 @@ function Storm.DamageLoop(self: Storm)
 			local tooHigh = math.abs(difference.Y) > 10
 
 			if (maxDifference > self.currentLayer - 1 or tooHigh) and combatPlayer:CanTakeDamage() then
+				-- Storm damage is forced, so it bypasses any shields
 				combatPlayer:TakeDamage(DAMAGEAMOUNT * combatPlayer.maxHealth)
 			end
 		end
