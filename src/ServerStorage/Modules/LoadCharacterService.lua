@@ -46,6 +46,8 @@ function GetPlayerBaseCharacter(player: Player)
 		-- we have to parent it to workspace
 		-- not sure if setting parent to nil will create issues
 		HRP.Anchored = false
+		HRP.AssemblyLinearVelocity = Vector3.zero
+
 		local newModel = model:Clone()
 		newModel.Name = player.Name
 
@@ -95,6 +97,10 @@ function InitializeCharacter(player: Player, model: Model?, spawnPosition: CFram
 		-- Rotate character so it faces same way as spawnpoint
 		local _, y, _ = spawnPosition.Rotation:ToEulerAnglesYXZ()
 		model:PivotTo(model:GetPivot() * CFrame.Angles(0, y, 0))
+
+		if model.PrimaryPart then
+			model.PrimaryPart.AssemblyLinearVelocity = Vector3.zero
+		end
 
 		return model
 	end)
