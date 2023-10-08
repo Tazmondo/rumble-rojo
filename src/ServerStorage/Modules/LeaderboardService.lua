@@ -42,8 +42,8 @@ local currentWeek = GetWeek(os.time())
 local ENDTIME = STARTTIME + (currentWeek + 1) * WEEKLENGTH
 
 function GetStorePrefixWithWeek(week)
-	local studioPrefix = if RunService:IsStudio() then "Studio_" else ""
-	return studioPrefix .. "Leaderboard2_" .. currentWeek .. "_"
+	local studioPrefix = if RunService:IsStudio() then "Studio2_" else ""
+	return studioPrefix .. "Leaderboard2_" .. tostring(week) .. "_"
 end
 
 local PREFIX = "Player_"
@@ -51,8 +51,10 @@ local PREFIX = "Player_"
 local DATASTORECOOLDOWN = 60
 local DATASERVICECOOLDOWN = 5
 
-local TrophyLeaderboardStore = DataStoreService:GetOrderedDataStore(GetStorePrefixWithWeek(currentWeek) .. "Trophy")
-local KillLeaderboardStore = DataStoreService:GetOrderedDataStore(GetStorePrefixWithWeek(currentWeek) .. "Kill")
+local storeprefix = GetStorePrefixWithWeek(currentWeek)
+print("storeprefix", storeprefix)
+local TrophyLeaderboardStore = DataStoreService:GetOrderedDataStore(storeprefix .. "Trophy")
+local KillLeaderboardStore = DataStoreService:GetOrderedDataStore(storeprefix .. "Kill")
 
 local trophyLeaderboard = {}
 local killLeaderboard = {}
@@ -100,6 +102,7 @@ function LeaderboardService.GetDataForTime(time: number)
 			if cached == nil then
 				CachedDatastores[week] = "Fetching"
 				local storeName = GetStorePrefixWithWeek(week)
+				print("getting ", storeName)
 				local dataStoreKill = DataStoreService:GetOrderedDataStore(storeName .. "Kill")
 				local dataStoreTrophy = DataStoreService:GetOrderedDataStore(storeName .. "Trophy")
 
@@ -293,7 +296,7 @@ function HandleReward(player: Player, data: Data.ProfileData)
 		warn(lastData)
 		return
 	end
-
+	print(lastData, #lastData.Kill, #lastData.Trophy)
 	local reward = 0
 
 	local value, index = TableUtil.Find(lastData.Kill, function(a)
