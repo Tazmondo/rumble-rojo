@@ -13,8 +13,8 @@ local Modifiers: {
 		Modify: ((Types.CombatPlayer) -> ())?,
 		Damage: ((Types.CombatPlayer) -> number)?,
 		Defence: ((Types.CombatPlayer) -> number)?,
-		OnHit: ((self: Types.CombatPlayer, victim: Types.CombatPlayer, details: Types.Attack) -> ())?,
-		OnReceiveHit: ((self: Types.CombatPlayer, attacker: Types.CombatPlayer, details: Types.Attack) -> ())?,
+		OnHit: ((self: Types.CombatPlayer, victim: Types.CombatPlayer, details: Types.AbilityData) -> ())?,
+		OnReceiveHit: ((self: Types.CombatPlayer, attacker: Types.CombatPlayer, details: Types.AbilityData) -> ())?,
 		OnHidden: ((self: Types.CombatPlayer, hidden: boolean) -> ())?,
 	},
 } =
@@ -52,7 +52,7 @@ Modifiers.Slow = {
 	Price = 1000,
 	LockedImage = "rbxassetid://14996720951",
 	UnlockedImage = "rbxassetid://14996723265",
-	OnHit = function(self, victim, details)
+	OnHit = function(self, victim)
 		if self.health / self.maxHealth > 0.5 then
 			return
 		end
@@ -147,7 +147,7 @@ Modifiers.Rat = {
 	Price = 500,
 	LockedImage = "rbxassetid://14996722010",
 	UnlockedImage = "rbxassetid://14997014496",
-	OnReceiveHit = function(self, attacker, details)
+	OnReceiveHit = function(self, attacker)
 		if self.health / self.maxHealth >= 0.2 then
 			return
 		end
@@ -175,7 +175,7 @@ Modifiers.TrueSight = {
 	Price = 550,
 	UnlockedImage = "rbxassetid://14996718562",
 	LockedImage = "rbxassetid://14987676748",
-	OnHit = function(self, victim, details)
+	OnHit = function(self, victim)
 		victim:SetStatusEffect("TrueSight", true, 3)
 	end,
 }
@@ -201,7 +201,7 @@ Modifiers.ShellShock = {
 	UnlockedImage = "rbxassetid://14996725426",
 	LockedImage = "rbxassetid://14996726470",
 	OnHit = function(self, victim, details)
-		if details.Data.AbilityType ~= "Super" then
+		if details.AbilityType ~= "Super" then
 			return
 		end
 
@@ -258,7 +258,7 @@ Modifiers.Slimed = {
 	UnlockedImage = "rbxassetid://14997401119",
 	LockedImage = "rbxassetid://14996727184",
 	OnHit = function(self, victim, attack)
-		if attack.Data.AbilityType ~= "Super" then
+		if attack.AbilityType ~= "Super" then
 			return
 		end
 

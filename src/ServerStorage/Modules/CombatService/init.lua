@@ -123,9 +123,24 @@ local function replicateAttack(
 			localAttackDetails.origin.Position
 		) :: AttackLogic.FieldDetails
 
-		FieldEffect.new(attackDetails.origin.Position, attackData, combatPlayer, CombatPlayerData, function(victim)
-			return victim ~= combatPlayer
-		end)
+		FieldEffect.new(
+			attackDetails.origin.Position,
+			attackData,
+			combatPlayer,
+			CombatPlayerData,
+			function(victim, multiplier)
+				local character = victim.character
+				local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
+				if not HRP then
+					return
+				end
+
+				processHit(player, HRP, nil, combatPlayer, character, victim, attackData, nil, multiplier)
+			end,
+			function(victim)
+				return victim ~= combatPlayer
+			end
+		)
 
 		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
 	else
@@ -256,15 +271,18 @@ end
 function processHit(
 	player: Player?,
 	target: BasePart,
-	localTargetPosition: Vector3,
+	localTargetPosition: Vector3?,
 	combatPlayer: CombatPlayer.CombatPlayer,
 	victimCharacter: Model,
 	victimCombatPlayer: CombatPlayer.CombatPlayer,
-	attackDetails: Types.Attack,
-	reflected: number?
+	attackDetails: Types.AbilityData,
+	reflected: number?,
+	multiplier: number?
 )
-	print("processing hit")
-	if (target.Position - localTargetPosition).Magnitude > Config.MaximumPlayerPositionDifference then
+	if
+		localTargetPosition
+		and (target.Position - localTargetPosition).Magnitude > Config.MaximumPlayerPositionDifference
+	then
 		warn("Rejected attack, too far away!", player, localTargetPosition, target, target.Position)
 		return
 	end
@@ -296,13 +314,13 @@ function processHit(
 	if not victimCombatPlayer:CanTakeDamage() then
 		return
 	end
-	if attackDetails.Data.AbilityType == Enums.AbilityType.Attack and victimCombatPlayer:CanGiveSuperCharge() then
+	if attackDetails.AbilityType == Enums.AbilityType.Attack and victimCombatPlayer:CanGiveSuperCharge() then
 		combatPlayer:ChargeSuper(1)
 	end
 	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
 	local beforeState = victimCombatPlayer:GetState()
 
-	local damage = CombatPlayer.GetDamageBetween(combatPlayer, victimCombatPlayer, attackDetails.Data)
+	local damage = CombatPlayer.GetDamageBetween(combatPlayer, victimCombatPlayer, attackDetails, multiplier)
 		* (reflected or 1)
 	local actualDamage = victimCombatPlayer:TakeDamage(damage) -- Will update state to dead if this kills
 
@@ -348,7 +366,7 @@ function processHit(
 			local data = {
 				Killer = player,
 				Victim = victimPlayer,
-				Attack = attackDetails.Data,
+				Attack = attackDetails,
 			} :: Types.KillData
 			CombatService:HandlePlayerDeath(victimPlayer, data)
 		end
@@ -401,7 +419,15 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		return
 	end
 
-	processHit(player, target, localTargetPosition, combatPlayer, victimCharacter, victimCombatPlayer, attackDetails)
+	processHit(
+		player,
+		target,
+		localTargetPosition,
+		combatPlayer,
+		victimCharacter,
+		victimCombatPlayer,
+		attackDetails.Data
+	)
 end
 
 function handleClientExplosionHit(player: Player, hitList: Types.HitList, attackId: number, explosionCentre: Vector3)
@@ -464,7 +490,7 @@ function handleClientExplosionHit(player: Player, hitList: Types.HitList, attack
 			combatPlayer,
 			victimCharacter,
 			victimCombatPlayer,
-			attackDetails
+			attackDetails.Data
 		)
 	end
 end

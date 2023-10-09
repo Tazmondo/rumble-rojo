@@ -63,8 +63,8 @@ type ModifierFunctions = {
 	Damage: (CombatPlayer) -> number, -- Called when dealing damage
 	Defence: (CombatPlayer) -> number, -- Called when taking damage
 	OnHidden: (CombatPlayer, hidden: boolean) -> (), -- Called when entering/exiting bush
-	OnHit: (self: CombatPlayer, victim: CombatPlayer, details: Attack) -> (), -- Called when hitting an enemy
-	OnReceiveHit: (self: CombatPlayer, attacker: CombatPlayer, details: Attack) -> (), -- Called when hit by an enemy
+	OnHit: (self: CombatPlayer, victim: CombatPlayer, details: AbilityData) -> (), -- Called when hitting an enemy
+	OnReceiveHit: (self: CombatPlayer, attacker: CombatPlayer, details: AbilityData) -> (), -- Called when hit by an enemy
 }
 
 export type ModifierCollection = {

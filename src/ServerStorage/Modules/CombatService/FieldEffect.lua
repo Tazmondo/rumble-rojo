@@ -9,6 +9,7 @@ function FieldEffect.new(
 	data: Types.AbilityData,
 	owner: Types.CombatPlayer,
 	combatPlayers: { [Model]: CombatPlayer.CombatPlayer },
+	OnHit: (victim: Types.CombatPlayer, multiplier: number) -> (),
 	Filter: ((Types.CombatPlayer) -> boolean)?
 )
 	assert(data.Data.AttackType == "Field")
@@ -30,8 +31,7 @@ function FieldEffect.new(
 				end
 
 				if data.Damage > 0 and combatPlayer:CanTakeDamage() then
-					local damage = CombatPlayer.GetDamageBetween(owner, combatPlayer, data, dt)
-					combatPlayer:TakeDamage(damage)
+					OnHit(combatPlayer, dt)
 				end
 			end
 		end
