@@ -98,4 +98,20 @@ Skills.Shield = {
 	end,
 }
 
+Skills.Sprint = {
+	Name = "Sprint",
+	Description = "Gain a 35% movement speed buff for 5 seconds.",
+	Activation = "Instant",
+	Type = "Ability",
+	Activated = function(self)
+		self.baseSpeed *= 1.35
+		self:UpdateSpeed()
+
+		task.delay(5, function()
+			self.baseSpeed /= 1.35
+			self:UpdateSpeed()
+		end)
+	end,
+}
+
 return Skills
