@@ -1,4 +1,5 @@
 --!strict
+--!nolint LocalShadow
 -- Handles rendering of attacks
 -- This will be more fleshed out when we have more attacks
 print("init attackrenderer")
@@ -312,6 +313,7 @@ function AttackRenderer.RenderAttack(
 		end
 	elseif attackData.AttackType == "Shot" then
 		local details = attackDetails :: AttackLogic.ShotDetails
+		local attackData = attackData :: Types.ShotData & Types.AbilityData
 
 		CreateAttackProjectile(
 			player,
@@ -323,6 +325,7 @@ function AttackRenderer.RenderAttack(
 		)
 	elseif attackData.AttackType == "Arced" then
 		local details = attackDetails :: AttackLogic.ArcDetails
+		local attackData = attackData :: Types.ArcedData & Types.AbilityData
 
 		CreateArcedAttack(
 			player,

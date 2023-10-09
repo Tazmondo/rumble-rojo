@@ -39,13 +39,6 @@ Enums.Modifiers = {
 	BreakBarrier = "BreakBarrier",
 }
 
-Enums.AttackType = {
-	Shot = "Shot", -- Fire one bullet at target
-	Shotgun = "Shotgun", -- Fire many bullets in a cone
-	Arced = "Arced", -- Fires overhead in an arc
-}
-export type AttackType = "Shot" | "Shotgun" | "Arced"
-
 Enums.AbilityType = {
 	Attack = "Attack",
 	Super = "Super",

@@ -1,5 +1,4 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 
 type Signal = typeof(Signal(...))
@@ -145,12 +144,55 @@ export type CombatPlayer = {
 	scheduledReloads: number,
 	scheduledRegen: {}?,
 
-	-- Not all functions listed, just the ones needed for modifiers
-	-- This is to resolve the circular dependency, so its a bit hacky and weird
-	-- But its not the end of the world, at least it works.
+	GetDamageMultiplier: (self: CombatPlayer, victim: CombatPlayer?) -> number,
+	GetDefenceMultiplier: (self: CombatPlayer) -> number,
+
+	Sync: (self: CombatPlayer, string, ...any) -> (),
+	AsUpdateData: (CombatPlayer) -> UpdateData,
+	Update: (CombatPlayer) -> (),
+
+	GetState: (CombatPlayer) -> State,
+	ChangeState: (CombatPlayer, State) -> (),
+	ScheduleStateChange: (CombatPlayer, number, State) -> (),
+	IsDead: (CombatPlayer) -> boolean,
+
 	SetStatusEffect: (CombatPlayer, string, any) -> (),
-	UpdateSpeed: (CombatPlayer) -> (),
+	SetBush: (CombatPlayer, boolean) -> (),
+	SetAiming: (CombatPlayer, string?) -> (),
+
+	Reload: (CombatPlayer) -> (),
+	ScheduleReload: (CombatPlayer) -> (),
+
+	Regen: (CombatPlayer) -> (),
+	CanRegen: (CombatPlayer) -> boolean,
+	ScheduleRegen: (CombatPlayer, number) -> (),
+
 	Heal: (CombatPlayer, number) -> (),
+	SetHealth: (CombatPlayer, number) -> (),
+	SetMaxHealth: (CombatPlayer, number) -> (),
+
+	GetNextAttackId: (CombatPlayer) -> number,
+	DealDamage: (CombatPlayer, number, victim: Model) -> (),
+	CanTakeDamage: (CombatPlayer) -> boolean,
+	TakeDamage: (CombatPlayer, number) -> number,
+
+	AbilitiesEnabled: (CombatPlayer) -> boolean,
+	CanAttack: (CombatPlayer) -> boolean,
+	Attack: (CombatPlayer) -> (),
+
+	ChargeSuper: (CombatPlayer, number) -> (),
+	CanGiveSuperCharge: (CombatPlayer) -> boolean,
+	CanSuperAttack: (CombatPlayer) -> boolean,
+	SuperAttack: (CombatPlayer) -> (),
+
+	CanUseSkill: (CombatPlayer) -> boolean,
+	UseSkill: (CombatPlayer) -> (),
+
+	RegisterBullet: (CombatPlayer, number, CFrame, number, AttackType) -> (),
+
+	AddBooster: (CombatPlayer, number) -> (),
+	UpdateSpeed: (CombatPlayer) -> (),
+	Destroy: (CombatPlayer) -> (),
 }
 
 export type HeroData = {
@@ -169,7 +211,7 @@ type BaseAttack = {
 	AmmoRegen: number,
 	ReloadSpeed: number,
 
-	AttackType: Enums.AttackType,
+	AttackType: AttackTypeName,
 }
 
 type BaseSuper = {
@@ -179,7 +221,7 @@ type BaseSuper = {
 	Damage: number,
 	Range: number,
 
-	AttackType: Enums.AttackType,
+	AttackType: AttackTypeName,
 }
 export type ShotgunData = {
 	AttackType: "Shotgun",
@@ -211,10 +253,11 @@ export type ArcedData = {
 export type FieldData = {
 	AttackType: "Field",
 	Radius: number,
-	Effect: ((CombatPlayer) -> ())?,
+	-- Effect: ((CombatPlayer) -> ())?,
 }
 
-export type AttackType = ShotgunData | ShotData | ArcedData
+export type AttackTypeName = "Shot" | "Shotgun" | "Arced" | "Explosion" | "Field"
+export type AttackType = ShotgunData | ShotData | ArcedData | ExplosionData | FieldData
 
 export type AttackData = BaseAttack & AttackType
 export type SuperData = BaseSuper & AttackType

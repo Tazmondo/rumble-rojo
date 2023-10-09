@@ -16,7 +16,7 @@ local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
 
-local aimPartTemplates: { [Enums.AttackType]: Instance } = {
+local aimPartTemplates: { [Types.AttackTypeName]: Instance } = {
 	Shotgun = GeneralVFX.AimCone,
 	Shot = GeneralVFX.AimRectangle,
 	Arced = GeneralVFX.AimCircle,

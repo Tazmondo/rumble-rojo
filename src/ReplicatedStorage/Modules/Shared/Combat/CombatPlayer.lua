@@ -270,6 +270,26 @@ function CombatPlayer.GetState(self: CombatPlayer)
 	return self.state
 end
 
+function CombatPlayer.ChangeState(self: CombatPlayer, newState: Types.State)
+	self.state = newState
+	self.scheduledChange = nil
+	self:Update()
+end
+
+function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, newState: Types.State)
+	local stateChange = { newState }
+	self.scheduledChange = stateChange
+
+	task.delay(delay, function()
+		-- Makes sure it hasn't been overriden by another scheduled state change
+		if self.scheduledChange == stateChange then
+			self:ChangeState(newState)
+		else
+			print("state change was overriden!")
+		end
+	end)
+end
+
 function CombatPlayer.IsDead(self: CombatPlayer)
 	return self.state == "Dead"
 end
@@ -404,26 +424,6 @@ function CombatPlayer.SetHealth(self: CombatPlayer, amount: number)
 	self.health = amount
 	self:Sync("SetHealth", amount)
 	self:Update()
-end
-
-function CombatPlayer.ChangeState(self: CombatPlayer, newState: Types.State)
-	self.state = newState
-	self.scheduledChange = nil
-	self:Update()
-end
-
-function CombatPlayer.ScheduleStateChange(self: CombatPlayer, delay: number, newState: Types.State)
-	local stateChange = { newState }
-	self.scheduledChange = stateChange
-
-	task.delay(delay, function()
-		-- Makes sure it hasn't been overriden by another scheduled state change
-		if self.scheduledChange == stateChange then
-			self:ChangeState(newState)
-		else
-			print("state change was overriden!")
-		end
-	end)
 end
 
 function CombatPlayer.GetNextAttackId(self: CombatPlayer): number
@@ -591,6 +591,6 @@ function CombatPlayer.Destroy(self: CombatPlayer)
 	clientCombatPlayer = nil :: any
 end
 
-export type CombatPlayer = Types.CombatPlayer & typeof(CombatPlayer)
+export type CombatPlayer = Types.CombatPlayer
 
 return CombatPlayer
