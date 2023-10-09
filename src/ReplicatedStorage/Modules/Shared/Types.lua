@@ -71,12 +71,6 @@ export type ModifierCollection = {
 	Modifiers: { string },
 } & ModifierFunctions
 
-export type SkillAttack = {
-	AbilityType: "Skill",
-	Name: string,
-	Damage: number,
-	Range: number,
-}
 export type Skill = {
 	Name: string,
 	Description: string,
@@ -86,8 +80,77 @@ export type Skill = {
 	Activated: ((CombatPlayer) -> ())?,
 	AttackData: SkillData?,
 }
+export type HeroData = {
+	Name: string,
+	Health: number,
+	MovementSpeed: number,
+	Attack: AttackData,
+	Super: SuperData,
+}
+export type AttackData = {
+	AbilityType: "Attack",
+	Name: string,
+	Damage: number,
+	Range: number,
+	Ammo: number,
+	AmmoRegen: number,
+	ReloadSpeed: number,
 
-export type SkillData = SkillAttack & AttackType
+	Data: AttackType,
+}
+
+export type SuperData = {
+	AbilityType: "Super",
+	Name: string,
+	Charge: number,
+	Damage: number,
+	Range: number,
+
+	Data: AttackType,
+}
+
+export type SkillData = {
+	AbilityType: "Skill",
+	Name: string,
+	Damage: number,
+	Range: number,
+
+	Data: AttackType,
+}
+export type ShotgunData = {
+	AttackType: "Shotgun",
+	Angle: number,
+	ShotCount: number,
+	ProjectileSpeed: number,
+}
+
+export type ShotData = {
+	AttackType: "Shot",
+	ProjectileSpeed: number,
+}
+
+export type ExplosionData = {
+	AttackType: "Explosion",
+	TimeToDetonate: number,
+	Radius: number,
+}
+
+export type ArcedData = {
+	AttackType: "Arced",
+	ProjectileSpeed: number,
+	TimeToDetonate: number, -- Can be zero for instant explosion, but allows for a grenade like effect
+	Height: number,
+	Radius: number,
+	Rotation: number?,
+}
+export type FieldData = {
+	AttackType: "Field",
+	Radius: number,
+	Effect: ((any) -> ())?,
+}
+
+export type AttackTypeName = "Shot" | "Shotgun" | "Arced" | "Explosion" | "Field"
+export type AttackType = ShotgunData | ShotData | ArcedData | ExplosionData | FieldData
 
 export type AbilityData = AttackData | SuperData | SkillData
 
@@ -188,78 +251,11 @@ export type CombatPlayer = {
 	CanUseSkill: (CombatPlayer) -> boolean,
 	UseSkill: (CombatPlayer) -> (),
 
-	RegisterBullet: (CombatPlayer, number, CFrame, number, AttackType) -> (),
+	RegisterBullet: (CombatPlayer, number, CFrame, number, AbilityData) -> (),
 
 	AddBooster: (CombatPlayer, number) -> (),
 	UpdateSpeed: (CombatPlayer) -> (),
 	Destroy: (CombatPlayer) -> (),
 }
-
-export type HeroData = {
-	Name: string,
-	Health: number,
-	MovementSpeed: number,
-	Attack: AttackData,
-	Super: SuperData,
-}
-type BaseAttack = {
-	AbilityType: "Attack",
-	Name: string,
-	Damage: number,
-	Range: number,
-	Ammo: number,
-	AmmoRegen: number,
-	ReloadSpeed: number,
-
-	AttackType: AttackTypeName,
-}
-
-type BaseSuper = {
-	AbilityType: "Super",
-	Name: string,
-	Charge: number,
-	Damage: number,
-	Range: number,
-
-	AttackType: AttackTypeName,
-}
-export type ShotgunData = {
-	AttackType: "Shotgun",
-	Angle: number,
-	ShotCount: number,
-	ProjectileSpeed: number,
-}
-
-export type ShotData = {
-	AttackType: "Shot",
-	ProjectileSpeed: number,
-}
-
-export type ExplosionData = {
-	AttackType: "Explosion",
-	TimeToDetonate: number,
-	Radius: number,
-}
-
-export type ArcedData = {
-	AttackType: "Arced",
-	ProjectileSpeed: number,
-	TimeToDetonate: number, -- Can be zero for instant explosion, but allows for a grenade like effect
-	Height: number,
-	Radius: number,
-	Rotation: number?,
-}
-
-export type FieldData = {
-	AttackType: "Field",
-	Radius: number,
-	-- Effect: ((CombatPlayer) -> ())?,
-}
-
-export type AttackTypeName = "Shot" | "Shotgun" | "Arced" | "Explosion" | "Field"
-export type AttackType = ShotgunData | ShotData | ArcedData | ExplosionData | FieldData
-
-export type AttackData = BaseAttack & AttackType
-export type SuperData = BaseSuper & AttackType
 
 return {}

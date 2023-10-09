@@ -70,7 +70,7 @@ local function replicateAttack(
 
 	print("registering1")
 
-	if attackData.AttackType == "Shotgun" then
+	if attackData.Data.AttackType == "Shotgun" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotgunDetails
 
 		local attackDetails =
@@ -85,9 +85,8 @@ local function replicateAttack(
 		end
 
 		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
-	elseif attackData.AttackType == "Shot" then
+	elseif attackData.Data.AttackType == "Shot" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotDetails
-		local attackData = attackData :: Types.ShotData & Types.AbilityData
 
 		local attackDetails = AttackLogic.MakeAttack(combatPlayer, origin, attackData) :: AttackLogic.ShotDetails
 
@@ -96,12 +95,11 @@ local function replicateAttack(
 			return
 		end
 
-		combatPlayer:RegisterBullet(attackDetails.id, attackDetails.origin, attackData.ProjectileSpeed, attackData)
+		combatPlayer:RegisterBullet(attackDetails.id, attackDetails.origin, attackData.Data.ProjectileSpeed, attackData)
 
 		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
-	elseif attackData.AttackType == "Arced" then
+	elseif attackData.Data.AttackType == "Arced" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ArcDetails
-		local attackData = attackData :: Types.ArcedData & Types.AbilityData
 
 		local attackDetails =
 			AttackLogic.MakeAttack(combatPlayer, origin, attackData, localAttackDetails.target) :: AttackLogic.ArcDetails
@@ -111,7 +109,7 @@ local function replicateAttack(
 			return
 		end
 
-		combatPlayer:RegisterBullet(attackDetails.id, attackDetails.origin, attackData.ProjectileSpeed, attackData)
+		combatPlayer:RegisterBullet(attackDetails.id, attackDetails.origin, attackData.Data.ProjectileSpeed, attackData)
 
 		print("registered arc", localAttackDetails.id)
 
@@ -436,8 +434,9 @@ function handleClientExplosionHit(player: Player, hitList: Types.HitList, attack
 		end
 
 		local victimCombatPlayer = CombatPlayerData[victimCharacter]
-		local data = attackDetails.Data :: Types.ArcedData & Types.AbilityData
-		if ((hitData.position - explosionCentre) * Vector3.new(1, 0, 1)).Magnitude > data.Radius * 1.1 then
+		local data = attackDetails.Data
+		assert(data.Data.AttackType == "Arced")
+		if ((hitData.position - explosionCentre) * Vector3.new(1, 0, 1)).Magnitude > data.Data.Radius * 1.1 then
 			warn("Likely exploiting! Hit player was not in explosion radius!", player)
 			return
 		end

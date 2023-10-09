@@ -427,9 +427,7 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 	end
 
 	-- Constrain target to range of attack
-	if attackData.AttackType == "Arced" then
-		local attackData = attackData :: Types.ArcedData & Types.AbilityData
-
+	if attackData.Data.AttackType == "Arced" then
 		local HRPToTarget = target - self.HRP.Position
 		local yDiff = HRPToTarget.Y
 
@@ -439,7 +437,7 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 			+ Vector3.new(0, yDiff, 0)
 			+ HRPToTarget.Unit
 				-- Get smallest of max range or target, but cant be any smaller than 0.
-				* math.max(0, math.min(attackData.Range - attackData.Radius, HRPToTarget.Magnitude))
+				* math.max(0, math.min(attackData.Range - attackData.Data.Radius, HRPToTarget.Magnitude))
 	end
 
 	trajectory = trajectory.Unit
@@ -447,7 +445,7 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 
 	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, attackData, target)
 
-	local hitFunction = if attackData.AttackType == "Arced"
+	local hitFunction = if attackData.Data.AttackType == "Arced"
 		then function(...)
 			self:ExplosionHit(...)
 		end

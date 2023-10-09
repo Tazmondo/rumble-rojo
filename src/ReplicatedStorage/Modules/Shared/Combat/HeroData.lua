@@ -20,8 +20,10 @@ local ChestData: Types.HeroData = {
 		Range = 0,
 		ReloadSpeed = 0,
 
-		AttackType = "Shot" :: "Shot",
-		ProjectileSpeed = 0,
+		Data = {
+			AttackType = "Shot" :: "Shot",
+			ProjectileSpeed = 0,
+		},
 	},
 	Super = {
 		AbilityType = "Super" :: "Super",
@@ -31,8 +33,10 @@ local ChestData: Types.HeroData = {
 		Range = 0,
 		Modifiers = {},
 
-		AttackType = "Shot" :: "Shot",
-		ProjectileSpeed = 0,
+		Data = {
+			AttackType = "Shot" :: "Shot",
+			ProjectileSpeed = 0,
+		},
 	},
 }
 
@@ -52,10 +56,12 @@ local HeroData: { [string]: Types.HeroData } = {
 			Range = Enums.AttackRange.Short,
 			ReloadSpeed = 0.5,
 
-			AttackType = "Shotgun" :: "Shotgun",
-			ShotCount = 10,
-			Angle = 27,
-			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			Data = {
+				AttackType = "Shotgun" :: "Shotgun",
+				ShotCount = 10,
+				Angle = 27,
+				ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			},
 		},
 		Super = {
 			AbilityType = "Super" :: "Super",
@@ -64,10 +70,12 @@ local HeroData: { [string]: Types.HeroData } = {
 			Damage = 250,
 			Range = Enums.AttackRange.Short,
 
-			AttackType = "Shotgun" :: "Shotgun",
-			ShotCount = 10,
-			Angle = 20,
-			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+			Data = {
+				AttackType = "Shotgun" :: "Shotgun",
+				ShotCount = 10,
+				Angle = 20,
+				ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+			},
 		},
 	},
 	Frankie = {
@@ -83,8 +91,10 @@ local HeroData: { [string]: Types.HeroData } = {
 			Range = Enums.AttackRange.Short, -- to account for size of projectile
 			ReloadSpeed = 0.5,
 
-			AttackType = "Shot" :: "Shot",
-			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			Data = {
+				AttackType = "Shot" :: "Shot",
+				ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			},
 		},
 		Super = {
 			AbilityType = "Super" :: "Super",
@@ -93,11 +103,13 @@ local HeroData: { [string]: Types.HeroData } = {
 			Damage = 2000,
 			Range = Enums.AttackRange.Medium,
 
-			AttackType = "Arced" :: "Arced",
-			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
-			Height = Enums.ArcHeight.Medium,
-			TimeToDetonate = 0.6,
-			Radius = Enums.Radius.Medium,
+			Data = {
+				AttackType = "Arced" :: "Arced",
+				ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+				Height = Enums.ArcHeight.Medium,
+				TimeToDetonate = 0.6,
+				Radius = Enums.Radius.Medium,
+			},
 		},
 	},
 }

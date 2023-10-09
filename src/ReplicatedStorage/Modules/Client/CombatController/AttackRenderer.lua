@@ -214,7 +214,7 @@ end
 
 function CreateArcedAttack(
 	player: Player,
-	attackData: Types.AbilityData & Types.ArcedData,
+	attackData: Types.AbilityData,
 	origin: CFrame,
 	projectileTime: number,
 	speed: number,
@@ -222,6 +222,8 @@ function CreateArcedAttack(
 	target: Vector3,
 	onHit: MultiHit?
 )
+	assert(attackData.Data.AttackType == "Arced")
+
 	local pelletPart: BasePart =
 		assert(attackVFXFolder[attackData.Name], "VFX did not exist for", attackData.Name):Clone()
 	local baseRotation = pelletPart.CFrame.Rotation
@@ -231,11 +233,11 @@ function CreateArcedAttack(
 
 	local targetCFrame = CFrame.new(target) * origin.Rotation
 
-	local totalRotation = attackData.Rotation or 360 * 1.5
+	local totalRotation = attackData.Data.Rotation or 360 * 1.5
 
 	TriggerAllDescendantParticleEmitters(pelletPart, true)
 
-	local height = attackData.Height
+	local height = attackData.Data.Height
 	local timeTravelled = 0
 	local movementTick = RunService.PreSimulation:Connect(function(dt: number)
 		timeTravelled += dt
@@ -256,12 +258,12 @@ function CreateArcedAttack(
 
 		SoundController:PlayGeneralAttackSound("BombTimer", anchor)
 
-		task.wait(attackData.TimeToDetonate)
+		task.wait(attackData.Data.TimeToDetonate)
 
 		SoundController:PlayGeneralAttackSound("BombBlast", anchor)
 
 		local defaultExplosionRadius = 9
-		local explosionScale = attackData.Radius / defaultExplosionRadius
+		local explosionScale = attackData.Data.Radius / defaultExplosionRadius
 
 		local explosionModel = attackVFXFolder.Explosion:Clone() :: Model
 		explosionModel:PivotTo(CFrame.new(target + Vector3.new(0, 0, 0)))
@@ -275,7 +277,7 @@ function CreateArcedAttack(
 		Debris:AddItem(explosionModel, 10)
 
 		if onHit then
-			local explosionParts = GetPartsInExplosion(attackData.Radius, target)
+			local explosionParts = GetPartsInExplosion(attackData.Data.Radius, target)
 			local hitCharacters = {}
 			local hitRegisters = {}
 			for _, part in ipairs(explosionParts) do
@@ -305,34 +307,32 @@ function AttackRenderer.RenderAttack(
 )
 	assert(attackDetails, "Called attack renderer without providing attack details")
 
-	if attackData.AttackType == "Shotgun" then
+	if attackData.Data.AttackType == "Shotgun" then
 		local details = attackDetails :: AttackLogic.ShotgunDetails
 
 		for index, pellet in pairs(details.pellets) do
 			CreateAttackProjectile(player, attackData, pellet.CFrame, pellet.speed, pellet.id, onHit :: HitFunction?)
 		end
-	elseif attackData.AttackType == "Shot" then
+	elseif attackData.Data.AttackType == "Shot" then
 		local details = attackDetails :: AttackLogic.ShotDetails
-		local attackData = attackData :: Types.ShotData & Types.AbilityData
 
 		CreateAttackProjectile(
 			player,
 			attackData,
 			details.origin,
-			attackData.ProjectileSpeed,
+			attackData.Data.ProjectileSpeed,
 			details.id,
 			onHit :: HitFunction?
 		)
-	elseif attackData.AttackType == "Arced" then
+	elseif attackData.Data.AttackType == "Arced" then
 		local details = attackDetails :: AttackLogic.ArcDetails
-		local attackData = attackData :: Types.ArcedData & Types.AbilityData
 
 		CreateArcedAttack(
 			player,
-			attackData :: Types.AbilityData & Types.ArcedData,
+			attackData,
 			origin,
 			details.timeToLand,
-			attackData.ProjectileSpeed,
+			attackData.Data.ProjectileSpeed,
 			details.id,
 			details.target,
 			onHit :: MultiHit?

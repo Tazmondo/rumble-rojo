@@ -26,28 +26,25 @@ function AttackLogic.MakeAttack(
 		return combatPlayer:GetNextAttackId()
 	end
 
-	if attackData.AttackType == "Shotgun" then
-		local attackData = attackData :: Types.ShotgunData & Types.AbilityData
-
+	if attackData.Data.AttackType == "Shotgun" then
 		return AttackLogic.Shotgun(
-			attackData.Angle,
-			attackData.ShotCount,
-			attackData.ProjectileSpeed,
+			attackData.Data.Angle,
+			attackData.Data.ShotCount,
+			attackData.Data.ProjectileSpeed,
 			origin,
 			seed,
 			idFunction
 		)
-	elseif attackData.AttackType == "Shot" then
+	elseif attackData.Data.AttackType == "Shot" then
 		return AttackLogic.Shot(origin, idFunction())
-	elseif attackData.AttackType == "Arced" then
+	elseif attackData.Data.AttackType == "Arced" then
 		assert(target, "Tried to fire arced attack without a target!")
-		local attackData = attackData :: Types.ArcedData & Types.AbilityData
 
-		return AttackLogic.Arced(origin, idFunction(), target, attackData.ProjectileSpeed)
+		return AttackLogic.Arced(origin, idFunction(), target, attackData.Data.ProjectileSpeed)
 	-- elseif attackData.AttackType == "Field" then
 	-- 	return { origin = origin, id = idFunction() }
 	else
-		error("Invalid shot type provided " .. attackData.AttackType)
+		error("Invalid shot type provided " .. attackData.Data.AttackType)
 	end
 end
 

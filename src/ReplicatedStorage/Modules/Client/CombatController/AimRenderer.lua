@@ -28,7 +28,7 @@ function AimRenderer.new(
 	combatPlayer: CombatPlayer.CombatPlayer,
 	validFunction: () -> boolean
 ): AimRenderer
-	print("aimrendering", attackData.AttackType)
+	print("aimrendering", attackData.Data.AttackType)
 	local self = setmetatable({}, AimRenderer) :: AimRenderer
 	self.janitor = Janitor.new()
 
@@ -38,18 +38,18 @@ function AimRenderer.new(
 
 	self.combatPlayer = combatPlayer
 	self.attackData = attackData
-	self.type = attackData.AttackType
+	self.type = attackData.Data.AttackType
 	self.enabled = false
 	self.direction = Vector3.new(0, 0, 1)
 	self.target = self.HRP.Position
 
 	-- Aim part whose position is always below the HRP
-	self.aimPart = self.janitor:Add(aimPartTemplates[attackData.AttackType]:Clone()) :: BasePart
+	self.aimPart = self.janitor:Add(aimPartTemplates[attackData.Data.AttackType]:Clone()) :: BasePart
 	self.aimPart.Parent = workspace
 
 	-- Aim part whose position follows mouse
 	self.targetedAimPart = nil :: BasePart?
-	if attackData.AttackType == "Arced" then
+	if attackData.Data.AttackType == "Arced" then
 		local part = self.janitor:Add(aimPartTemplates["Arced" :: "Arced"]:Clone()) :: BasePart
 		self.targetedAimPart = part
 
@@ -112,23 +112,23 @@ function AimRenderer.StartRendering(self: AimRenderer)
 		local targetWidth
 		local targetDepth
 
-		if self.attackData.AttackType == "Shotgun" then
-			local data = self.attackData :: Types.AbilityData & Types.ShotgunData
+		if self.attackData.Data.AttackType == "Shotgun" then
+			local data = self.attackData.Data
 
 			local angle = data.Angle + Config.ShotgunRandomSpread * 2
-			depth = data.Range
+			depth = self.attackData.Range
 			width = 2 * depth * math.sin(math.rad(angle / 2)) -- horizontal distance of a sector
-		elseif self.attackData.AttackType == "Shot" then
-			local data = self.attackData :: Types.AbilityData & Types.ShotData
+		elseif self.attackData.Data.AttackType == "Shot" then
+			local data = self.attackData
 
 			width = 5
 			depth = data.Range
-		elseif self.attackData.AttackType == "Arced" then
-			local data = self.attackData :: Types.AbilityData & Types.ArcedData
+		elseif self.attackData.Data.AttackType == "Arced" then
+			local data = self.attackData.Data
 
 			-- Diameter of circle
-			width = data.Range * 2
-			depth = data.Range * 2
+			width = self.attackData.Range * 2
+			depth = self.attackData.Range * 2
 			targetWidth = data.Radius * 2
 			targetDepth = data.Radius * 2
 		end
@@ -138,12 +138,13 @@ function AimRenderer.StartRendering(self: AimRenderer)
 		local transformHRPToFeet = CFrame.new(0, -self.humanoid.HipHeight - self.HRP.Size.Y / 2 + 0.2, 0)
 
 		if self.targetedAimPart then
-			local data = self.attackData :: Types.AbilityData & Types.ArcedData
+			local data = self.attackData
+			assert(data.Data.AttackType == "Arced")
 
 			local XYVector = (self.target - self.HRP.Position) * Vector3.new(1, 0, 1)
 
 			-- Stop target from going outside of range
-			local XYDistance = math.min(data.Range - data.Radius, XYVector.Magnitude)
+			local XYDistance = math.min(data.Range - data.Data.Radius, XYVector.Magnitude)
 
 			local newVector = XYVector.Unit * XYDistance
 				+ Vector3.new(self.HRP.Position.X, self.target.Y, self.HRP.Position.Z)

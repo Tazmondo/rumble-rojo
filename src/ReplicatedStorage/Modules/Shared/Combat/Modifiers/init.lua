@@ -257,8 +257,10 @@ Modifiers.SuperBlast = {
 	LockedImage = "rbxassetid://14996726794",
 	Modify = function(self)
 		self.baseSuperDamage *= 1.15
-		local super = self.heroData.Super :: Types.ArcedData & Types.SuperData
-		super.Radius *= 1.5
+		local super = self.heroData.Super
+		assert(super.Data.AttackType == "Arced")
+
+		super.Data.Radius *= 1.5
 	end,
 }
 
@@ -301,7 +303,7 @@ Modifiers.Missile = {
 	Price = 1000,
 	Modify = function(self)
 		local data = self.heroData
-		local super = data.Super :: Types.SuperData & Types.ArcedData
+		local super = data.Super.Data :: Types.ArcedData
 		super.TimeToDetonate = 0
 	end,
 }

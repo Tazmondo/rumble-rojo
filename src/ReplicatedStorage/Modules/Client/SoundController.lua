@@ -98,7 +98,7 @@ function SoundController:PlayHeroAttack(heroName: string, super: boolean, charac
 	local part = if character then character:FindFirstChild("HumanoidRootPart") else nil
 
 	local attackData: Types.AbilityData = if super then heroData.Super else heroData.Attack
-	if attackData.AttackType == "Arced" then
+	if attackData.Data.AttackType == "Arced" then
 		local sound = soundFolder.Attack.General.BombThrow
 		self:_PlaySound(sound, part)
 	else
