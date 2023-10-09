@@ -2,64 +2,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Defines hero abilities and attacks
 -- We need to typecast the string literals due to a bug in luau :(
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local Enums = require(script.Parent.Enums)
 
-export type HeroData = {
-	Name: string,
-	Health: number,
-	MovementSpeed: number,
-	Attack: AttackData,
-	Super: SuperData,
-}
-type BaseAttack = {
-	AbilityType: "Attack",
-	Name: string,
-	Damage: number,
-	Range: number,
-	Ammo: number,
-	AmmoRegen: number,
-	ReloadSpeed: number,
-
-	AttackType: Enums.AttackType,
-}
-type BaseSuper = {
-	AbilityType: "Super",
-	Name: string,
-	Charge: number,
-	Damage: number,
-	Range: number,
-
-	AttackType: Enums.AttackType,
-}
-export type ShotgunData = {
-	AttackType: "Shotgun",
-	Angle: number,
-	ShotCount: number,
-	ProjectileSpeed: number,
-}
-
-export type ShotData = {
-	AttackType: "Shot",
-	ProjectileSpeed: number,
-}
-
-export type ArcedData = {
-	AttackType: "Arced",
-	ProjectileSpeed: number,
-	TimeToDetonate: number, -- Can be zero for instant explosion, but allows for a grenade like effect
-	Height: number,
-	Radius: number,
-	Rotation: number?,
-}
-
-export type AttackType = ShotgunData | ShotData | ArcedData
-
-export type AttackData = BaseAttack & AttackType
-export type SuperData = BaseSuper & AttackType
-
 -- to keep the system simple, chests are fully fledged combat players, they just can't attack and won't move.
-local ChestData: HeroData = {
+local ChestData: Types.HeroData = {
 	Name = "Chest",
 	Health = 1, -- Not used for the actual health.
 	MovementSpeed = 0,
@@ -90,7 +38,7 @@ local ChestData: HeroData = {
 
 ChestData = table.freeze(ChestData)
 
-local HeroData: { [string]: HeroData } = {
+local HeroData: { [string]: Types.HeroData } = {
 	Taz = {
 		Name = "Taz",
 		Health = 3600,

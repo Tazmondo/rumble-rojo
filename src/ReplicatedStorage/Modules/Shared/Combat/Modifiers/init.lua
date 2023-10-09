@@ -3,7 +3,6 @@ local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local DefaultModifier = require(script.DefaultModifier)
-local HeroData = require(script.Parent.HeroData)
 
 local Modifiers: {
 	[string]: {
@@ -258,7 +257,7 @@ Modifiers.SuperBlast = {
 	LockedImage = "rbxassetid://14996726794",
 	Modify = function(self)
 		self.baseSuperDamage *= 1.15
-		local super = self.heroData.Super :: HeroData.ArcedData & HeroData.SuperData
+		local super = self.heroData.Super :: Types.ArcedData & Types.SuperData
 		super.Radius *= 1.5
 	end,
 }
@@ -302,7 +301,7 @@ Modifiers.Missile = {
 	Price = 1000,
 	Modify = function(self)
 		local data = self.heroData
-		local super = data.Super :: HeroData.SuperData & HeroData.ArcedData
+		local super = data.Super :: Types.SuperData & Types.ArcedData
 		super.TimeToDetonate = 0
 	end,
 }

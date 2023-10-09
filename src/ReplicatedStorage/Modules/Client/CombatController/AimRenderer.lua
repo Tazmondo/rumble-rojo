@@ -12,7 +12,6 @@ local GeneralVFX = ReplicatedStorage.Assets.VFX.General
 
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
-local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
@@ -114,18 +113,18 @@ function AimRenderer.StartRendering(self: AimRenderer)
 		local targetDepth
 
 		if self.attackData.AttackType == "Shotgun" then
-			local data = self.attackData :: Types.AbilityData & HeroData.ShotgunData
+			local data = self.attackData :: Types.AbilityData & Types.ShotgunData
 
 			local angle = data.Angle + Config.ShotgunRandomSpread * 2
 			depth = data.Range
 			width = 2 * depth * math.sin(math.rad(angle / 2)) -- horizontal distance of a sector
 		elseif self.attackData.AttackType == "Shot" then
-			local data = self.attackData :: Types.AbilityData & HeroData.ShotData
+			local data = self.attackData :: Types.AbilityData & Types.ShotData
 
 			width = 5
 			depth = data.Range
 		elseif self.attackData.AttackType == "Arced" then
-			local data = self.attackData :: Types.AbilityData & HeroData.ArcedData
+			local data = self.attackData :: Types.AbilityData & Types.ArcedData
 
 			-- Diameter of circle
 			width = data.Range * 2
@@ -139,7 +138,7 @@ function AimRenderer.StartRendering(self: AimRenderer)
 		local transformHRPToFeet = CFrame.new(0, -self.humanoid.HipHeight - self.HRP.Size.Y / 2 + 0.2, 0)
 
 		if self.targetedAimPart then
-			local data = self.attackData :: Types.AbilityData & HeroData.ArcedData
+			local data = self.attackData :: Types.AbilityData & Types.ArcedData
 
 			local XYVector = (self.target - self.HRP.Position) * Vector3.new(1, 0, 1)
 

@@ -73,7 +73,7 @@ function GetGameState()
 end
 
 function InitializeSelf(
-	heroData: HeroData.HeroData,
+	heroData: Types.HeroData,
 	model: Model,
 	modifiers: Types.ModifierCollection,
 	player: Player?,

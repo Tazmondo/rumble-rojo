@@ -16,7 +16,6 @@ local combatFolder = ReplicatedStorage.Modules.Shared.Combat
 local SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
-local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local AimRenderer = require(script.Parent.AimRenderer)
 local AttackRenderer = require(script.Parent.AttackRenderer)
 local CombatCamera = require(script.Parent.CombatCamera)
@@ -429,7 +428,7 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 
 	-- Constrain target to range of attack
 	if attackData.AttackType == "Arced" then
-		local attackData = attackData :: HeroData.ArcedData & Types.AbilityData
+		local attackData = attackData :: Types.ArcedData & Types.AbilityData
 
 		local HRPToTarget = target - self.HRP.Position
 		local yDiff = HRPToTarget.Y

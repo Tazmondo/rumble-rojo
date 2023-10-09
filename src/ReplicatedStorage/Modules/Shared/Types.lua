@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
+local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 
 type Signal = typeof(Signal(...))
@@ -88,13 +88,13 @@ export type Skill = {
 	AttackData: SkillData?,
 }
 
-export type SkillData = SkillAttack & HeroData.AttackType
+export type SkillData = SkillAttack & AttackType
 
-export type AbilityData = HeroData.AttackData | HeroData.SuperData | SkillData
+export type AbilityData = AttackData | SuperData | SkillData
 
 export type State = "Idle" | "Dead"
 export type CombatPlayer = {
-	heroData: HeroData.HeroData,
+	heroData: HeroData,
 
 	baseSpeed: number,
 	baseHealth: number,
@@ -152,5 +152,71 @@ export type CombatPlayer = {
 	UpdateSpeed: (CombatPlayer) -> (),
 	Heal: (CombatPlayer, number) -> (),
 }
+
+export type HeroData = {
+	Name: string,
+	Health: number,
+	MovementSpeed: number,
+	Attack: AttackData,
+	Super: SuperData,
+}
+type BaseAttack = {
+	AbilityType: "Attack",
+	Name: string,
+	Damage: number,
+	Range: number,
+	Ammo: number,
+	AmmoRegen: number,
+	ReloadSpeed: number,
+
+	AttackType: Enums.AttackType,
+}
+
+type BaseSuper = {
+	AbilityType: "Super",
+	Name: string,
+	Charge: number,
+	Damage: number,
+	Range: number,
+
+	AttackType: Enums.AttackType,
+}
+export type ShotgunData = {
+	AttackType: "Shotgun",
+	Angle: number,
+	ShotCount: number,
+	ProjectileSpeed: number,
+}
+
+export type ShotData = {
+	AttackType: "Shot",
+	ProjectileSpeed: number,
+}
+
+export type ExplosionData = {
+	AttackType: "Explosion",
+	TimeToDetonate: number,
+	Radius: number,
+}
+
+export type ArcedData = {
+	AttackType: "Arced",
+	ProjectileSpeed: number,
+	TimeToDetonate: number, -- Can be zero for instant explosion, but allows for a grenade like effect
+	Height: number,
+	Radius: number,
+	Rotation: number?,
+}
+
+export type FieldData = {
+	AttackType: "Field",
+	Radius: number,
+	Effect: ((CombatPlayer) -> ())?,
+}
+
+export type AttackType = ShotgunData | ShotData | ArcedData
+
+export type AttackData = BaseAttack & AttackType
+export type SuperData = BaseSuper & AttackType
 
 return {}

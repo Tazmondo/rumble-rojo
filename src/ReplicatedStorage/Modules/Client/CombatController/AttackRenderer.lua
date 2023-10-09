@@ -14,7 +14,6 @@ local SoundController = require(ReplicatedStorage.Modules.Client.SoundController
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
-local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local RaycastHitbox = require(ReplicatedStorage.Packages.RaycastHitbox)
 
@@ -214,7 +213,7 @@ end
 
 function CreateArcedAttack(
 	player: Player,
-	attackData: Types.AbilityData & HeroData.ArcedData,
+	attackData: Types.AbilityData & Types.ArcedData,
 	origin: CFrame,
 	projectileTime: number,
 	speed: number,
@@ -327,7 +326,7 @@ function AttackRenderer.RenderAttack(
 
 		CreateArcedAttack(
 			player,
-			attackData :: Types.AbilityData & HeroData.ArcedData,
+			attackData :: Types.AbilityData & Types.ArcedData,
 			origin,
 			details.timeToLand,
 			attackData.ProjectileSpeed,

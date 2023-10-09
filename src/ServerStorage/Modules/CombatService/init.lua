@@ -22,7 +22,6 @@ local SoundService = require(script.Parent.SoundService)
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
-local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local ServerConfig = require(ReplicatedStorage.Modules.Shared.ServerConfig)
@@ -88,6 +87,7 @@ local function replicateAttack(
 		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
 	elseif attackData.AttackType == "Shot" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotDetails
+		local attackData = attackData :: Types.ShotData & Types.AbilityData
 
 		local attackDetails = AttackLogic.MakeAttack(combatPlayer, origin, attackData) :: AttackLogic.ShotDetails
 
@@ -101,6 +101,7 @@ local function replicateAttack(
 		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
 	elseif attackData.AttackType == "Arced" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ArcDetails
+		local attackData = attackData :: Types.ArcedData & Types.AbilityData
 
 		local attackDetails =
 			AttackLogic.MakeAttack(combatPlayer, origin, attackData, localAttackDetails.target) :: AttackLogic.ArcDetails
@@ -142,7 +143,7 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails):
 		return combatPlayer.attackId
 	end
 
-	local attackData = combatPlayer.heroData.Attack :: HeroData.AttackData
+	local attackData = combatPlayer.heroData.Attack :: Types.AttackData
 
 	replicateAttack(player, origin, combatPlayer, attackData, localAttackDetails)
 
@@ -168,7 +169,7 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 		warn(player, "Tried to super when they couldn't")
 		return combatPlayer.attackId
 	end
-	local superData = combatPlayer.heroData.Super :: HeroData.SuperData
+	local superData = combatPlayer.heroData.Super :: Types.SuperData
 
 	replicateAttack(player, origin, combatPlayer, superData, localAttackDetails)
 
@@ -435,7 +436,7 @@ function handleClientExplosionHit(player: Player, hitList: Types.HitList, attack
 		end
 
 		local victimCombatPlayer = CombatPlayerData[victimCharacter]
-		local data = attackDetails.Data :: HeroData.ArcedData & Types.AbilityData
+		local data = attackDetails.Data :: Types.ArcedData & Types.AbilityData
 		if ((hitData.position - explosionCentre) * Vector3.new(1, 0, 1)).Magnitude > data.Radius * 1.1 then
 			warn("Likely exploiting! Hit player was not in explosion radius!", player)
 			return

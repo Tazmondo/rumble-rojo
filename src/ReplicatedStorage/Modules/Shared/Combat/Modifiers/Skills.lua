@@ -1,7 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
-local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Skills: { [string]: Types.Skill } = {}
 
@@ -51,7 +50,7 @@ Skills.Dash = {
 	end,
 }
 
-local BombAttack: Types.SkillAttack & HeroData.ArcedData = {
+local BombAttack: Types.SkillAttack & Types.ArcedData = {
 	AbilityType = "Skill" :: "Skill",
 	Name = "Bomb",
 	Damage = 1500,
@@ -162,6 +161,13 @@ Skills.Haste = {
 			self:SetStatusEffect("Haste")
 		end)
 	end,
+}
+
+Skills.SlowField = {
+	Name = "Slow Field",
+	Description = "Release a slowing field around you, reducing enemy movement speed by 40%.",
+	Activation = "Instant",
+	Type = "Ability",
 }
 
 return Skills

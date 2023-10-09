@@ -6,7 +6,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local CombatPlayer = require(script.Parent.CombatPlayer)
 local Config = require(script.Parent.Config)
-local HeroData = require(script.Parent.HeroData)
 
 local AttackLogic = {}
 
@@ -28,7 +27,7 @@ function AttackLogic.MakeAttack(
 	end
 
 	if attackData.AttackType == "Shotgun" then
-		local attackData = attackData :: HeroData.ShotgunData & Types.AbilityData
+		local attackData = attackData :: Types.ShotgunData & Types.AbilityData
 
 		return AttackLogic.Shotgun(
 			attackData.Angle,
@@ -42,9 +41,11 @@ function AttackLogic.MakeAttack(
 		return AttackLogic.Shot(origin, idFunction())
 	elseif attackData.AttackType == "Arced" then
 		assert(target, "Tried to fire arced attack without a target!")
-		local attackData = attackData :: HeroData.ArcedData & Types.AbilityData
+		local attackData = attackData :: Types.ArcedData & Types.AbilityData
 
 		return AttackLogic.Arced(origin, idFunction(), target, attackData.ProjectileSpeed)
+	-- elseif attackData.AttackType == "Field" then
+	-- 	return { origin = origin, id = idFunction() }
 	else
 		error("Invalid shot type provided " .. attackData.AttackType)
 	end
@@ -133,6 +134,8 @@ export type ArcDetails = {
 	timeToLand: number,
 }
 
-export type AttackDetails = ShotDetails | ShotgunDetails | ArcDetails
+export type FieldDetails = ShotDetails
+
+export type AttackDetails = ShotDetails | ShotgunDetails | ArcDetails | FieldDetails
 
 return AttackLogic
