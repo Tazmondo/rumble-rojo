@@ -100,6 +100,7 @@ export type CombatPlayer = {
 	baseHealth: number,
 	baseRegenRate: number,
 	baseAmmoRegen: number,
+	baseReloadSpeed: number,
 	baseSuperDamage: number,
 	baseAttackDamage: number,
 	requiredSuperCharge: number,

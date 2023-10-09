@@ -146,4 +146,22 @@ Skills.Reflect = {
 	end,
 }
 
+Skills.Haste = {
+	Name = "Haste",
+	Description = "Double attack and reload speed for 4 seconds.",
+	Activation = "Instant",
+	Type = "Ability",
+	Activated = function(self)
+		self.baseAmmoRegen /= 2
+		self.baseReloadSpeed /= 2
+
+		self:SetStatusEffect("Haste", true)
+		task.delay(4, function()
+			self.baseAmmoRegen *= 2
+			self.baseReloadSpeed *= 2
+			self:SetStatusEffect("Haste")
+		end)
+	end,
+}
+
 return Skills

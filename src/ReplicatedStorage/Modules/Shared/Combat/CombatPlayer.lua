@@ -82,11 +82,6 @@ function InitializeSelf(
 )
 	local self = {} :: Types.CombatPlayer
 
-	local allowance = LATENCYALLOWANCE
-	if not player then
-		allowance = 0
-	end
-
 	-- We make a copy so that modifiers are able to change the attack details
 	self.heroData = TableUtil.Copy(heroData, true)
 
@@ -96,6 +91,7 @@ function InitializeSelf(
 	self.baseSpeed = self.heroData.MovementSpeed
 	self.baseRegenRate = 1
 	self.baseAmmoRegen = self.heroData.Attack.AmmoRegen
+	self.baseReloadSpeed = self.heroData.Attack.ReloadSpeed
 	self.requiredSuperCharge = self.heroData.Super.Charge
 
 	modifiers.Modify(self)
@@ -106,8 +102,8 @@ function InitializeSelf(
 	self.movementSpeed = self.baseSpeed
 	self.maxAmmo = self.heroData.Attack.Ammo
 	self.ammo = self.maxAmmo
-	self.ammoRegen = self.baseAmmoRegen - allowance
-	self.reloadSpeed = self.heroData.Attack.ReloadSpeed - allowance
+	self.ammoRegen = self.baseAmmoRegen - LATENCYALLOWANCE
+	self.reloadSpeed = self.heroData.Attack.ReloadSpeed - LATENCYALLOWANCE
 	self.superCharge = 0
 	self.boosterCount = 0
 
@@ -141,7 +137,7 @@ function InitializeSelf(
 	self.lastSkillTime = 0
 	self.skillActive = false
 	self.skillUses = 3
-	self.skillCooldown = Config.SkillCooldown - allowance
+	self.skillCooldown = Config.SkillCooldown - LATENCYALLOWANCE
 
 	self.aiming = nil
 
@@ -290,6 +286,9 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 		self:UpdateSpeed()
 	elseif effect == "TrueSight" then
 		self:Update()
+	elseif effect == "Haste" then
+		self.ammoRegen = self.baseAmmoRegen - LATENCYALLOWANCE
+		self.reloadSpeed = self.baseReloadSpeed - LATENCYALLOWANCE
 	end
 end
 
