@@ -56,15 +56,7 @@ Modifiers.Slow = {
 		if self.health / self.maxHealth > 0.5 then
 			return
 		end
-		-- Use a table instead of value so we can make sure it hasn't been overwritten when removing the slow
-		local slowTable = { 0.85 }
-		victim:SetStatusEffect("Slow", slowTable)
-
-		task.delay(2, function()
-			if victim.statusEffects["Slow"] == slowTable then
-				victim:SetStatusEffect("Slow", nil)
-			end
-		end)
+		victim:SetStatusEffect("Slow", 0.85, 2)
 	end,
 }
 
@@ -166,9 +158,11 @@ Modifiers.Rat = {
 			Spawn(function()
 				-- Run at full speed for a second, and then slow down
 				task.wait(2)
-				while self.statusEffects["Rat"] > 1 do
+				local ratValue = self:GetStatusEffect("Rat") :: number
+				while ratValue > 1 do
 					local dt = task.wait()
-					self:SetStatusEffect("Rat", math.max(1, self.statusEffects["Rat"] - (dt / 1)))
+					ratValue = math.max(1, ratValue - (dt / 1))
+					self:SetStatusEffect("Rat", ratValue)
 				end
 			end)
 		end
@@ -182,13 +176,7 @@ Modifiers.TrueSight = {
 	UnlockedImage = "rbxassetid://14996718562",
 	LockedImage = "rbxassetid://14987676748",
 	OnHit = function(self, victim, details)
-		local value = { true }
-		victim:SetStatusEffect("TrueSight", value)
-		task.delay(3, function()
-			if victim.statusEffects["TrueSight"] == value then
-				victim:SetStatusEffect("TrueSight")
-			end
-		end)
+		victim:SetStatusEffect("TrueSight", true, 3)
 	end,
 }
 
@@ -217,15 +205,7 @@ Modifiers.ShellShock = {
 			return
 		end
 
-		-- Use a table instead of value so we can make sure it hasn't been overwritten when removing the slow
-		local slowTable = { 0.75 }
-		victim:SetStatusEffect("Slow", slowTable)
-
-		task.delay(2, function()
-			if victim.statusEffects["Slow"] == slowTable then
-				victim:SetStatusEffect("Slow", nil)
-			end
-		end)
+		victim:SetStatusEffect("Slow", 0.75, 2)
 	end,
 }
 
@@ -240,11 +220,7 @@ Modifiers.BandAid = {
 			return
 		end
 		self:Heal(2000)
-		self.statusEffects["BandAidCooldown"] = true
-
-		task.delay(15, function()
-			self.statusEffects["BandAidCooldown"] = nil
-		end)
+		self:SetStatusEffect("BandAidCooldown", true, 15)
 	end,
 }
 
@@ -287,13 +263,7 @@ Modifiers.Slimed = {
 		end
 
 		local value = { true }
-		victim:SetStatusEffect("Stun", value)
-
-		task.delay(1.5, function()
-			if victim.statusEffects["Stun"] == value then
-				victim:SetStatusEffect("Stun")
-			end
-		end)
+		victim:SetStatusEffect("Stun", value, 1.5)
 	end,
 }
 

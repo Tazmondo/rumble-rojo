@@ -167,11 +167,27 @@ Skills.Haste = {
 	end,
 }
 
+local SlowField: Types.SkillData = {
+	AbilityType = "Skill",
+	Name = "Slow Field",
+	Damage = 0,
+	Range = 0,
+
+	Data = {
+		AttackType = "Field",
+		Duration = 5,
+		Radius = Enums.Radius.Large,
+		Effect = function(combatPlayer)
+			combatPlayer:SetStatusEffect("Slow", 0.5, 1)
+		end,
+	},
+}
 Skills.SlowField = {
 	Name = "Slow Field",
 	Description = "Release a slowing field around you, reducing enemy movement speed by 40%.",
 	Activation = "Instant",
-	Type = "Ability",
+	Type = "Attack",
+	AttackData = SlowField,
 }
 
 return Skills

@@ -41,8 +41,9 @@ function AttackLogic.MakeAttack(
 		assert(target, "Tried to fire arced attack without a target!")
 
 		return AttackLogic.Arced(origin, idFunction(), target, attackData.Data.ProjectileSpeed)
-	-- elseif attackData.AttackType == "Field" then
-	-- 	return { origin = origin, id = idFunction() }
+	elseif attackData.Data.AttackType == "Field" then
+		assert(target, "Tried to field attack without a target!")
+		return { origin = CFrame.new(target), id = idFunction() }
 	else
 		error("Invalid shot type provided " .. attackData.Data.AttackType)
 	end
@@ -131,7 +132,10 @@ export type ArcDetails = {
 	timeToLand: number,
 }
 
-export type FieldDetails = ShotDetails
+export type FieldDetails = {
+	origin: CFrame,
+	id: number,
+}
 
 export type AttackDetails = ShotDetails | ShotgunDetails | ArcDetails | FieldDetails
 

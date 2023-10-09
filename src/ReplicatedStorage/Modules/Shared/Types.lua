@@ -146,6 +146,7 @@ export type ArcedData = {
 export type FieldData = {
 	AttackType: "Field",
 	Radius: number,
+	Duration: number,
 	Effect: ((CombatPlayer) -> ())?,
 }
 
@@ -193,7 +194,7 @@ export type CombatPlayer = {
 	skillCooldown: number,
 
 	modifiers: ModifierCollection,
-	statusEffects: { [string]: any },
+	statusEffects: { [string]: { any } },
 
 	attackId: number,
 	attacks: { [number]: Attack },
@@ -219,7 +220,8 @@ export type CombatPlayer = {
 	ScheduleStateChange: (CombatPlayer, number, State) -> (),
 	IsDead: (CombatPlayer) -> boolean,
 
-	SetStatusEffect: (CombatPlayer, string, any) -> (),
+	SetStatusEffect: (CombatPlayer, string, any, number?) -> (),
+	GetStatusEffect: (CombatPlayer, string) -> any?,
 	SetBush: (CombatPlayer, boolean) -> (),
 	SetAiming: (CombatPlayer, string?) -> (),
 

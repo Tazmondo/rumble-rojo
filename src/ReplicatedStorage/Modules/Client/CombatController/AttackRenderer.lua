@@ -298,6 +298,38 @@ function CreateArcedAttack(
 	end)
 end
 
+function ScaleWithAttachments(part: BasePart, newSize: Vector3)
+	local scale = newSize / part.Size
+	print(scale)
+
+	for i, attachment in ipairs(part:GetChildren()) do
+		if attachment:IsA("Attachment") then
+			local currentOffset = attachment.Position
+			attachment.Position = currentOffset * scale
+		end
+	end
+	part.Size = newSize
+end
+
+function CreateFieldAttack(origin: CFrame, radius: number, name: string, duration: number)
+	-- Don't pass in an on-hit, as field effect hitboxes are handled by the server
+
+	local VFX = attackVFXFolder[name]:Clone() :: BasePart
+
+	VFX:PivotTo(origin + Vector3.new(0, 0.1, 0))
+
+	-- ScaleWithAttachments(VFX, VFX.Size)
+	ScaleWithAttachments(VFX, Vector3.new(radius * 2, VFX.Size.Y, radius * 2))
+
+	VFX.Name = name
+	VFX.Parent = partFolder
+	TriggerAllDescendantParticleEmitters(VFX, true)
+
+	task.delay(duration, function()
+		VFX:Destroy()
+	end)
+end
+
 function AttackRenderer.RenderAttack(
 	player: Player,
 	attackData: Types.AbilityData,
@@ -337,6 +369,9 @@ function AttackRenderer.RenderAttack(
 			details.target,
 			onHit :: MultiHit?
 		)
+	elseif attackData.Data.AttackType == "Field" then
+		local details = attackDetails :: AttackLogic.FieldDetails
+		CreateFieldAttack(details.origin, attackData.Data.Radius, attackData.Name, attackData.Data.Duration)
 	end
 end
 

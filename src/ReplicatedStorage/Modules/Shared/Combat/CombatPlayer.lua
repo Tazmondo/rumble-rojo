@@ -294,10 +294,19 @@ function CombatPlayer.IsDead(self: CombatPlayer)
 	return self.state == "Dead"
 end
 
-function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value: any?)
+function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value: any?, delay: number)
 	self:Sync("SetStatusEffect", effect, value)
 	if value then
-		self.statusEffects[effect] = value
+		local save = { value }
+		self.statusEffects[effect] = save
+
+		if delay then
+			task.delay(delay, function()
+				if self.statusEffects[effect] == save then
+					self:SetStatusEffect(effect)
+				end
+			end)
+		end
 	else
 		self.statusEffects[effect] = nil
 	end
@@ -309,6 +318,14 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 	elseif effect == "Haste" then
 		self.ammoRegen = self.baseAmmoRegen - LATENCYALLOWANCE
 		self.reloadSpeed = self.baseReloadSpeed - LATENCYALLOWANCE
+	end
+end
+
+function CombatPlayer.GetStatusEffect(self: CombatPlayer, effect: string)
+	if self.statusEffects[effect] then
+		return self.statusEffects[effect][1]
+	else
+		return nil
 	end
 end
 
@@ -330,12 +347,12 @@ end
 
 function CombatPlayer.UpdateSpeed(self: CombatPlayer)
 	-- Since Data type for slow is {number}
-	local slowModifier = (self.statusEffects["Slow"] or { 1 })[1]
-	local rattyModifier = (self.statusEffects["Ratty"] or 1)
+	local slowModifier = self:GetStatusEffect("Slow") or 1
+	local ratModifier = self:GetStatusEffect("Rat") or 1
 	local stunModifier = if self.statusEffects["Stun"] then 0 else 1
 	local dashModifier = if self.statusEffects["Dash"] then 0 else 1
 
-	local modifier = slowModifier * rattyModifier * stunModifier * dashModifier
+	local modifier = slowModifier * ratModifier * stunModifier * dashModifier
 
 	self.movementSpeed = self.baseSpeed * modifier
 	print("Updating speed", self.movementSpeed)

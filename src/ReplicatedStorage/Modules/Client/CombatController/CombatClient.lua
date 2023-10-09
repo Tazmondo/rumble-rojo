@@ -427,7 +427,7 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 	end
 
 	-- Constrain target to range of attack
-	if attackData.Data.AttackType == "Arced" then
+	if attackData.Data.AttackType == "Arced" or attackData.Data.AttackType == "Field" then
 		local HRPToTarget = target - self.HRP.Position
 		local yDiff = HRPToTarget.Y
 
