@@ -146,7 +146,7 @@ export type ArcedData = {
 export type FieldData = {
 	AttackType: "Field",
 	Radius: number,
-	Effect: ((any) -> ())?,
+	Effect: ((CombatPlayer) -> ())?,
 }
 
 export type AttackTypeName = "Shot" | "Shotgun" | "Arced" | "Explosion" | "Field"
