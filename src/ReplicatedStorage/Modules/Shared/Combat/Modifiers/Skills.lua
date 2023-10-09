@@ -114,4 +114,19 @@ Skills.Sprint = {
 	end,
 }
 
+Skills.PowerPill = {
+	Name = "Power Pill",
+	Description = "Gain immense power for 5 seconds, doing 15% more damage.",
+	Activation = "Instant",
+	Type = "Ability",
+	Activated = function(self)
+		self.baseAttackDamage *= 1.15
+		self.baseSuperDamage *= 1.15
+		task.delay(5, function()
+			self.baseAttackDamage /= 1.15
+			self.baseSuperDamage /= 1.15
+		end)
+	end,
+}
+
 return Skills
