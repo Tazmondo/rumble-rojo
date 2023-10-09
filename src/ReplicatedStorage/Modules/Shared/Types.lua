@@ -147,6 +147,7 @@ export type FieldData = {
 	AttackType: "Field",
 	Radius: number,
 	Duration: number,
+	TickRate: number,
 	Effect: ((CombatPlayer) -> ())?,
 }
 

@@ -14,6 +14,7 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local StarterGui = game:GetService("StarterGui")
 
+local FieldEffect = require(script.FieldEffect)
 local DataService = require(script.Parent.DataService)
 local ItemService = require(script.Parent.ItemService)
 local LoadCharacterService = require(script.Parent.LoadCharacterService)
@@ -111,9 +112,24 @@ local function replicateAttack(
 
 		combatPlayer:RegisterBullet(attackDetails.id, attackDetails.origin, attackData.Data.ProjectileSpeed, attackData)
 
-		print("registered arc", localAttackDetails.id)
+		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
+	elseif attackData.Data.AttackType == "Field" then
+		local localAttackDetails = localAttackDetails :: AttackLogic.FieldDetails
+
+		local attackDetails = AttackLogic.MakeAttack(
+			combatPlayer,
+			origin,
+			attackData,
+			localAttackDetails.origin.Position
+		) :: AttackLogic.FieldDetails
+
+		FieldEffect.new(attackDetails.origin.Position, attackData, CombatPlayerData, function(victim)
+			return victim ~= combatPlayer
+		end)
 
 		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
+	else
+		warn("Invalid attack received: ", attackData.Data.AttackType)
 	end
 end
 
