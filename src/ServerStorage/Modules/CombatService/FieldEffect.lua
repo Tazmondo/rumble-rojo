@@ -7,12 +7,13 @@ local FieldEffect = {}
 function FieldEffect.new(
 	origin: Vector3,
 	data: Types.AbilityData,
+	owner: Types.CombatPlayer,
 	combatPlayers: { [Model]: CombatPlayer.CombatPlayer },
 	Filter: ((Types.CombatPlayer) -> boolean)?
 )
 	assert(data.Data.AttackType == "Field")
 
-	local conn = RunService.Stepped:Connect(function()
+	local conn = RunService.PostSimulation:Connect(function(dt)
 		debug.profilebegin("FieldEffect")
 		for character, combatPlayer in pairs(combatPlayers) do
 			if Filter and not Filter(combatPlayer) then
@@ -29,7 +30,8 @@ function FieldEffect.new(
 				end
 
 				if data.Damage > 0 and combatPlayer:CanTakeDamage() then
-					combatPlayer:TakeDamage(data.Damage)
+					local damage = CombatPlayer.GetDamageBetween(owner, combatPlayer, data, dt)
+					combatPlayer:TakeDamage(damage)
 				end
 			end
 		end

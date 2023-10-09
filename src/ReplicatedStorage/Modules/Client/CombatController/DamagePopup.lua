@@ -90,7 +90,7 @@ function DamagePopup:Update(dt: number)
 
 	self.gui.DamageNumber.Position = UDim2.new(0.5, 0, 0.15, self.currentProgress * self.maxOffset)
 
-	self.gui.DamageNumber.Text = self.damage
+	self.gui.DamageNumber.Text = math.ceil(self.damage)
 	self.gui.DamageNumber.TextColor3 = self.color
 	self.gui.DamageNumber.TextSize = math.ceil(24 + self.currentProgress * 6)
 

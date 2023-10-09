@@ -76,7 +76,7 @@ function NameTag.InitFriendly(combatPlayer: CombatPlayer.CombatPlayer)
 			end
 		end
 
-		nameTag.stats.healthnumber.Text = combatPlayer.health
+		nameTag.stats.healthnumber.Text = math.ceil(combatPlayer.health)
 
 		local healthRatio = combatPlayer.health / combatPlayer.maxHealth
 
@@ -185,7 +185,7 @@ function NameTag.InitEnemy(data: Types.UpdateData)
 		end
 
 		if not data.IsObject then
-			nameTag.stats.healthnumber.Text = data.Health
+			nameTag.stats.healthnumber.Text = math.ceil(data.Health)
 		end
 
 		local healthRatio = data.Health / data.MaxHealth

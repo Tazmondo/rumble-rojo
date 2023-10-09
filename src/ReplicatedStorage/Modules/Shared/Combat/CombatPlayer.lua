@@ -87,6 +87,8 @@ function InitializeSelf(
 
 	self.baseAttackDamage = self.heroData.Attack.Damage
 	self.baseSuperDamage = self.heroData.Super.Damage
+	self.baseSkillDamage = if skill and skill.AttackData then skill.AttackData.Damage else 0
+	self.baseDamageMultiplier = 1
 	self.baseHealth = self.heroData.Health
 	self.baseSpeed = self.heroData.MovementSpeed
 	self.baseRegenRate = 1
@@ -213,21 +215,32 @@ function CombatPlayer.CombatPlayerRemoved()
 	return CollectionService:GetInstanceRemovedSignal(Config.CombatPlayerTag)
 end
 
-function CombatPlayer.GetDamageBetween(attacker: CombatPlayer, victim: CombatPlayer, attack: Types.AbilityData)
+function CombatPlayer.GetDamageBetween(
+	attacker: CombatPlayer,
+	victim: CombatPlayer,
+	attack: Types.AbilityData,
+	multiplier: number?
+)
 	local shieldMultiplier = 1
 	if victim.statusEffects["Shield"] then
 		shieldMultiplier = 0
 		victim:SetStatusEffect("Shield")
 	end
 
-	local baseDamage = if attack.AbilityType == "Attack" then attacker.baseAttackDamage else attacker.baseSuperDamage
-	local boosterDamage = math.round(baseDamage * (1 + attacker.boosterCount * Config.BoosterDamage))
+	local givenMultiplier = multiplier or 1
+	local baseDamage = attacker.baseDamageMultiplier
+		* if attack.AbilityType == "Attack"
+			then attacker.baseAttackDamage
+			elseif attack.AbilityType == "Super" then attacker.baseSuperDamage
+			else attacker.baseSkillDamage
+	local boosterDamage = baseDamage * (1 + attacker.boosterCount * Config.BoosterDamage)
 	local finalDamage = boosterDamage
 		* attacker:GetDamageMultiplier(victim)
 		* victim:GetDefenceMultiplier()
 		* shieldMultiplier
+		* givenMultiplier
 
-	return math.round(finalDamage)
+	return finalDamage
 end
 
 function CombatPlayer.GetDamageMultiplier(self: CombatPlayer, victim: CombatPlayer?)
@@ -429,7 +442,7 @@ function CombatPlayer.Heal(self: CombatPlayer, amount: number)
 		return
 	end
 
-	self.health = math.round(math.clamp(self.health + amount, 0, self.maxHealth))
+	self.health = math.clamp(self.health + amount, 0, self.maxHealth)
 	self:Sync("SetHealth", self.health)
 	self:Update()
 end
@@ -557,7 +570,7 @@ end
 
 function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 	self:Sync("TakeDamage", amount)
-	self.health = math.round(math.clamp(self.health - amount, 0, self.maxHealth))
+	self.health = math.clamp(self.health - amount, 0, self.maxHealth)
 	self.TookDamageSignal:Fire(amount)
 
 	self:ScheduleRegen(Config.InitialRegenTime)
@@ -577,8 +590,8 @@ end
 function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
 	local previousHealthPercentage = self.health / self.maxHealth
 
-	self.maxHealth = math.round(newMaxHealth) -- prevent decimals
-	self.health = math.round(math.clamp(self.maxHealth * previousHealthPercentage, 0, newMaxHealth))
+	self.maxHealth = newMaxHealth
+	self.health = math.clamp(self.maxHealth * previousHealthPercentage, 0, newMaxHealth)
 
 	-- Don't need to regen as health percentage is preserved
 	-- self:ScheduleRegen(Config.InitialRegenTime)

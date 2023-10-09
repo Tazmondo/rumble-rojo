@@ -170,7 +170,7 @@ Skills.Haste = {
 local SlowField: Types.SkillData = {
 	AbilityType = "Skill",
 	Name = "Slow Field",
-	Damage = 0,
+	Damage = 100,
 	Range = 0,
 
 	Data = {

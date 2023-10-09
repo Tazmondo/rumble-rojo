@@ -166,6 +166,8 @@ export type CombatPlayer = {
 	baseReloadSpeed: number,
 	baseSuperDamage: number,
 	baseAttackDamage: number,
+	baseSkillDamage: number,
+	baseDamageMultiplier: number,
 	requiredSuperCharge: number,
 	movementSpeed: number,
 	maxAmmo: number,

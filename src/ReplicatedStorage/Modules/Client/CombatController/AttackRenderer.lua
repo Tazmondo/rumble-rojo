@@ -300,7 +300,6 @@ end
 
 function ScaleWithAttachments(part: BasePart, newSize: Vector3)
 	local scale = newSize / part.Size
-	print(scale)
 
 	for i, attachment in ipairs(part:GetChildren()) do
 		if attachment:IsA("Attachment") then
@@ -318,7 +317,6 @@ function CreateFieldAttack(origin: CFrame, radius: number, name: string, duratio
 
 	VFX:PivotTo(origin + Vector3.new(0, 0.1, 0))
 
-	-- ScaleWithAttachments(VFX, VFX.Size)
 	ScaleWithAttachments(VFX, Vector3.new(radius * 2, VFX.Size.Y, radius * 2))
 
 	VFX.Name = name

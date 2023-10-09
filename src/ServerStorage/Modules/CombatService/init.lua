@@ -123,7 +123,7 @@ local function replicateAttack(
 			localAttackDetails.origin.Position
 		) :: AttackLogic.FieldDetails
 
-		FieldEffect.new(attackDetails.origin.Position, attackData, CombatPlayerData, function(victim)
+		FieldEffect.new(attackDetails.origin.Position, attackData, combatPlayer, CombatPlayerData, function(victim)
 			return victim ~= combatPlayer
 		end)
 
