@@ -129,4 +129,21 @@ Skills.PowerPill = {
 	end,
 }
 
+Skills.Reflect = {
+	Name = "Reflect",
+	Description = "For two seconds, reflect 80% of damage taken back to the attacker.",
+	Activation = "Instant",
+	Type = "Ability",
+	Activated = function(self)
+		local value = { 0.8 }
+		self:SetStatusEffect("Reflect", value)
+
+		task.delay(2, function()
+			if self.statusEffects["Reflect"] == value then
+				self:SetStatusEffect("Reflect")
+			end
+		end)
+	end,
+}
+
 return Skills

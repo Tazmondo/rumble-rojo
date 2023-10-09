@@ -239,13 +239,14 @@ function handleAim(player: Player, aim: string?)
 end
 
 function processHit(
-	player: Player,
+	player: Player?,
 	target: BasePart,
 	localTargetPosition: Vector3,
 	combatPlayer: CombatPlayer.CombatPlayer,
 	victimCharacter: Model,
 	victimCombatPlayer: CombatPlayer.CombatPlayer,
-	attackDetails: Types.Attack
+	attackDetails: Types.Attack,
+	reflected: number?
 )
 	print("processing hit")
 	if (target.Position - localTargetPosition).Magnitude > Config.MaximumPlayerPositionDifference then
@@ -287,6 +288,7 @@ function processHit(
 	local beforeState = victimCombatPlayer:GetState()
 
 	local damage = CombatPlayer.GetDamageBetween(combatPlayer, victimCombatPlayer, attackDetails.Data)
+		* (reflected or 1)
 	local actualDamage = victimCombatPlayer:TakeDamage(damage) -- Will update state to dead if this kills
 
 	combatPlayer:DealDamage(actualDamage, victimCharacter)
@@ -295,12 +297,30 @@ function processHit(
 
 	DamagedEvent:FireAll(victimCharacter, actualDamage)
 
-	-- Update Data
-	DataService.GetPrivateData(player):After(function(data)
-		if data then
-			data.Stats.DamageDealt += actualDamage
+	if not reflected and victimCombatPlayer.statusEffects["Reflect"] then
+		local HRP = combatPlayer.character:FindFirstChild("HumanoidRootPart") :: BasePart
+		if HRP then
+			processHit(
+				victimCombatPlayer.player,
+				HRP :: BasePart,
+				HRP.Position,
+				victimCombatPlayer,
+				combatPlayer.character,
+				combatPlayer,
+				attackDetails,
+				victimCombatPlayer.statusEffects["Reflect"][1]
+			)
 		end
-	end)
+	end
+
+	-- Update Data
+	if player then
+		DataService.GetPrivateData(player):After(function(data)
+			if data then
+				data.Stats.DamageDealt += actualDamage
+			end
+		end)
+	end
 
 	combatPlayer.modifiers.OnHit(combatPlayer, victimCombatPlayer, attackDetails)
 	victimCombatPlayer.modifiers.OnReceiveHit(victimCombatPlayer, combatPlayer, attackDetails)
