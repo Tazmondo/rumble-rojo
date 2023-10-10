@@ -66,14 +66,14 @@ local DefaultModifiers = {
 
 local DefaultSkills = {
 	"Dash",
-	"BirdyBomb",
+	"Birdy Bomb",
 	"Heal",
 	"Shield",
 	"Sprint",
-	"PowerPill",
+	"Power Pill",
 	"Reflect",
 	"Haste",
-	"SlowField",
+	"Slow Field",
 }
 
 local orderedHeroDetails: { OrderedHero } = {

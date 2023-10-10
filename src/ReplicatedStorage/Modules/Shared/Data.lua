@@ -117,7 +117,7 @@ function Data.ReplicateToPublic(privateData: PrivatePlayerData, publicData: Publ
 	local newSkill = heroData.SelectedSkill
 	if newSkill ~= heroData.SelectedSkill then
 		changed = true
-		heroData.SelectedSkill = newSkill
+		publicData.SelectedSkill = newSkill
 	end
 
 	return changed

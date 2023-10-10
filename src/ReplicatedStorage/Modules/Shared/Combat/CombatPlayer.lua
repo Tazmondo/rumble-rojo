@@ -330,12 +330,11 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 
 	if effect == "Slow" or effect == "Ratty" or effect == "Stun" or effect == "Dash" then
 		self:UpdateSpeed()
-	elseif effect == "TrueSight" then
-		self:Update()
 	elseif effect == "Haste" then
 		self.ammoRegen = self.baseAmmoRegen - LATENCYALLOWANCE
 		self.reloadSpeed = self.baseReloadSpeed - LATENCYALLOWANCE
 	end
+	self:Update()
 end
 
 function CombatPlayer.GetStatusEffect(self: CombatPlayer, effect: string)

@@ -330,7 +330,7 @@ function processHit(
 
 	DamagedEvent:FireAll(victimCharacter, actualDamage)
 
-	if not reflected and victimCombatPlayer.statusEffects["Reflect"] then
+	if not reflected and victimCombatPlayer:GetStatusEffect("Reflect") then
 		local HRP = combatPlayer.character:FindFirstChild("HumanoidRootPart") :: BasePart
 		if HRP then
 			processHit(
@@ -341,7 +341,7 @@ function processHit(
 				combatPlayer.character,
 				combatPlayer,
 				attackDetails,
-				victimCombatPlayer.statusEffects["Reflect"][1]
+				victimCombatPlayer:GetStatusEffect("Reflect")
 			)
 		end
 	end

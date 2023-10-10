@@ -74,8 +74,8 @@ function SetEmittersEnabled(character: Model, enabled: boolean)
 		return
 	end
 
-	for emitter, initial in pairs(characterData[character].Emitters) do
-		if emitter:IsA("ParticleEmitter") then
+	for emitter: any, initial in pairs(characterData[character].Emitters) do
+		if emitter:IsA("ParticleEmitter") or emitter:IsA("Trail") then
 			local realEnabled = emitter:GetAttribute("RealEnabled")
 			local emitting = emitter:GetAttribute("Emitting")
 

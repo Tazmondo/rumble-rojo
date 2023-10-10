@@ -108,13 +108,7 @@ Skills.Shield = {
 	Length = 5,
 	Type = "Ability",
 	Activated = function(self)
-		local value = { true }
-		self:SetStatusEffect("Shield", value)
-		task.delay(5, function()
-			if self.statusEffects["Shield"] == value then
-				self:SetStatusEffect("Shield")
-			end
-		end)
+		self:SetStatusEffect("Shield", true, 5)
 	end,
 }
 
@@ -167,14 +161,7 @@ Skills.Reflect = {
 	Price = 1000,
 	Type = "Ability",
 	Activated = function(self)
-		local value = { 0.8 }
-		self:SetStatusEffect("Reflect", value)
-
-		task.delay(2, function()
-			if self.statusEffects["Reflect"] == value then
-				self:SetStatusEffect("Reflect")
-			end
-		end)
+		self:SetStatusEffect("Reflect", 0.8, 2)
 	end,
 }
 
@@ -191,12 +178,7 @@ Skills.Haste = {
 		self.baseAmmoRegen /= 2
 		self.baseReloadSpeed /= 2
 
-		self:SetStatusEffect("Haste", true)
-		task.delay(4, function()
-			self.baseAmmoRegen *= 2
-			self.baseReloadSpeed *= 2
-			self:SetStatusEffect("Haste")
-		end)
+		self:SetStatusEffect("Haste", true, 4)
 	end,
 }
 

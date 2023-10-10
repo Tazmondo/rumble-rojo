@@ -4,6 +4,7 @@ local VFXController = {}
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CombatPlayerController = require(ReplicatedStorage.Modules.Client.CombatController.CombatPlayerController)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 
 local VFXEvent = require(ReplicatedStorage.Events.VFX.VFXEvent):Client()
@@ -12,9 +13,18 @@ local VFXFolder = ReplicatedStorage.Assets.VFX
 local skillFolder = VFXFolder.Skill
 local generalFolder = VFXFolder.General
 
-function SetEmitterEnabled(emitter: ParticleEmitter, enabled: boolean, emitting: boolean?)
+function SetEmitterEnabled(emitter: ParticleEmitter | Trail, enabled: boolean, emitting: boolean?)
 	emitter:SetAttribute("RealEnabled", enabled)
 	emitter:SetAttribute("Emitting", emitting)
+end
+
+function TriggerAllDescendantParticleEmitters(instance: Instance)
+	for i, v in pairs(instance:GetDescendants()) do
+		if v:IsA("ParticleEmitter") then
+			local count = v:GetAttribute("EmitCount")
+			v:Emit(count or 1)
+		end
+	end
 end
 
 function WeldVFX(character: Model, part: BasePart)
@@ -77,6 +87,21 @@ function VFXController.Dash(character: Model, skill: Types.Skill)
 	dashVFX:Destroy()
 end
 
+function VFXController.Shield(character: Model, skill: Types.Skill)
+	local shieldVFX = skillFolder.Shield:Clone()
+	local data = CombatPlayerController.GetData(character):Await()
+	WeldVFX(character, shieldVFX)
+	TriggerAllDescendantParticleEmitters(shieldVFX)
+
+	task.wait(0.5)
+
+	while data.StatusEffects["Shield"] do
+		task.wait()
+	end
+
+	shieldVFX:Destroy()
+end
+
 function StandardSkill(character: Model, skill: Types.Skill)
 	local vfx = skillFolder[skill.Name]:Clone()
 	WeldVFX(character, vfx)
@@ -86,7 +111,6 @@ end
 VFXController.Haste = StandardSkill
 VFXController.Reflect = StandardSkill
 VFXController["Power Pill"] = StandardSkill
-VFXController.Shield = StandardSkill
 
 VFXController["Heal"] = VFXController.Regen
 VFXController["Sprint"] = VFXController.Dash
