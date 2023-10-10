@@ -53,7 +53,8 @@ end
 
 function VFXController.Dash(character: Model, skill: Types.Skill)
 	local length = assert(skill.Length)
-	if character ~= Players.LocalPlayer.Character then
+	if character ~= Players.LocalPlayer.Character and skill.Name == "Dash" then
+		-- Since character position is replicated weirdly, we need to do this or the VFX ends too early.
 		length += 0.5
 	end
 
@@ -76,12 +77,19 @@ function VFXController.Dash(character: Model, skill: Types.Skill)
 	dashVFX:Destroy()
 end
 
-function VFXController.Haste(character: Model, skill: Types.Skill)
-	local hasteVFX = skillFolder.Haste:Clone()
-	WeldVFX(character, hasteVFX)
-	Debris:AddItem(hasteVFX, skill.Length)
+function StandardSkill(character: Model, skill: Types.Skill)
+	local vfx = skillFolder[skill.Name]:Clone()
+	WeldVFX(character, vfx)
+	Debris:AddItem(vfx, skill.Length)
 end
 
+VFXController.Haste = StandardSkill
+VFXController.Reflect = StandardSkill
+VFXController["Power Pill"] = StandardSkill
+VFXController.Shield = StandardSkill
+
+VFXController["Heal"] = VFXController.Regen
+VFXController["Sprint"] = VFXController.Dash
 function HandleVFX(character: Model, VFX: string, ...)
 	if VFXController[VFX] then
 		VFXController[VFX](character, ...)
