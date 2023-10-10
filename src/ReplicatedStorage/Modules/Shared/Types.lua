@@ -142,6 +142,7 @@ export type ArcedData = {
 	Height: number,
 	Radius: number,
 	Rotation: number?,
+	ExplosionColour: Color3,
 }
 export type FieldData = {
 	AttackType: "Field",

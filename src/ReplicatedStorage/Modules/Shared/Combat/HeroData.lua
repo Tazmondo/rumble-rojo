@@ -109,6 +109,7 @@ local HeroData: { [string]: Types.HeroData } = {
 				Height = Enums.ArcHeight.Medium,
 				TimeToDetonate = 0.6,
 				Radius = Enums.Radius.Medium,
+				ExplosionColour = Color3.fromRGB(122, 255, 85),
 			},
 		},
 	},

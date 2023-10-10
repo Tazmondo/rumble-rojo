@@ -63,6 +63,7 @@ local BombAttack: Types.SkillData = {
 		Rotation = 0,
 		ProjectileSpeed = 20,
 		TimeToDetonate = 1,
+		ExplosionColour = Color3.fromRGB(255, 162, 73),
 	},
 }
 assert(BombAttack.Data.AttackType == "Arced")

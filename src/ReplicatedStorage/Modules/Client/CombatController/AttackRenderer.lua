@@ -98,9 +98,12 @@ function InitializeHitboxParams(raycastHitbox, raycastParams: RaycastParams): ni
 	return
 end
 
-function TriggerAllDescendantParticleEmitters(instance: Instance, enable: boolean)
+function TriggerAllDescendantParticleEmitters(instance: Instance, enable: boolean, newColour: Color3?)
 	for i, v in pairs(instance:GetDescendants()) do
 		if v:IsA("ParticleEmitter") then
+			if newColour then
+				v.Color = ColorSequence.new(newColour)
+			end
 			local count = v:GetAttribute("EmitCount")
 			v:Emit(count or 1)
 			v.Enabled = enable
@@ -212,6 +215,68 @@ function GetPartsInExplosion(radius: number, position: Vector3)
 	return intersectingParts
 end
 
+function CreateExplosion(bombPart: Model, player: Player, attackData: Types.ArcedData, target: Vector3, hitbox: boolean)
+	local anchor = if player == localPlayer then nil else bombPart
+
+	SoundController:PlayGeneralAttackSound("BombTimer", anchor)
+
+	local t = 0
+	local expand = RunService.RenderStepped:Connect(function(dt)
+		t += dt
+		local progress = math.clamp(t / attackData.TimeToDetonate, 0, 1)
+
+		local scaleThreshold = 0.9
+		local scaleAmount = 0.45
+		local scaleProgress = math.clamp((progress - scaleThreshold) / (1 - scaleThreshold), 0, 1)
+
+		if scaleProgress > 0 then
+			bombPart:ScaleTo(1 + scaleProgress * scaleAmount)
+		end
+	end)
+
+	task.wait(attackData.TimeToDetonate)
+
+	expand:Disconnect()
+	bombPart:Destroy()
+
+	SoundController:PlayGeneralAttackSound("BombBlast", anchor)
+
+	local defaultExplosionRadius = 9
+	local explosionScale = attackData.Radius / defaultExplosionRadius
+
+	local explosionModel = attackVFXFolder.Explosion:Clone() :: Model
+	explosionModel:PivotTo(CFrame.new(target + Vector3.new(0, 0, 0)))
+
+	explosionModel:ScaleTo(explosionScale)
+
+	explosionModel.Parent = partFolder
+
+	TriggerAllDescendantParticleEmitters(explosionModel, false, attackData.ExplosionColour)
+
+	Debris:AddItem(explosionModel, 10)
+
+	if hitbox then
+		local explosionParts = GetPartsInExplosion(attackData.Radius, target)
+		local hitCharacters = {}
+		local hitRegisters = {}
+		for _, part in ipairs(explosionParts) do
+			local character = AttackRenderer.GetCombatPlayerFromValidPart(part)
+			if character and not hitCharacters[character] then
+				print("hit", character)
+				hitCharacters[character] = true
+
+				table.insert(hitRegisters, {
+					instance = part :: Instance,
+					position = target,
+				})
+			end
+		end
+
+		return hitRegisters
+	end
+	return {}
+end
+
 function CreateArcedAttack(
 	player: Player,
 	attackData: Types.AbilityData,
@@ -254,62 +319,8 @@ function CreateArcedAttack(
 	-- Don't care about hit detection with map walls, we should handle that before the target is passed in.
 	task.delay(projectileTime, function()
 		movementTick:Disconnect()
-
-		local anchor = if player == localPlayer then nil else pelletPart
-
-		SoundController:PlayGeneralAttackSound("BombTimer", anchor)
-
-		local t = 0
-		local expand = RunService.RenderStepped:Connect(function(dt)
-			t += dt
-			local progress = math.clamp(t / attackData.Data.TimeToDetonate, 0, 1)
-
-			local scaleThreshold = 0.9
-			local scaleAmount = 0.45
-			local scaleProgress = math.clamp((progress - scaleThreshold) / (1 - scaleThreshold), 0, 1)
-
-			if scaleProgress > 0 then
-				pelletPart:ScaleTo(1 + scaleProgress * scaleAmount)
-			end
-		end)
-
-		task.wait(attackData.Data.TimeToDetonate)
-
-		expand:Disconnect()
-		pelletPart:Destroy()
-
-		SoundController:PlayGeneralAttackSound("BombBlast", anchor)
-
-		local defaultExplosionRadius = 9
-		local explosionScale = attackData.Data.Radius / defaultExplosionRadius
-
-		local explosionModel = attackVFXFolder.Explosion:Clone() :: Model
-		explosionModel:PivotTo(CFrame.new(target + Vector3.new(0, 0, 0)))
-
-		explosionModel:ScaleTo(explosionScale)
-
-		explosionModel.Parent = partFolder
-
-		TriggerAllDescendantParticleEmitters(explosionModel, false)
-
-		Debris:AddItem(explosionModel, 10)
-
+		local hitRegisters = CreateExplosion(pelletPart, player, attackData.Data, target, onHit ~= nil)
 		if onHit then
-			local explosionParts = GetPartsInExplosion(attackData.Data.Radius, target)
-			local hitCharacters = {}
-			local hitRegisters = {}
-			for _, part in ipairs(explosionParts) do
-				local character = AttackRenderer.GetCombatPlayerFromValidPart(part)
-				if character and not hitCharacters[character] then
-					print("hit", character)
-					hitCharacters[character] = true
-
-					table.insert(hitRegisters, {
-						instance = part :: Instance,
-						position = target,
-					})
-				end
-			end
 			onHit(hitRegisters, id, target)
 		end
 	end)
