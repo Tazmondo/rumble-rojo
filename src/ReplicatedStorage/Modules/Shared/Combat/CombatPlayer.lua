@@ -474,7 +474,9 @@ function CombatPlayer:AbilitiesEnabled()
 	self = self :: CombatPlayer
 	return (
 		GetGameState() ~= "BattleStarting" or (RunService:IsStudio() and ServerScriptService:GetAttribute("combat"))
-	) and not self.isObject
+	)
+		and not self.isObject
+		and self.statusEffects["Stun"] == nil
 end
 
 function CombatPlayer.CanAttack(self: CombatPlayer)
@@ -482,7 +484,6 @@ function CombatPlayer.CanAttack(self: CombatPlayer)
 		and os.clock() - self.lastAttackTime >= self.reloadSpeed
 		and self.ammo > 0
 		and self:AbilitiesEnabled()
-		and self.statusEffects["Stun"] == nil
 	return canAttack
 end
 -- warn("Take CanAttack function out of testing!")
