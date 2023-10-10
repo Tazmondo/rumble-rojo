@@ -27,6 +27,8 @@ function _initSelf(combatPlayer: CombatPlayer.CombatPlayer, character: Model)
 	self.readySuperButton = self.attackFrame.Super.Ready
 	self.activeSuperButton = self.attackFrame.Super:FindFirstChild("Active")
 
+	self.skillFrame = self.attackFrame.Skill
+
 	self.mainUI.Enabled = true
 	self.attackFrame.Visible = true
 
@@ -97,6 +99,24 @@ function CombatUI:RenderLoop()
 				self.activeSuperButton.Visible = false
 				self.readySuperButton.Visible = true
 			end
+		end
+
+		local skillTimeRemaining = self.combatPlayer.skillCooldown - (os.clock() - self.combatPlayer.lastSkillTime)
+		if self.combatPlayer.skillUses > 0 and self.combatPlayer.skill.Name ~= "Default" then
+			if skillTimeRemaining <= 0 then
+				self.skillFrame.Ready.Visible = true
+				self.skillFrame.Unavailable.Visible = false
+
+				self.skillFrame.Ready.ChargesLeft.Number.Text = self.combatPlayer.skillUses
+			else
+				self.skillFrame.Ready.Visible = false
+				self.skillFrame.Unavailable.Visible = true
+
+				self.skillFrame.Unavailable.Timer.Number.Text = math.ceil(skillTimeRemaining)
+			end
+		else
+			self.skillFrame.Ready.Visible = false
+			self.skillFrame.Unavailable.Visible = false
 		end
 	end))
 end
