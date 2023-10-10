@@ -74,13 +74,14 @@ function SetEmittersEnabled(character: Model, enabled: boolean)
 		return
 	end
 
-	for i, emitter in pairs(character:GetDescendants()) do
+	for emitter, initial in pairs(characterData[character].Emitters) do
 		if emitter:IsA("ParticleEmitter") then
-			local defaultEnabled = data.Emitters[emitter]
+			local realEnabled = emitter:GetAttribute("RealEnabled")
+			local emitting = emitter:GetAttribute("Emitting")
 
-			if defaultEnabled and enabled then
-				emitter.Enabled = defaultEnabled
-			elseif not enabled then
+			if (realEnabled or emitting) and enabled then
+				emitter.Enabled = realEnabled
+			else
 				emitter:Clear()
 				emitter.Enabled = false
 			end
@@ -228,12 +229,18 @@ function CharacterAdded(data: Types.UpdateData)
 	local baseTransparencies = {}
 	local emitters = {}
 
-	for i, v in pairs(character:GetDescendants()) do
-		if v:IsA("BasePart") then
-			baseTransparencies[v] = v.Transparency
-		elseif v:IsA("ParticleEmitter") then
-			emitters[v] = v.Enabled
+	local function addDescendant(descendant: any)
+		if descendant:IsA("BasePart") then
+			baseTransparencies[descendant] = descendant.Transparency
+		elseif descendant:IsA("ParticleEmitter") or descendant:IsA("Trail") then
+			emitters[descendant] = descendant.Enabled
+			descendant:SetAttribute("RealEnabled", descendant.Enabled)
+			descendant:SetAttribute("BushEnabled", true)
 		end
+	end
+
+	for i, v in pairs(character:GetDescendants()) do
+		addDescendant(v)
 	end
 
 	local combatPlayerData = assert(CombatPlayerController.GetData(character):Await())
@@ -246,6 +253,15 @@ function CharacterAdded(data: Types.UpdateData)
 		TargetOpacity = 1,
 		CombatData = combatPlayerData,
 	}
+
+	character.DescendantAdded:Connect(addDescendant)
+	character.DescendantRemoving:Connect(function(descendant)
+		if baseTransparencies[descendant] then
+			baseTransparencies[descendant] = nil
+		elseif emitters[descendant] then
+			emitters[descendant] = nil
+		end
+	end)
 end
 
 function CombatCharacterRemoved(character: Model)

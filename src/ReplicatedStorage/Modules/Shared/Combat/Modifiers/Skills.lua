@@ -21,6 +21,7 @@ Skills.Dash = {
 	UnlockedImage = "rbxassetid://15025262202",
 	LockedImage = "rbxassetid://15025262834",
 	Price = 1000,
+	Length = 0.2,
 	Type = "Ability",
 	Activated = function(combatPlayer)
 		if RunService:IsServer() then
@@ -73,7 +74,7 @@ local BombAttack: Types.SkillData = {
 }
 assert(BombAttack.Data.AttackType == "Arced")
 
-Skills.BirdyBomb = {
+Skills["Birdy Bomb"] = {
 	Name = "Birdy Bomb",
 	Description = "Drop a bomb. Go out with a bang!",
 	UnlockedImage = "rbxassetid://15010967737",
@@ -104,6 +105,7 @@ Skills.Shield = {
 	UnlockedImage = "rbxassetid://15010965925",
 	LockedImage = "rbxassetid://15010966907",
 	Price = 1000,
+	Length = 5,
 	Type = "Ability",
 	Activated = function(self)
 		local value = { true }
@@ -123,6 +125,7 @@ Skills.Sprint = {
 	Price = 1000,
 	UnlockedImage = "rbxassetid://15025262626",
 	LockedImage = "rbxassetid://15025263322",
+	Length = 5,
 	Type = "Ability",
 	Activated = function(self)
 		self.baseSpeed *= 1.35
@@ -135,12 +138,13 @@ Skills.Sprint = {
 	end,
 }
 
-Skills.PowerPill = {
+Skills["Power Pill"] = {
 	Name = "Power Pill",
 	Description = "Gain immense power for 5 seconds, doing 15% more damage.",
 	Activation = "Instant",
 	UnlockedImage = "rbxassetid://15010966360",
 	LockedImage = "rbxassetid://15010967310",
+	Length = 5,
 	Price = 1000,
 	Type = "Ability",
 	Activated = function(self)
@@ -159,6 +163,7 @@ Skills.Reflect = {
 	Activation = "Instant",
 	UnlockedImage = "rbxassetid://15010966542",
 	LockedImage = "rbxassetid://15010967489",
+	Length = 2,
 	Price = 1000,
 	Type = "Ability",
 	Activated = function(self)
@@ -180,6 +185,7 @@ Skills.Haste = {
 	Price = 1000,
 	UnlockedImage = "rbxassetid://15025262481",
 	LockedImage = "rbxassetid://15025263176",
+	Length = 4,
 	Type = "Ability",
 	Activated = function(self)
 		self.baseAmmoRegen /= 2
@@ -209,7 +215,7 @@ local SlowField: Types.SkillData = {
 		end,
 	},
 }
-Skills.SlowField = {
+Skills["Slow Field"] = {
 	Name = "Slow Field",
 	Description = "Release a slowing field around you, reducing enemy movement speed by 40%.",
 	Activation = "Instant",

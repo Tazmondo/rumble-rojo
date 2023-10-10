@@ -15,6 +15,7 @@ local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modif
 local Skill = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Signal = require(ReplicatedStorage.Packages.Signal)
+local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
@@ -27,10 +28,13 @@ local ObjectReplicationEvent: any
 
 local SoundController
 local DataController
+local VFXController
 if RunService:IsClient() then
-	SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
 	SyncEvent = require(ReplicatedStorage.Events.Combat.CombatPlayerSyncEvent):Client()
 	AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Client()
+
+	VFXController = require(ReplicatedStorage.Modules.Client.VFXController)
+	SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
 	DataController = require(ReplicatedStorage.Modules.Client.DataController)
 end
 
@@ -539,6 +543,13 @@ end
 function CombatPlayer.UseSkill(self: CombatPlayer)
 	self.lastSkillTime = os.clock()
 	self.skillUses -= 1
+
+	if RunService:IsServer() then
+		VFXService.HandleAbility(self.player, self.character, self.skill)
+	elseif VFXController[self.skill.Name] then
+		Spawn(VFXController[self.skill.Name], self.character, self.skill)
+	end
+
 	if self.skill.Activated then
 		self.skill.Activated(self)
 	end
