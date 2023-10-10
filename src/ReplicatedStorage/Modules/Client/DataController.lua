@@ -67,8 +67,14 @@ function DataController.SelectModifier(hero: string, modifier: string, slot: num
 	SelectModifierEvent:Fire(hero, modifier, slot)
 
 	local data = DataController.GetLocalData():Unwrap()
-	data.Private.OwnedHeroes[hero].SelectedModifiers[slot] = modifier
+	local heroData = data.Private.OwnedHeroes[hero]
+	heroData.SelectedModifiers[slot] = modifier
 	data.Public.SelectedModifiers[slot] = modifier
+
+	if heroData.SelectedModifiers[3 - slot] == modifier then
+		heroData.SelectedModifiers[3 - slot] = ""
+		data.Public.SelectedModifiers[3 - slot] = ""
+	end
 end
 
 function DataController.SelectTalent(hero: string, talent: string)

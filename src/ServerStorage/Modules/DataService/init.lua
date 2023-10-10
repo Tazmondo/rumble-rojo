@@ -362,13 +362,15 @@ function HandleSelectModifier(player: Player, hero: string, modifier: string, sl
 
 	local otherSlot = 3 - slot
 	local isDefault = modifier == ""
-	if
-		privateData.OwnedHeroes[hero]
-		and (privateData.OwnedHeroes[hero].Modifiers[modifier] or isDefault)
-		-- Same modifier cannot be in more than one slot, unless it is the default modifier
-		and (privateData.OwnedHeroes[hero].SelectedModifiers[otherSlot] ~= modifier or isDefault)
-	then
-		privateData.OwnedHeroes[hero].SelectedModifiers[slot] = modifier
+	local heroData = privateData.OwnedHeroes[hero]
+
+	if heroData and (heroData.Modifiers[modifier] or isDefault) then
+		-- If equipped in other slot then unequip it from the other slot.
+		if heroData.SelectedModifiers[otherSlot] == modifier then
+			heroData.SelectedModifiers[otherSlot] = ""
+		end
+
+		heroData.SelectedModifiers[slot] = modifier
 	else
 		warn("Tried to select modifier without owning it, or the hero, or already selecting it in the other slot.")
 	end
