@@ -768,7 +768,9 @@ function CombatService:Initialize()
 	SkillAbilityEvent:On(handleAbilitySkill)
 
 	for _, v in pairs(workspace:GetChildren()) do
-		if v.Name == "TestDummy" then
+		if v.Name == "TestDummy" and v:IsA("Model") then
+			local HRP = v:FindFirstChild("HumanoidRootPart") :: BasePart
+			HRP:SetNetworkOwner(nil)
 			print("Initializing test dummy")
 			local combatPlayer =
 				CombatPlayer.new("Frankie", v, ModifierCollection.new({ Modifiers.Default })) :: CombatPlayer.CombatPlayer
