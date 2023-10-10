@@ -17,6 +17,21 @@ function SetEmitterEnabled(emitter: ParticleEmitter, enabled: boolean, emitting:
 	emitter:SetAttribute("Emitting", emitting)
 end
 
+function WeldVFX(character: Model, part: BasePart)
+	local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
+
+	part.Anchored = false
+	part.CFrame = HRP.CFrame
+	part.Parent = HRP
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = HRP
+	weld.Part1 = part
+	weld.Parent = HRP
+
+	return weld
+end
+
 function VFXController.Regen(character: Model)
 	if not character then
 		return
@@ -43,19 +58,14 @@ function VFXController.Dash(character: Model, skill: Types.Skill)
 	end
 
 	local dashVFX = skillFolder.Dash:Clone()
-	local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
 
-	dashVFX.CFrame = HRP.CFrame
-	dashVFX.Parent = HRP
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = HRP
-	weld.Part1 = dashVFX
-	weld.Parent = HRP
+	local weld = WeldVFX(character, dashVFX)
 
 	task.wait(length)
-	weld:Destroy()
 
+	weld:Destroy()
 	dashVFX.Anchored = true
+
 	for i, child in ipairs(dashVFX:GetDescendants()) do
 		if child:IsA("ParticleEmitter") or child:IsA("Trail") then
 			print("disabling", child)
@@ -66,11 +76,15 @@ function VFXController.Dash(character: Model, skill: Types.Skill)
 	dashVFX:Destroy()
 end
 
+function VFXController.Haste(character: Model, skill: Types.Skill)
+	local hasteVFX = skillFolder.Haste:Clone()
+	WeldVFX(character, hasteVFX)
+	Debris:AddItem(hasteVFX, skill.Length)
+end
+
 function HandleVFX(character: Model, VFX: string, ...)
 	if VFXController[VFX] then
 		VFXController[VFX](character, ...)
-	else
-		warn("No VFX for", VFX)
 	end
 end
 
