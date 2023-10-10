@@ -8,7 +8,7 @@ local Future = require(ReplicatedStorage.Packages.Future)
 local BaseCharacter = ReplicatedStorage.Assets.BaseR15 :: Model
 BaseCharacter.Archivable = true
 local AnimateScript = BaseCharacter:FindFirstChild("Animate") :: LocalScript
-local LobbySpawn = workspace.Lobby:FindFirstChild("SpawnLocation", true) :: SpawnLocation
+local LobbySpawn = workspace:FindFirstChild("SpawnLocation", true)
 
 local CharacterReplicationEvent =
 	require(ReplicatedStorage.Events.CharacterReplication.CharacterReplicationEvent):Server()
