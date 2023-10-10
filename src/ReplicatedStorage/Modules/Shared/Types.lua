@@ -75,6 +75,8 @@ export type Skill = {
 	Name: string,
 	Description: string,
 	Price: number?,
+	UnlockedImage: string,
+	LockedImage: string,
 	Type: "Ability" | "Attack",
 	Activation: "Instant" | "Aim",
 	Activated: ((CombatPlayer) -> ())?,

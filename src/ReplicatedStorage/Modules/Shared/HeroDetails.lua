@@ -50,7 +50,6 @@ export type Hero = {
 }
 
 local DefaultModifiers = {
-	"", -- No modifier
 	"Fast",
 	"Health",
 	"Slow",
@@ -65,6 +64,18 @@ local DefaultModifiers = {
 	"SkillCharge",
 }
 
+local DefaultSkills = {
+	"Dash",
+	"BirdyBomb",
+	"Heal",
+	"Shield",
+	"Sprint",
+	"PowerPill",
+	"Reflect",
+	"Haste",
+	"SlowField",
+}
+
 local orderedHeroDetails: { OrderedHero } = {
 	{
 		Name = "Taz",
@@ -73,7 +84,7 @@ local orderedHeroDetails: { OrderedHero } = {
 		DefaultSkin = "Apple",
 		Modifiers = table.clone(DefaultModifiers),
 		Talents = { "ShellShock", "BandAid" },
-		Skills = {},
+		Skills = table.clone(DefaultSkills),
 		Skins = {
 			{
 				Name = "Apple",
@@ -126,7 +137,7 @@ local orderedHeroDetails: { OrderedHero } = {
 		DefaultSkin = "Aqua",
 		Modifiers = table.clone(DefaultModifiers),
 		Talents = { "SuperBlast", "Overslime", "Slimed", "Missile" },
-		Skills = {},
+		Skills = table.clone(DefaultSkills),
 		Skins = {
 			{
 				Name = "Aqua",

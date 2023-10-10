@@ -9,6 +9,8 @@ Skills[""] = {
 	Description = "Default skill",
 	Activation = "Instant",
 	Type = "Ability",
+	UnlockedImage = "",
+	LockedImage = "",
 	Activated = function() end,
 }
 
@@ -16,6 +18,9 @@ Skills.Dash = {
 	Name = "Dash",
 	Description = "Dash forwards",
 	Activation = "Instant",
+	UnlockedImage = "",
+	LockedImage = "",
+	Price = 1000,
 	Type = "Ability",
 	Activated = function(combatPlayer)
 		if RunService:IsServer() then
@@ -69,8 +74,11 @@ local BombAttack: Types.SkillData = {
 assert(BombAttack.Data.AttackType == "Arced")
 
 Skills.BirdyBomb = {
-	Name = "BirdyBomb",
+	Name = "Birdy Bomb",
 	Description = "Drop a bomb. Go out with a bang!",
+	UnlockedImage = "rbxassetid://15010967737",
+	LockedImage = "rbxassetid://15010966766",
+	Price = 1000,
 	Activation = "Instant",
 	Type = "Attack",
 	AttackData = BombAttack,
@@ -78,7 +86,10 @@ Skills.BirdyBomb = {
 
 Skills.Heal = {
 	Name = "Heal",
-	Description = "Instantly 30% of your health.",
+	Description = "Instantly heal 30% of your health.",
+	UnlockedImage = "rbxassetid://15010966115",
+	LockedImage = "rbxassetid://15010967110",
+	Price = 1000,
 	Activation = "Instant",
 	Type = "Ability",
 	Activated = function(self)
@@ -90,6 +101,9 @@ Skills.Shield = {
 	Name = "Shield",
 	Description = "Gain a temporary shield which blocks one hit.",
 	Activation = "Instant",
+	UnlockedImage = "rbxassetid://15010965925",
+	LockedImage = "rbxassetid://15010966907",
+	Price = 1000,
 	Type = "Ability",
 	Activated = function(self)
 		local value = { true }
@@ -106,6 +120,9 @@ Skills.Sprint = {
 	Name = "Sprint",
 	Description = "Gain a 35% movement speed buff for 5 seconds.",
 	Activation = "Instant",
+	Price = 1000,
+	UnlockedImage = "",
+	LockedImage = "",
 	Type = "Ability",
 	Activated = function(self)
 		self.baseSpeed *= 1.35
@@ -122,6 +139,9 @@ Skills.PowerPill = {
 	Name = "Power Pill",
 	Description = "Gain immense power for 5 seconds, doing 15% more damage.",
 	Activation = "Instant",
+	UnlockedImage = "rbxassetid://15010966360",
+	LockedImage = "rbxassetid://15010967310",
+	Price = 1000,
 	Type = "Ability",
 	Activated = function(self)
 		self.baseAttackDamage *= 1.15
@@ -137,6 +157,9 @@ Skills.Reflect = {
 	Name = "Reflect",
 	Description = "For two seconds, reflect 80% of damage taken back to the attacker.",
 	Activation = "Instant",
+	UnlockedImage = "rbxassetid://15010966542",
+	LockedImage = "rbxassetid://15010967489",
+	Price = 1000,
 	Type = "Ability",
 	Activated = function(self)
 		local value = { 0.8 }
@@ -154,6 +177,9 @@ Skills.Haste = {
 	Name = "Haste",
 	Description = "Double attack and reload speed for 4 seconds.",
 	Activation = "Instant",
+	Price = 1000,
+	UnlockedImage = "",
+	LockedImage = "",
 	Type = "Ability",
 	Activated = function(self)
 		self.baseAmmoRegen /= 2
@@ -187,8 +213,24 @@ Skills.SlowField = {
 	Name = "Slow Field",
 	Description = "Release a slowing field around you, reducing enemy movement speed by 40%.",
 	Activation = "Instant",
+	UnlockedImage = "",
+	Price = 1000,
+	LockedImage = "",
 	Type = "Attack",
 	AttackData = SlowField,
 }
+
+for skill, data in pairs(Skills) do
+	if skill == "" then
+		continue
+	end
+
+	if data.LockedImage == "" then
+		warn(skill, "has no locked image")
+	end
+	if data.UnlockedImage == "" then
+		warn(skill, "has no unlocked image")
+	end
+end
 
 return Skills

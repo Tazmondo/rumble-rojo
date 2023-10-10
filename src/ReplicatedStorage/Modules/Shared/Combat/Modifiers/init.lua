@@ -271,10 +271,12 @@ Modifiers.Missile = {
 	Name = "Missile",
 	Description = "Slime Bomb detonates immediately.",
 	Price = 1000,
+	UnlockedImage = "rbxassetid://15025070101",
+	LockedImage = "rbxassetid://15024868667",
 	Modify = function(self)
 		local data = self.heroData
 		local super = data.Super.Data :: Types.ArcedData
-		super.TimeToDetonate = 0
+		super.TimeToDetonate = 0.1
 	end,
 }
 

@@ -28,6 +28,7 @@ local UserInputService = game:GetService("UserInputService")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
 local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
+local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local DataController = require(script.Parent.DataController)
 local PurchaseController = require(script.Parent.PurchaseController)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
@@ -41,6 +42,7 @@ local MatchResultsEvent = require(ReplicatedStorage.Events.Arena.MatchResultsEve
 
 local modifierTemplate = ReplicatedStorage.Assets.UI.Modifier
 local talentTemplate = ReplicatedStorage.Assets.UI.Talent
+local skillTemplate = ReplicatedStorage.Assets.UI.Skill
 
 local heroSelectOpen = false
 local displayResults = false
@@ -56,7 +58,7 @@ local displayBoost = nil :: string?
 local updateBoost = true
 
 local emptyModifier = "rbxassetid://14996185517"
-local emptySkill = "rbxassetid://14988101503"
+local emptySkill = "rbxassetid://15025136170"
 local emptyTalent = "rbxassetid://14988074815"
 
 local shouldTryHide = false
@@ -487,7 +489,9 @@ function RenderHeroSelectScreen()
 			else emptyTalent
 		selectBoostsFrame.Talent.Icon.Image = headerFrame.Talent.Modifier.Icon.Image
 
-		headerFrame.Skill.Modifier.Icon.Image = emptySkill
+		headerFrame.Skill.Modifier.Icon.Image = if heroStats and heroStats.SelectedSkill ~= ""
+			then Skills[heroStats.SelectedSkill].UnlockedImage
+			else emptySkill
 		selectBoostsFrame.Skill.Icon.Image = headerFrame.Skill.Modifier.Icon.Image
 
 		for i, item in ipairs(shopDisplay:GetChildren()) do
@@ -497,6 +501,7 @@ function RenderHeroSelectScreen()
 		end
 
 		if boostPage == "Modifier1" or boostPage == "Modifier2" then
+			local slotNumber = if boostPage == "Modifier1" then 1 else 2
 			local modifiers = heroData.Modifiers
 			for i, modifierName in ipairs(modifiers) do
 				if modifierName == "" then
@@ -526,7 +531,7 @@ function RenderHeroSelectScreen()
 			end
 
 			if displayBoost and displayBoost ~= "" then
-				local equipped = DataController.IsModifierEquipped(displayedHero, displayBoost)
+				local equipped = DataController.IsModifierEquipped(displayedHero, displayBoost, slotNumber)
 				local owned = heroStats and heroStats.Modifiers[displayBoost] == true
 
 				local modifierData = Modifiers[displayBoost]
@@ -599,6 +604,60 @@ function RenderHeroSelectScreen()
 				infoFrame.Title.Text = "Talents"
 				infoFrame.Description.Text =
 					"Talents are powerful, unique abilities with large effects. Choose them carefully."
+
+				rightSide:FindFirstChild("Remove").Visible = false
+				rightSide.Equip.Visible = false
+				rightSide.Unlock.Visible = false
+			end
+		elseif boostPage == "Skill" then
+			local skills = heroData.Skills
+			for i, skillName in ipairs(skills) do
+				if skillName == "" then
+					continue
+				end
+
+				local owned = heroStats and heroStats.Skills[skillName] == true
+				local skillData = Skills[skillName]
+
+				local newButton = skillTemplate:Clone()
+				newButton.LayoutOrder = i
+
+				newButton.Icon.Image = if owned then skillData.UnlockedImage else skillData.LockedImage
+
+				-- If selected then show the hover
+				if displayBoost == skillName then
+					newButton.Image = newButton.HoverImage
+					newButton.HoverImage = ""
+				else
+					newButton.Icon.Activated:Connect(function()
+						updateBoost = true
+						displayBoost = skillName
+					end)
+				end
+
+				newButton.Parent = shopDisplay
+			end
+
+			if displayBoost and displayBoost ~= "" then
+				local equipped = heroStats and heroStats.SelectedSkill == displayBoost
+				local owned = heroStats and heroStats.Skills[displayBoost] == true
+
+				local skillData = Skills[displayBoost]
+
+				infoFrame.Title.Text = skillData.Name
+				infoFrame.Description.Text = skillData.Description
+
+				rightSide:FindFirstChild("Remove").Visible = owned and equipped
+				rightSide.Equip.Visible = owned and not equipped
+				rightSide.Unlock.Visible = not owned and skillData.Price and heroStats
+
+				if rightSide.Unlock.Visible then
+					rightSide.Unlock.Cost.Text = skillData.Price
+				end
+			else
+				infoFrame.Title.Text = "Skills"
+				infoFrame.Description.Text =
+					"Skills, once activated, can have devastating effects for your enemies. Pick your skill carefully, and use it at the right time!"
 
 				rightSide:FindFirstChild("Remove").Visible = false
 				rightSide.Equip.Visible = false
@@ -1059,6 +1118,12 @@ function UIController:Initialize()
 				return
 			end
 			DataController.PurchaseTalent(displayedHero, displayBoost)
+		elseif boostPage == "Skill" then
+			if not DataController.CanAffordSkill(displayBoost) then
+				ShowBuyBucks()
+				return
+			end
+			DataController.PurchaseSkill(displayedHero, displayBoost)
 		end
 	end)
 
@@ -1073,6 +1138,8 @@ function UIController:Initialize()
 			DataController.SelectModifier(displayedHero, displayBoost, slot)
 		elseif boostPage == "Talent" then
 			DataController.SelectTalent(displayedHero, displayBoost)
+		elseif boostPage == "Skill" then
+			DataController.SelectSkill(displayedHero, displayBoost)
 		end
 	end)
 
@@ -1084,6 +1151,8 @@ function UIController:Initialize()
 			DataController.SelectModifier(displayedHero, "", slot)
 		elseif boostPage == "Talent" then
 			DataController.SelectTalent(displayedHero, "")
+		elseif boostPage == "Skill" then
+			DataController.SelectSkill(displayedHero, "")
 		end
 	end)
 

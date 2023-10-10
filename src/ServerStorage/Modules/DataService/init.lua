@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
+local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local Migration = require(script.Migration)
 local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
@@ -20,14 +21,18 @@ local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local PrivateDataEvent = require(ReplicatedStorage.Events.Data.PrivateDataEvent):Server()
 local GameDataEvent = require(ReplicatedStorage.Events.Data.GameDataEvent):Server()
 local PublicDataEvent = require(ReplicatedStorage.Events.Data.PublicDataEvent):Server()
+
 local PurchaseHeroEvent = require(ReplicatedStorage.Events.Data.PurchaseHeroEvent):Server()
 local PurchaseSkinEvent = require(ReplicatedStorage.Events.Data.PurchaseSkinEvent):Server()
 local PurchaseModifierEvent = require(ReplicatedStorage.Events.Data.PurchaseModifierEvent):Server()
 local PurchaseTalentEvent = require(ReplicatedStorage.Events.Data.PurchaseTalentEvent):Server()
+local PurchaseSkillEvent = require(ReplicatedStorage.Events.Data.PurchaseSkillEvent):Server()
+
 local SelectHeroEvent = require(ReplicatedStorage.Events.Data.SelectHeroEvent):Server()
 local SelectSkinEvent = require(ReplicatedStorage.Events.Data.SelectSkinEvent):Server()
 local SelectModifierEvent = require(ReplicatedStorage.Events.Data.SelectModifierEvent):Server()
 local SelectTalentEvent = require(ReplicatedStorage.Events.Data.SelectTalentEvent):Server()
+local SelectSkillEvent = require(ReplicatedStorage.Events.Data.SelectSkillEvent):Server()
 
 -- increment this to reset the datastore
 local studioPrefix = if RunService:IsStudio() then "Studio2_" else ""
@@ -380,7 +385,22 @@ function HandleSelectTalent(player, hero, talent)
 	if privateData.OwnedHeroes[hero] and (privateData.OwnedHeroes[hero].Talents[talent] or isDefault) then
 		privateData.OwnedHeroes[hero].SelectedTalent = talent
 	else
-		warn("Tried to select modifier without owning it, or the hero, or already selecting it in the other slot.")
+		warn("Tried to select talent without owning it, or the hero.")
+	end
+end
+
+function HandleSelectSkill(player, hero, skill)
+	local privateData = DataService.GetPrivateData(player):Await()
+
+	if not privateData then
+		return
+	end
+
+	local isDefault = skill == ""
+	if privateData.OwnedHeroes[hero] and (privateData.OwnedHeroes[hero].Skills[skill] or isDefault) then
+		privateData.OwnedHeroes[hero].SelectedSkill = skill
+	else
+		warn("Tried to select skill without owning it, or the hero.")
 	end
 end
 
@@ -497,6 +517,38 @@ function HandlePurchaseTalent(player, hero, talent)
 	privateData.OwnedHeroes[hero].Talents[talent] = true
 end
 
+function HandlePurchaseSkill(player, hero, skill)
+	local privateData = DataService.GetPrivateData(player):Await()
+
+	if not privateData then
+		return
+	end
+
+	local heroData = HeroDetails.HeroDetails[hero]
+	if not heroData then
+		warn("Hero does not exist", hero)
+		return
+	end
+
+	local skillData = Skills[skill]
+	if
+		not skillData
+		or not privateData.OwnedHeroes[hero]
+		or privateData.OwnedHeroes[hero].Skills[skill]
+		or not skillData.Price
+	then
+		warn("Invalid data when purchasing modifier: ", hero, skill)
+		return
+	end
+
+	if privateData.Money < skillData.Price then
+		return
+	end
+
+	privateData.Money -= skillData.Price
+	privateData.OwnedHeroes[hero].Skills[skill] = true
+end
+
 function StartEventLoop()
 	RunService.Stepped:Connect(function()
 		if scheduledUpdates.Game then
@@ -560,10 +612,13 @@ function DataService.Initialize()
 	SelectSkinEvent:On(HandleSelectSkin)
 	SelectModifierEvent:On(HandleSelectModifier)
 	SelectTalentEvent:On(HandleSelectTalent)
+	SelectSkillEvent:On(HandleSelectSkill)
+
 	PurchaseHeroEvent:On(HandlePurchaseHero)
 	PurchaseSkinEvent:On(HandlePurchaseSkin)
 	PurchaseModifierEvent:On(HandlePurchaseModifier)
 	PurchaseTalentEvent:On(HandlePurchaseTalent)
+	PurchaseSkillEvent:On(HandlePurchaseSkill)
 
 	StartEventLoop()
 end
