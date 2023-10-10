@@ -224,9 +224,8 @@ function CreateArcedAttack(
 )
 	assert(attackData.Data.AttackType == "Arced")
 
-	local pelletPart: BasePart =
-		assert(attackVFXFolder[attackData.Name], "VFX did not exist for", attackData.Name):Clone()
-	local baseRotation = pelletPart.CFrame.Rotation
+	local pelletPart: Model = assert(attackVFXFolder[attackData.Name], "VFX did not exist for", attackData.Name):Clone()
+	local baseRotation = pelletPart:GetPivot().Rotation
 
 	pelletPart:PivotTo(CFrame.new(origin.Position) * baseRotation)
 	pelletPart.Parent = workspace
@@ -260,7 +259,24 @@ function CreateArcedAttack(
 
 		SoundController:PlayGeneralAttackSound("BombTimer", anchor)
 
+		local t = 0
+		local expand = RunService.RenderStepped:Connect(function(dt)
+			t += dt
+			local progress = math.clamp(t / attackData.Data.TimeToDetonate, 0, 1)
+
+			local scaleThreshold = 0.9
+			local scaleAmount = 0.45
+			local scaleProgress = math.clamp((progress - scaleThreshold) / (1 - scaleThreshold), 0, 1)
+
+			if scaleProgress > 0 then
+				pelletPart:ScaleTo(1 + scaleProgress * scaleAmount)
+			end
+		end)
+
 		task.wait(attackData.Data.TimeToDetonate)
+
+		expand:Disconnect()
+		pelletPart:Destroy()
 
 		SoundController:PlayGeneralAttackSound("BombBlast", anchor)
 
@@ -296,7 +312,6 @@ function CreateArcedAttack(
 			end
 			onHit(hitRegisters, id, target)
 		end
-		pelletPart:Destroy()
 	end)
 end
 
