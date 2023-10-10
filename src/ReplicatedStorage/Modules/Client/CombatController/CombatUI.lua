@@ -29,6 +29,8 @@ function _initSelf(combatPlayer: CombatPlayer.CombatPlayer, character: Model)
 
 	self.skillFrame = self.attackFrame.Skill
 
+	self.skillFrame.Ready.Image = combatPlayer.skill.UnlockedImage
+
 	self.mainUI.Enabled = true
 	self.attackFrame.Visible = true
 
