@@ -58,7 +58,7 @@ Skills.Dash = {
 local BombAttack: Types.SkillData = {
 	AbilityType = "Skill" :: "Skill",
 	Name = "BirdyBomb",
-	Damage = 1500,
+	Damage = 2500,
 	Range = 0,
 
 	Data = {
@@ -197,7 +197,7 @@ Skills.Haste = {
 local SlowField: Types.SkillData = {
 	AbilityType = "Skill",
 	Name = "Slow Field",
-	Damage = 100,
+	Damage = 0,
 	Range = 0,
 
 	Data = {
