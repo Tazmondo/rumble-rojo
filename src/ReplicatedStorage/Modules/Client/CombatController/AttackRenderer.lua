@@ -228,7 +228,7 @@ function CreateArcedAttack(
 		assert(attackVFXFolder[attackData.Name], "VFX did not exist for", attackData.Name):Clone()
 	local baseRotation = pelletPart.CFrame.Rotation
 
-	pelletPart.CFrame = CFrame.new(origin.Position) * baseRotation
+	pelletPart:PivotTo(CFrame.new(origin.Position) * baseRotation)
 	pelletPart.Parent = workspace
 
 	local targetCFrame = CFrame.new(target) * origin.Rotation
@@ -244,10 +244,12 @@ function CreateArcedAttack(
 		local progress = math.clamp(timeTravelled / projectileTime, 0, 1)
 
 		-- Move projectile to end point, and have it imitate the sin curve
-		pelletPart.CFrame = origin:Lerp(targetCFrame, progress)
-				* baseRotation
-				* CFrame.Angles(math.rad(-progress * totalRotation), 0, 0)
-			+ Vector3.new(0, height * math.sin(progress * math.rad(180)))
+		pelletPart:PivotTo(
+			origin:Lerp(targetCFrame, progress)
+					* baseRotation
+					* CFrame.Angles(math.rad(-progress * totalRotation), 0, 0)
+				+ Vector3.new(0, height * math.sin(progress * math.rad(180)))
+		)
 	end)
 
 	-- Don't care about hit detection with map walls, we should handle that before the target is passed in.

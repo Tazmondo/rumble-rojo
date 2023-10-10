@@ -52,23 +52,23 @@ Skills.Dash = {
 
 local BombAttack: Types.SkillData = {
 	AbilityType = "Skill" :: "Skill",
-	Name = "Bomb",
+	Name = "BirdyBomb",
 	Damage = 1500,
-	Range = 1,
+	Range = 0,
 
 	Data = {
 		AttackType = "Arced" :: "Arced",
 		Radius = Enums.Radius.Large,
 		Height = 3,
-		Rotation = 90,
+		Rotation = 0,
 		ProjectileSpeed = 20,
 		TimeToDetonate = 1,
 	},
 }
 assert(BombAttack.Data.AttackType == "Arced")
 
-Skills.Bomb = {
-	Name = "Bomb",
+Skills.BirdyBomb = {
+	Name = "BirdyBomb",
 	Description = "Drop a bomb. Go out with a bang!",
 	Activation = "Instant",
 	Type = "Attack",
