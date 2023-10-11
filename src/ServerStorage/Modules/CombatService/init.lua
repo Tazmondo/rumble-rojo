@@ -320,9 +320,16 @@ function processHit(
 	-- Don't send the victimCombatPlayer because we'd be sending too much information over the network pointlessly.
 	local beforeState = victimCombatPlayer:GetState()
 
-	local damage = CombatPlayer.GetDamageBetween(combatPlayer, victimCombatPlayer, attackDetails, multiplier)
-		* (reflected or 1)
-	local actualDamage = victimCombatPlayer:TakeDamage(damage) -- Will update state to dead if this kills
+	local actualDamage
+	if reflected then
+		-- We need to get the damage of the original attack if it was reflected
+		local damage = CombatPlayer.GetDamageBetween(victimCombatPlayer, combatPlayer, attackDetails, multiplier)
+			* reflected
+		actualDamage = victimCombatPlayer:TakeDamage(damage) -- Will update state to dead if this kills
+	else
+		local damage = CombatPlayer.GetDamageBetween(combatPlayer, victimCombatPlayer, attackDetails, multiplier)
+		actualDamage = victimCombatPlayer:TakeDamage(damage) -- Will update state to dead if this kills
+	end
 
 	combatPlayer:DealDamage(actualDamage, victimCharacter)
 
