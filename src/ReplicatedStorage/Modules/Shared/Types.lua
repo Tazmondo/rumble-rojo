@@ -163,6 +163,8 @@ export type State = "Idle" | "Dead"
 export type CombatPlayer = {
 	heroData: HeroData,
 
+	destroyed: boolean,
+
 	baseSpeed: number,
 	baseHealth: number,
 	baseRegenRate: number,

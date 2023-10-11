@@ -88,6 +88,7 @@ function InitializeSelf(
 
 	-- We make a copy so that modifiers are able to change the attack details
 	self.heroData = TableUtil.Copy(heroData, true)
+	self.destroyed = false
 
 	self.baseAttackDamage = self.heroData.Attack.Damage
 	self.baseSuperDamage = self.heroData.Super.Damage
@@ -175,6 +176,10 @@ function CombatPlayer.new(
 		clientCombatPlayer = self :: any
 	end
 
+	self.character.Destroying:Once(function()
+		self:Destroy()
+	end)
+
 	return self :: CombatPlayer
 end
 
@@ -185,6 +190,10 @@ function CombatPlayer.newChest(health: number, model: Model): CombatPlayer
 	self.health = health
 
 	self:Update()
+
+	self.character.Destroying:Once(function()
+		self:Destroy()
+	end)
 
 	ObjectReplicationEvent:FireAll(self.character)
 
@@ -264,7 +273,7 @@ function CombatPlayer.Sync(self: CombatPlayer, funcName, ...)
 end
 
 function CombatPlayer.Update(self: CombatPlayer)
-	if RunService:IsServer() then
+	if RunService:IsServer() and not self.destroyed then
 		UpdateEvent:FireAll(self:AsUpdateData())
 	end
 end
@@ -618,6 +627,11 @@ function CombatPlayer.AddBooster(self: CombatPlayer, count: number)
 end
 
 function CombatPlayer.Destroy(self: CombatPlayer)
+	if self.destroyed then
+		return
+	end
+	self.destroyed = true
+
 	-- warn("CombatPlayer was destroyed, but this is undefined behaviour! Killing humanoid instead.")
 	-- self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 	self.character:RemoveTag(Config.CombatPlayerTag)

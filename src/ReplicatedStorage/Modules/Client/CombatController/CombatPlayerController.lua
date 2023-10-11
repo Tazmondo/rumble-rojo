@@ -16,7 +16,11 @@ local combatPlayers: { [Model]: Types.UpdateData } = {}
 CombatPlayerController.CombatPlayerAdded = Signal()
 
 function MakeNewCombatPlayer(data: Types.UpdateData)
-	print("make new combat player", data)
+	print("make new combat player")
+	if not data.Character then
+		warn("combat player update received without a character")
+		return
+	end
 	if combatPlayers[data.Character] then
 		warn("Overwriting combat player with new data")
 		return
