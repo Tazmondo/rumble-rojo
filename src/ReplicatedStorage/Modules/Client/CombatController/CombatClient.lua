@@ -17,6 +17,7 @@ local SoundController = require(ReplicatedStorage.Modules.Client.SoundController
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local AimRenderer = require(script.Parent.AimRenderer)
+local AnimationController = require(script.Parent.AnimationController)
 local AttackRenderer = require(script.Parent.AttackRenderer)
 local CombatCamera = require(script.Parent.CombatCamera)
 local CombatUI = require(script.Parent.CombatUI)
@@ -105,6 +106,8 @@ function CombatClient.new(heroName: string, modifierNames: { string }, skill: st
 	NameTag.InitFriendly(self.combatPlayer)
 
 	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer, self.character))
+
+	self.animationController = AnimationController.new(self.character)
 
 	-- Net:On("PlayerKill", function()
 	-- 	-- TODO: Render leaderboard, maybe dont do this here
@@ -452,6 +455,8 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 		else function(...)
 			self:RayHit(...)
 		end
+
+	-- AnimationController.AttemptPlay(self.animationController, "Attack")
 
 	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction)
 
