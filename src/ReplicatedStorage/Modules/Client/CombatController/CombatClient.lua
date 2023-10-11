@@ -308,7 +308,6 @@ function CombatClient.HandleMouseUp(self: CombatClient)
 
 	self.usingSuper = false
 	self.combatUI:UpdateSuperActive(self.usingSuper)
-	self.combatCamera:Shake()
 
 	while not self.completedRotation do
 		task.wait()
@@ -408,9 +407,9 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 
 	if type == "Attack" then
 		if not self.combatPlayer:CanAttack() then
-			print("Tried to attack but can't.", self.combatPlayer.ammo)
 			return
 		end
+		self.combatCamera:Shake()
 		self.combatPlayer:Attack()
 		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, false)
 		attackData = self.combatPlayer.heroData.Attack
@@ -419,6 +418,7 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 			print("Tried to super attack but can't.", self.combatPlayer.superCharge)
 			return
 		end
+		self.combatCamera:Shake()
 		self.combatPlayer:SuperAttack()
 		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, true)
 		attackData = self.combatPlayer.heroData.Super

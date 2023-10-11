@@ -9,7 +9,6 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local AccelTween = require(ReplicatedStorage.Modules.Shared.AccelTween)
 local Spring = require(ReplicatedStorage.Modules.Shared.Spring)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
 
@@ -38,7 +37,6 @@ function _initSelf()
 	self.shakeVelocity = 47.4
 
 	self.savedCFrame = CFrame.new()
-	self.accelTween = AccelTween.new(25)
 
 	self.enabled = false
 	self.transitioning = false
@@ -81,30 +79,13 @@ function CombatCamera.SetupCamera(self: CombatCamera)
 		if self.enabled and not self.transitioning then
 			local targetCFrame = self:GetCFrame()
 			local currentCFrame = self.camera.CFrame
-			local differenceVector: Vector3 = targetCFrame.Position - currentCFrame.Position
 
-			self.accelTween.p = -differenceVector.Magnitude
-
-			-- Move camera in direction of target based on current velocity of the spring. Preserve its rotation.
-			currentCFrame = CFrame.new(currentCFrame.Position + self.accelTween.v * differenceVector.Unit * dt)
-				* currentCFrame.Rotation
-
-			differenceVector = targetCFrame.Position - currentCFrame.Position
-			self.accelTween.p = -differenceVector.Magnitude
+			currentCFrame = currentCFrame:Lerp(targetCFrame, 0.05)
 
 			-- apply camera shake
-			currentCFrame *= CFrame.new(Vector3.new(0, 1, 0).Unit * self.shakeSpring.Offset)
+			currentCFrame *= CFrame.new(Vector3.new(0, 1, 0).Unit * self.shakeSpring.Offset * 2)
 
 			self.camera.CFrame = currentCFrame
-
-			-- 	-- Lerp can actually take alpha > 1, which causes camera to overshoot and mess up completely
-			-- 	local alpha = math.clamp(dt * 8.5, 0, 1)
-
-			-- 	local targetCFrame = self:GetCFrame()
-			-- local smoothCFrame = CFrame.new()
-			-- 	smoothCFrame = self.camera.CFrame:Lerp(targetCFrame, alpha)
-
-			-- 	self.camera.CFrame = smoothCFrame
 		end
 	end))
 end
@@ -132,7 +113,7 @@ function CombatCamera.Transition(self: CombatCamera, enable: boolean)
 	local initialFOV = self.camera.FieldOfView
 
 	local startTime
-	local transitionStep = RunService.Stepped:Connect(function(t: number)
+	local transitionStep = self.janitor:Add(RunService.Stepped:Connect(function(t: number)
 		if not startTime then
 			startTime = t
 		end
@@ -149,7 +130,7 @@ function CombatCamera.Transition(self: CombatCamera, enable: boolean)
 
 		self.camera.CFrame = newStartPosition:Lerp(targetCFrame, alpha)
 		self.camera.FieldOfView = initialFOV + (targetFOV - initialFOV) * alpha
-	end)
+	end))
 
 	task.delay(transitionTime, function()
 		transitionStep:Disconnect()
