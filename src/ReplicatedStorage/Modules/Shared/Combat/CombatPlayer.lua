@@ -99,6 +99,7 @@ function InitializeSelf(
 	self.baseAmmoRegen = self.heroData.Attack.AmmoRegen
 	self.baseReloadSpeed = self.heroData.Attack.ReloadSpeed
 	self.requiredSuperCharge = self.heroData.Super.Charge
+	self.skillUses = 3
 
 	modifiers.Modify(self)
 	self.modifiers = modifiers
@@ -142,7 +143,6 @@ function InitializeSelf(
 	self.skill = skill or Skill[""] -- If no skill given then use default
 	self.lastSkillTime = 0
 	self.skillActive = false
-	self.skillUses = 3
 	self.skillCooldown = Config.SkillCooldown - LATENCYALLOWANCE
 
 	self.aiming = nil
