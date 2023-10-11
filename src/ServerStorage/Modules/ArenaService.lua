@@ -204,7 +204,7 @@ function ArenaService.StartMatch()
 	local winner = nil
 
 	local map = assert(MapService:GetMap())
-	local storm = Storm.new(map)
+	local storm = Storm.new(map, ArenaService.GetRegisteredPlayersLength() <= 6)
 	storm:Start()
 
 	while

@@ -46,7 +46,7 @@ function TestPart(position: Vector3)
 	return part
 end
 
-function _self(map: Model)
+function _self(map: Model, fastMode: boolean)
 	local self = setmetatable({}, Storm)
 
 	local Add, Remove = Bin()
@@ -57,6 +57,8 @@ function _self(map: Model)
 	self.centre = map:GetPivot()
 
 	self.lastDamaged = 0
+	self.startDelay = STARTDELAY * (if fastMode then 0.2 else 1)
+	self.progressDelay = PROGRESSDELAY * (if fastMode then 0.5 else 1)
 
 	self.destroyed = false
 
@@ -69,8 +71,8 @@ function _self(map: Model)
 end
 
 -- Should only be called once map is in position!
-function Storm.new(map: Model): Storm
-	local self = _self(map)
+function Storm.new(map: Model, fastMode: boolean): Storm
+	local self = _self(map, fastMode)
 
 	return self :: Storm
 end
@@ -179,14 +181,14 @@ function Storm.DamageLoop(self: Storm)
 end
 
 function Storm.ProgressLayers(self: Storm)
-	task.wait(STARTDELAY)
+	task.wait(self.startDelay)
 
 	while self.currentLayer > MINLAYER and not self.destroyed do
 		self.currentLayer -= 1
 		for i, position in ipairs(self.layers[self.currentLayer]) do
 			self:RenderStorm(position)
 		end
-		task.wait(PROGRESSDELAY)
+		task.wait(self.progressDelay)
 		self.lastDamaged = os.clock()
 	end
 end
