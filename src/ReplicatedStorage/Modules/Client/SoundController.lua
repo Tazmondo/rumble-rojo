@@ -14,6 +14,7 @@ local AttackSoundEvent = require(ReplicatedStorage.Events.Sound.AttackSoundEvent
 
 local localPlayer = Players.LocalPlayer
 local soundFolder = ReplicatedStorage.Assets.Sounds
+local skillFolder = soundFolder.Skills
 
 local playingFolder = Instance.new("Folder")
 playingFolder.Parent = localPlayer.PlayerScripts
@@ -106,6 +107,17 @@ function SoundController:PlayHeroAttack(heroName: string, super: boolean, charac
 			assert(if super then heroSounds.Super else heroSounds.Attack, "Hero did not have attack: ", heroName, super)
 		self:_PlaySound(sound, part)
 	end
+end
+
+function SoundController:PlaySkillSound(skillName: string, character: Model)
+	local sound = skillFolder:FindFirstChild(skillName)
+	if not sound then
+		sound = skillFolder.Default
+	end
+
+	assert(character.PrimaryPart)
+
+	SoundController:_PlaySound(sound, character.PrimaryPart)
 end
 
 function SoundController:StateUpdated()

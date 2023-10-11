@@ -4,7 +4,9 @@ local VFXController = {}
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundController = require(script.Parent.SoundController)
 local CombatPlayerController = require(ReplicatedStorage.Modules.Client.CombatController.CombatPlayerController)
+local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 
 local VFXEvent = require(ReplicatedStorage.Events.VFX.VFXEvent):Client()
@@ -114,8 +116,19 @@ VFXController["Power Pill"] = StandardSkill
 
 VFXController["Heal"] = VFXController.Regen
 VFXController["Sprint"] = VFXController.Dash
+
+function VFXController.PlaySkill(character: Model, name: string, skill: Types.Skill)
+	local skillfunc = VFXController[name]
+	if skillfunc then
+		SoundController:PlaySkillSound(name, character)
+		skillfunc(character, skill)
+	end
+end
+
 function HandleVFX(character: Model, VFX: string, ...)
-	if VFXController[VFX] then
+	if Skills[VFX] then
+		VFXController.PlaySkill(character, VFX, ...)
+	elseif VFXController[VFX] then
 		VFXController[VFX](character, ...)
 	end
 end

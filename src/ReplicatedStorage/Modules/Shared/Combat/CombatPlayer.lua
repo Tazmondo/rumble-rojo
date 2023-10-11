@@ -554,8 +554,8 @@ function CombatPlayer.UseSkill(self: CombatPlayer)
 
 	if RunService:IsServer() then
 		VFXService.HandleAbility(self.player, self.character, self.skill)
-	elseif VFXController[self.skill.Name] then
-		Spawn(VFXController[self.skill.Name], self.character, self.skill)
+	else
+		Spawn(VFXController.PlaySkill, self.character, self.skill.Name, self.skill)
 	end
 
 	if self.skill.Activated then
