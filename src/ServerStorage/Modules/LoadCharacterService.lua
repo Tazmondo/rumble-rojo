@@ -98,8 +98,15 @@ function InitializeCharacter(player: Player, model: Model?, spawnPosition: CFram
 		local _, y, _ = spawnPosition.Rotation:ToEulerAnglesYXZ()
 		model:PivotTo(model:GetPivot() * CFrame.Angles(0, y, 0))
 
+		-- This prevents issues with characters being flung on spawn.
 		if model.PrimaryPart then
+			-- Before physics, freeze char
+			RunService.Stepped:Wait()
 			model.PrimaryPart.AssemblyLinearVelocity = Vector3.zero
+			model.PrimaryPart.Anchored = true
+			RunService.Heartbeat:Wait()
+			-- can thaw char after physics
+			model.PrimaryPart.Anchored = false
 		end
 
 		return model
