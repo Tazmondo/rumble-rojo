@@ -276,8 +276,8 @@ function processHit(
 	victimCharacter: Model,
 	victimCombatPlayer: CombatPlayer.CombatPlayer,
 	attackDetails: Types.AbilityData,
-	reflected: number?,
-	multiplier: number?
+	reflected: number?, -- Used for reflect skill
+	multiplier: number? -- Used for DPS effect on fields
 )
 	if
 		localTargetPosition
