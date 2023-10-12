@@ -57,7 +57,7 @@ function _self(map: Model, fastMode: boolean)
 	self.centre = map:GetPivot()
 
 	self.lastDamaged = 0
-	self.startDelay = STARTDELAY * (if fastMode then 0.2 else 1)
+	self.startDelay = STARTDELAY * (if fastMode then 0.5 else 1)
 	self.progressDelay = PROGRESSDELAY * (if fastMode then 0.5 else 1)
 
 	self.destroyed = false

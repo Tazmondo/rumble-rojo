@@ -5,7 +5,7 @@ local CONFIG = {
 	RoundLength = 400,
 
 	MinPlayers = 2,
-	MaxPlayers = 6,
+	MaxPlayers = 12,
 
 	QueueOnJoin = true,
 	LobbyMovementSpeed = 34,
@@ -19,7 +19,7 @@ local studioconfig = {
 	RoundLength = 400, -- 2mimnutes
 
 	MinPlayers = 2,
-	MaxPlayers = 6,
+	MaxPlayers = 12,
 
 	QueueOnJoin = false,
 	LobbyMovementSpeed = CONFIG.LobbyMovementSpeed,
