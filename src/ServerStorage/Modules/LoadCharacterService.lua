@@ -59,6 +59,12 @@ end
 function InitializeCharacter(player: Player, model: Model?, spawnPosition: CFrame)
 	return Future.new(function()
 		if player.Character then
+			-- We must destroy it here. If you just set it to nil, then the Destroying event does not fire. So, the client
+			-- gets confused and thinks the character has never been destroyed
+			-- This was causing a memory leak in the CombatplayerControler, as it waited for the destroying event to fire
+			-- before cleaning up the data associated with the character
+			-- but since the destroying event never fired, it never cleaned up the data
+			player.Character:Destroy()
 			player.Character = nil
 		end
 
