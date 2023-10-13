@@ -37,7 +37,7 @@ function FieldEffect.new(
 					data.Data.Effect(combatPlayer)
 				end
 
-				if data.Damage > 0 and combatPlayer:CanTakeDamage() then
+				if data.Data.Damage > 0 and combatPlayer:CanTakeDamage() then
 					OnHit(combatPlayer, dt)
 				end
 			end

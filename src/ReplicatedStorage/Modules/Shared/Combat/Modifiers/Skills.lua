@@ -59,11 +59,11 @@ Skills.Dash = {
 local BombAttack: Types.SkillData = {
 	AbilityType = "Skill" :: "Skill",
 	Name = "BirdyBomb",
-	Damage = 2500,
 	Range = 0,
 
 	Data = {
 		AttackType = "Arced" :: "Arced",
+		Damage = 2500,
 		Radius = Enums.Radius.Large,
 		Height = 3,
 		Rotation = 0,
@@ -191,11 +191,11 @@ Skills.Haste = {
 local SlowField: Types.SkillData = {
 	AbilityType = "Skill",
 	Name = "Slow Field",
-	Damage = 0,
 	Range = 0,
 
 	Data = {
 		AttackType = "Field",
+		Damage = 0,
 		Duration = 5,
 		Radius = Enums.Radius.Large,
 		Effect = function(combatPlayer)

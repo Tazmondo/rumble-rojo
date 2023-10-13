@@ -94,72 +94,81 @@ export type HeroData = {
 export type AttackData = {
 	AbilityType: "Attack",
 	Name: string,
-	Damage: number,
 	Range: number,
 	Ammo: number,
 	AmmoRegen: number,
 	ReloadSpeed: number,
 
 	Data: AttackType,
-	Chain: AttackType?,
 }
 
 export type SuperData = {
 	AbilityType: "Super",
 	Name: string,
 	Charge: number,
-	Damage: number,
 	Range: number,
 
 	Data: AttackType,
-	Chain: AttackType?,
 }
 
 export type SkillData = {
 	AbilityType: "Skill",
 	Name: string,
-	Damage: number,
 	Range: number,
 
 	Data: AttackType,
-	Chain: AttackType?,
 }
 export type ShotgunData = {
 	AttackType: "Shotgun",
 	Angle: number,
+	Damage: number,
 	ShotCount: number,
 	ProjectileSpeed: number,
 	AngleVariation: number?,
 	SpeedVariation: number?,
 	TimeBetweenShots: number?,
+
+	Chain: AttackType?,
 }
 
 export type ShotData = {
 	AttackType: "Shot",
 	ProjectileSpeed: number,
+	Damage: number,
+
+	Chain: AttackType?,
 }
 
 export type ExplosionData = {
 	AttackType: "Explosion",
 	TimeToDetonate: number,
 	Radius: number,
+	Damage: number,
+
+	Chain: AttackType?,
 }
 
 export type ArcedData = {
 	AttackType: "Arced",
 	ProjectileSpeed: number,
+	Damage: number,
 	TimeToDetonate: number, -- Can be zero for instant explosion, but allows for a grenade like effect
 	Height: number,
 	Radius: number,
 	Rotation: number?,
 	ExplosionColour: Color3,
+
+	Chain: AttackType?,
 }
 export type FieldData = {
 	AttackType: "Field",
 	Radius: number,
+	Damage: number,
 	Duration: number,
 	Effect: ((CombatPlayer) -> ())?,
 	ExpansionTime: number?,
+
+	Chain: AttackType?,
 }
 
 export type AttackTypeName = "Shot" | "Shotgun" | "Arced" | "Explosion" | "Field"

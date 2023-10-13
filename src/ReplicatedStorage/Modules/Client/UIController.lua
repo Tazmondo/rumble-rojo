@@ -400,9 +400,9 @@ function RenderHeroSelectScreen()
 		healthText = tostring(combatData.Health)
 		local attackData = combatData.Attack
 		if attackData.Data.AttackType == "Shotgun" then
-			damageText = attackData.Data.ShotCount .. " x " .. attackData.Damage
+			damageText = attackData.Data.ShotCount .. " x " .. attackData.Data.Damage
 		else
-			damageText = tostring(attackData.Damage)
+			damageText = tostring(attackData.Data.Damage)
 		end
 	else
 		healthText = "Coming soon!"

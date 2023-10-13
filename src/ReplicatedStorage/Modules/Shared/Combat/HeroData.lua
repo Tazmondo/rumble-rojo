@@ -14,7 +14,6 @@ local ChestData: Types.HeroData = {
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
 		Name = "",
-		Damage = 0,
 		Ammo = 0,
 		AmmoRegen = 0,
 		Range = 0,
@@ -22,6 +21,7 @@ local ChestData: Types.HeroData = {
 
 		Data = {
 			AttackType = "Shot" :: "Shot",
+			Damage = 0,
 			ProjectileSpeed = 0,
 		},
 	},
@@ -29,12 +29,12 @@ local ChestData: Types.HeroData = {
 		AbilityType = "Super" :: "Super",
 		Name = "",
 		Charge = 0,
-		Damage = 0,
 		Range = 0,
 		Modifiers = {},
 
 		Data = {
 			AttackType = "Shot" :: "Shot",
+			Damage = 0,
 			ProjectileSpeed = 0,
 		},
 	},
@@ -49,7 +49,6 @@ local Taz: Types.HeroData = {
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
 		Name = "Buckshot",
-		Damage = 230,
 		Ammo = 3,
 		AmmoRegen = 2,
 		Range = Enums.AttackRange.Short,
@@ -57,6 +56,7 @@ local Taz: Types.HeroData = {
 
 		Data = {
 			AttackType = "Shotgun" :: "Shotgun",
+			Damage = 230,
 			ShotCount = 10,
 			Angle = 35,
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
@@ -68,11 +68,11 @@ local Taz: Types.HeroData = {
 		AbilityType = "Super" :: "Super",
 		Name = "Super Shell",
 		Charge = 16,
-		Damage = 240,
 		Range = Enums.AttackRange.Short,
 
 		Data = {
 			AttackType = "Shotgun" :: "Shotgun",
+			Damage = 240,
 			ShotCount = 8,
 			Angle = 20,
 			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
@@ -89,7 +89,6 @@ local Frankie: Types.HeroData = {
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
 		Name = "Energy Ball",
-		Damage = 800,
 		Ammo = 3,
 		AmmoRegen = 1.5,
 		Range = Enums.AttackRange.Short, -- to account for size of projectile
@@ -97,6 +96,7 @@ local Frankie: Types.HeroData = {
 
 		Data = {
 			AttackType = "Shot" :: "Shot",
+			Damage = 800,
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 		},
 	},
@@ -104,13 +104,13 @@ local Frankie: Types.HeroData = {
 		AbilityType = "Super" :: "Super",
 		Name = "Slime Bomb",
 		Charge = 4,
-		Damage = 1500,
 		Range = Enums.AttackRange.Medium,
 
 		Data = {
 			AttackType = "Arced" :: "Arced",
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			Height = Enums.ArcHeight.Medium,
+			Damage = 1500,
 			TimeToDetonate = 0.8,
 			Radius = Enums.Radius.Medium,
 			ExplosionColour = Color3.fromRGB(122, 255, 85),
@@ -124,8 +124,7 @@ local Gobzie: Types.HeroData = {
 	MovementSpeed = Enums.MovementSpeed.Normal,
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
-		Name = "Long Shotgun",
-		Damage = 250,
+		Name = "Meat&Bone",
 		Ammo = 3,
 		AmmoRegen = 2,
 		Range = Enums.AttackRange.Short,
@@ -134,6 +133,7 @@ local Gobzie: Types.HeroData = {
 		Data = {
 			AttackType = "Shotgun",
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			Damage = 250,
 			Angle = 7,
 			ShotCount = 6,
 			TimeBetweenShots = 0.08,
@@ -142,19 +142,21 @@ local Gobzie: Types.HeroData = {
 		},
 	},
 	Super = {
-		AbilityType = "Super" :: "Super",
-		Name = "Slime Bomb",
-		Charge = 4,
-		Damage = 1500,
-		Range = Enums.AttackRange.Medium,
+		AbilityType = "Super",
+		Name = "Zombie Infection",
+		Charge = 0,
+		Range = Enums.AttackRange.Short, -- to account for size of projectile
 
 		Data = {
-			AttackType = "Arced" :: "Arced",
+			AttackType = "Shot" :: "Shot",
+			Damage = 200,
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
-			Height = Enums.ArcHeight.Medium,
-			TimeToDetonate = 0.8,
-			Radius = Enums.Radius.Medium,
-			ExplosionColour = Color3.fromRGB(122, 255, 85),
+			Chain = {
+				AttackType = "Field",
+				Damage = 50,
+				Duration = 5,
+				Radius = 10,
+			},
 		},
 	},
 }
