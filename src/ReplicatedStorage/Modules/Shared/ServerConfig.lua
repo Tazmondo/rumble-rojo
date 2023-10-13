@@ -9,7 +9,7 @@ local CONFIG = {
 
 	QueueOnJoin = true,
 	LobbyMovementSpeed = 34,
-	LobbyPlayerScale = 2,
+	LobbyPlayerScale = 4,
 	LobbyJumpPower = 65,
 }
 
