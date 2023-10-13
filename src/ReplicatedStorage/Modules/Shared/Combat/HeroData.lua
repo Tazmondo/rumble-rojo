@@ -128,7 +128,7 @@ local Gobzie: Types.HeroData = {
 		Damage = 250,
 		Ammo = 3,
 		AmmoRegen = 2,
-		Range = Enums.AttackRange.Medium,
+		Range = Enums.AttackRange.Short,
 		ReloadSpeed = 0.5,
 
 		Data = {
@@ -137,8 +137,8 @@ local Gobzie: Types.HeroData = {
 			Angle = 7,
 			ShotCount = 6,
 			TimeBetweenShots = 0.1,
-			SpeedVariation = 0,
-			AngleVariation = 3.5,
+			SpeedVariation = 2,
+			AngleVariation = 2,
 		},
 	},
 	Super = {

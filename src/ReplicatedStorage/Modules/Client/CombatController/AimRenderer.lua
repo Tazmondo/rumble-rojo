@@ -15,11 +15,10 @@ local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
 
-local aimPartTemplates: { [Types.AttackTypeName]: Instance } = {
-	Shotgun = GeneralVFX.AimCone,
-	Shot = GeneralVFX.AimRectangle,
-	Arced = GeneralVFX.AimCircle,
-}
+assert(GeneralVFX.AimCone)
+assert(GeneralVFX.AimConeSquare)
+assert(GeneralVFX.AimRectangle)
+assert(GeneralVFX.AimCircle)
 
 function AimRenderer.new(
 	attackData: Types.AbilityData,
@@ -43,13 +42,25 @@ function AimRenderer.new(
 	self.target = self.HRP.Position
 
 	-- Aim part whose position is always below the HRP
-	self.aimPart = self.janitor:Add(aimPartTemplates[attackData.Data.AttackType]:Clone()) :: BasePart
+	local aimpart
+	if attackData.Data.AttackType == "Shotgun" then
+		if attackData.Data.Angle <= 10 then
+			aimpart = GeneralVFX.AimConeSquare
+		else
+			aimpart = GeneralVFX.AimCone
+		end
+	elseif attackData.Data.AttackType == "Arced" then
+		aimpart = GeneralVFX.AimCircle
+	elseif attackData.Data.AttackType == "Shot" then
+		aimpart = GeneralVFX.AimRectangle
+	end
+	self.aimPart = self.janitor:Add(aimpart:Clone()) :: BasePart
 	self.aimPart.Parent = workspace
 
 	-- Aim part whose position follows mouse
 	self.targetedAimPart = nil :: BasePart?
 	if attackData.Data.AttackType == "Arced" then
-		local part = self.janitor:Add(aimPartTemplates["Arced" :: "Arced"]:Clone()) :: BasePart
+		local part = self.janitor:Add(GeneralVFX.AimCircle:Clone()) :: BasePart
 		self.targetedAimPart = part
 
 		part.Parent = workspace
