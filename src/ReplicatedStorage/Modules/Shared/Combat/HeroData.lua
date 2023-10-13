@@ -136,7 +136,7 @@ local Gobzie: Types.HeroData = {
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			Angle = 7,
 			ShotCount = 6,
-			TimeBetweenShots = 0.1,
+			TimeBetweenShots = 0.08,
 			SpeedVariation = 2,
 			AngleVariation = 2,
 		},
