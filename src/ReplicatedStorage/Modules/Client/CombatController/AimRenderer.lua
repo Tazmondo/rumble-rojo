@@ -11,7 +11,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GeneralVFX = ReplicatedStorage.Assets.VFX.General
 
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
-local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
@@ -115,7 +114,7 @@ function AimRenderer.StartRendering(self: AimRenderer)
 		if self.attackData.Data.AttackType == "Shotgun" then
 			local data = self.attackData.Data
 
-			local angle = data.Angle + Config.ShotgunRandomSpread * 2
+			local angle = data.Angle + (data.AngleVariation or 0) * 2
 			depth = self.attackData.Range
 			width = 2 * depth * math.sin(math.rad(angle / 2)) -- horizontal distance of a sector
 		elseif self.attackData.Data.AttackType == "Shot" then

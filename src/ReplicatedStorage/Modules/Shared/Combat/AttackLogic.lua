@@ -5,7 +5,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local CombatPlayer = require(script.Parent.CombatPlayer)
-local Config = require(script.Parent.Config)
 
 local AttackLogic = {}
 
@@ -27,14 +26,7 @@ function AttackLogic.MakeAttack(
 	end
 
 	if attackData.Data.AttackType == "Shotgun" then
-		return AttackLogic.Shotgun(
-			attackData.Data.Angle,
-			attackData.Data.ShotCount,
-			attackData.Data.ProjectileSpeed,
-			origin,
-			seed,
-			idFunction
-		)
+		return AttackLogic.Shotgun(attackData.Data, origin, seed, idFunction)
 	elseif attackData.Data.AttackType == "Shot" then
 		return AttackLogic.Shot(origin, idFunction())
 	elseif attackData.Data.AttackType == "Arced" then
@@ -59,9 +51,7 @@ export type ShotDetails = {
 }
 
 function AttackLogic.Shotgun(
-	angleSpread: number,
-	pelletCount: number,
-	basePelletSpeed: number,
+	data: Types.ShotgunData,
 	origin: CFrame,
 	seed: number?,
 	idFunction: IdFunction?
@@ -70,16 +60,19 @@ function AttackLogic.Shotgun(
 	local random = Random.new(seed)
 	local pellets = {}
 
-	for pellet = 1, pelletCount do
-		local decidedAngle = (-angleSpread / 2) + (angleSpread / (pelletCount - 1)) * (pellet - 1)
-		local randomAngle = random:NextNumber(-Config.ShotgunRandomSpread, Config.ShotgunRandomSpread)
+	for pellet = 1, data.ShotCount do
+		local decidedAngle = (-data.Angle / 2) + (data.Angle / (data.ShotCount - 1)) * (pellet - 1)
+
+		local randomAngleVariation = data.AngleVariation or 0
+		local randomAngle = random:NextNumber(-randomAngleVariation, randomAngleVariation)
 
 		local originalCFrame = origin
 		local rotatedCFrame = originalCFrame * CFrame.Angles(0, math.rad(decidedAngle + randomAngle), 0)
 
 		local id = if idFunction then idFunction() else 1
 
-		local speed = math.max(1, basePelletSpeed + random:NextNumber(-5, 5))
+		local speedVariation = data.SpeedVariation or 0
+		local speed = math.max(1, data.ProjectileSpeed + random:NextNumber(-speedVariation, speedVariation))
 
 		pellets[pellet] = {
 			CFrame = rotatedCFrame,

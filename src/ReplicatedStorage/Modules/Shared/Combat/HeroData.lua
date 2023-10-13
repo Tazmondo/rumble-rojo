@@ -60,6 +60,8 @@ local Taz: Types.HeroData = {
 			ShotCount = 10,
 			Angle = 35,
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			AngleVariation = 2,
+			SpeedVariation = 5,
 		},
 	},
 	Super = {
@@ -74,6 +76,8 @@ local Taz: Types.HeroData = {
 			ShotCount = 8,
 			Angle = 20,
 			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+			AngleVariation = 2,
+			SpeedVariation = 5,
 		},
 	},
 }
@@ -121,7 +125,7 @@ local Gobzie: Types.HeroData = {
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
 		Name = "Long Shotgun",
-		Damage = 300,
+		Damage = 450,
 		Ammo = 3,
 		AmmoRegen = 2,
 		Range = Enums.AttackRange.Medium,
@@ -129,10 +133,12 @@ local Gobzie: Types.HeroData = {
 
 		Data = {
 			AttackType = "Shotgun",
-			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
-			Angle = 10,
-			ShotCount = 4,
-			TimeBetweenShots = 0.2,
+			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+			Angle = 7,
+			ShotCount = 6,
+			TimeBetweenShots = 0.1,
+			SpeedVariation = 0,
+			AngleVariation = 3.5,
 		},
 	},
 	Super = {

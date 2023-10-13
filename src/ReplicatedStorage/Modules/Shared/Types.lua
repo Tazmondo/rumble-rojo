@@ -128,6 +128,8 @@ export type ShotgunData = {
 	Angle: number,
 	ShotCount: number,
 	ProjectileSpeed: number,
+	AngleVariation: number?,
+	SpeedVariation: number?,
 	TimeBetweenShots: number?,
 }
 
