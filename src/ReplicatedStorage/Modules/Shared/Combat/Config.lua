@@ -12,6 +12,9 @@ local Config = {
 	-- Default: 60
 	MaxAttackTimeout = 60,
 
+	-- Time taken for field to expand to its full radius
+	FieldExpansionTime = 0.4,
+
 	-- Tag applied to all valid combat players, change if it conflicts
 	CombatPlayerTag = "CombatPlayer",
 

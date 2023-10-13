@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
+local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local FieldEffect = {}
 
@@ -14,6 +15,9 @@ function FieldEffect.new(
 )
 	assert(data.Data.AttackType == "Field")
 
+	local start = os.clock()
+	local expansionTime = data.Data.ExpansionTime or Config.FieldExpansionTime
+
 	local conn = RunService.PostSimulation:Connect(function(dt)
 		debug.profilebegin("FieldEffect")
 		for character, combatPlayer in pairs(combatPlayers) do
@@ -21,11 +25,14 @@ function FieldEffect.new(
 				continue
 			end
 
+			local expansionProgress = math.clamp((os.clock() - start) / expansionTime, 0, 1)
+			local currentRadius = data.Data.Radius * expansionProgress
+
 			local charPosition = character:GetPivot().Position
 			local differenceXZ = (charPosition - origin) * Vector3.new(1, 0, 1)
 
 			-- We add a small amount here to account for lag
-			if differenceXZ.Magnitude <= data.Data.Radius + 3 then
+			if differenceXZ.Magnitude <= currentRadius + 3 then
 				if data.Data.Effect then
 					data.Data.Effect(combatPlayer)
 				end
@@ -38,7 +45,7 @@ function FieldEffect.new(
 		debug.profileend()
 	end)
 
-	task.delay(data.Data.Duration, function()
+	task.delay(data.Data.Duration + expansionTime, function()
 		conn:Disconnect()
 	end)
 end

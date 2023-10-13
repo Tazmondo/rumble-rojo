@@ -159,6 +159,7 @@ export type FieldData = {
 	Radius: number,
 	Duration: number,
 	Effect: ((CombatPlayer) -> ())?,
+	ExpansionTime: number?,
 }
 
 export type AttackTypeName = "Shot" | "Shotgun" | "Arced" | "Explosion" | "Field"

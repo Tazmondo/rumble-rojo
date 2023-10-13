@@ -9,6 +9,7 @@ local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local CombatPlayerController = require(script.Parent.CombatPlayerController)
 local SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
@@ -101,11 +102,19 @@ function InitializeHitboxParams(raycastHitbox, raycastParams: RaycastParams): ni
 	return
 end
 
-function TriggerAllDescendantParticleEmitters(instance: Instance, enable: boolean, newColour: Color3?)
+function TriggerAllDescendantParticleEmitters(
+	instance: Instance,
+	enable: boolean,
+	newColour: Color3?,
+	makeLocked: boolean?
+)
 	for i, v in pairs(instance:GetDescendants()) do
 		if v:IsA("ParticleEmitter") then
 			if newColour then
 				v.Color = ColorSequence.new(newColour)
+			end
+			if makeLocked then
+				v.LockedToPart = true
 			end
 			local count = v:GetAttribute("EmitCount")
 			v:Emit(count or 1)
@@ -344,17 +353,34 @@ end
 function CreateFieldAttack(origin: CFrame, radius: number, name: string, duration: number)
 	-- Don't pass in an on-hit, as field effect hitboxes are handled by the server
 
+	local fieldExpansionTime = Config.FieldExpansionTime
+
 	local VFX = attackVFXFolder[name]:Clone() :: BasePart
 
 	VFX:PivotTo(origin + Vector3.new(0, 0.1, 0))
 
-	ScaleWithAttachments(VFX, Vector3.new(radius * 2, VFX.Size.Y, radius * 2))
-
 	VFX.Name = name
 	VFX.Parent = partFolder
-	TriggerAllDescendantParticleEmitters(VFX, true)
+	TriggerAllDescendantParticleEmitters(VFX, true, nil, true)
 
-	task.delay(duration, function()
+	local start = os.clock()
+
+	local expand
+	expand = RunService.PreRender:Connect(function()
+		local progress = math.clamp((os.clock() - start) / fieldExpansionTime, 0, 1)
+
+		local tweenedProgress = TweenService:GetValue(progress, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+		local currentRadius = tweenedProgress * radius
+
+		ScaleWithAttachments(VFX, Vector3.new(currentRadius * 2, VFX.Size.Y, currentRadius * 2))
+
+		if progress == 1 then
+			expand:Disconnect()
+		end
+	end)
+
+	task.delay(duration + fieldExpansionTime, function()
 		VFX:Destroy()
 	end)
 end
