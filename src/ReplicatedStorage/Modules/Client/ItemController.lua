@@ -150,7 +150,7 @@ function HandleItemPickup(id: number, part: BasePart)
 	end
 
 	item.Enabled = false
-	RenderAbsorption(item.Item, part)
+	RenderAbsorption(item.Item, part):Await()
 	spawnedItems[id] = nil
 	item.Item:Destroy()
 end
