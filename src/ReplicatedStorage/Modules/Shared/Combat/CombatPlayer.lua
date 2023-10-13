@@ -320,7 +320,7 @@ function CombatPlayer.IsDead(self: CombatPlayer)
 	return self.state == "Dead"
 end
 
-function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value: any?, delay: number)
+function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value: any?, delay: number?)
 	self:Sync("SetStatusEffect", effect, value)
 	if value then
 		local save = { value }

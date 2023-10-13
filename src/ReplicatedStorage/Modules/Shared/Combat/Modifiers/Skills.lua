@@ -167,18 +167,24 @@ Skills.Reflect = {
 
 Skills.Haste = {
 	Name = "Haste",
-	Description = "Double attack and reload speed for 4 seconds.",
+	Description = "Increase attack and reload speed for 3 seconds.",
 	Activation = "Instant",
 	Price = 900,
 	UnlockedImage = "rbxassetid://15025262481",
 	LockedImage = "rbxassetid://15025263176",
-	Length = 4,
+	Length = 3,
 	Type = "Ability",
 	Activated = function(self)
-		self.baseAmmoRegen /= 2
-		self.baseReloadSpeed /= 2
+		self.baseAmmoRegen *= 0.5
+		self.baseReloadSpeed *= 0.8
 
-		self:SetStatusEffect("Haste", true, 4)
+		self:SetStatusEffect("Haste", true)
+		task.delay(3, function()
+			self.baseAmmoRegen /= 0.5
+			self.baseReloadSpeed /= 0.8
+
+			self:SetStatusEffect("Haste")
+		end)
 	end,
 }
 

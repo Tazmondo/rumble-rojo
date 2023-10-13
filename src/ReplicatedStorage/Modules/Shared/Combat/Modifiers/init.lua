@@ -269,7 +269,7 @@ Modifiers.Slimed = {
 
 Modifiers.Missile = {
 	Name = "Missile",
-	Description = "Slime Bomb detonates immediately.",
+	Description = "Slime Bomb detonates almost immediately, but has a smaller explosion radius and lower travel speed.",
 	Price = 1000,
 	UnlockedImage = "rbxassetid://15025070101",
 	LockedImage = "rbxassetid://15024868667",
