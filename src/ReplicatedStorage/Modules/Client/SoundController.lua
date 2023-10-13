@@ -20,8 +20,6 @@ local playingFolder = Instance.new("Folder")
 playingFolder.Parent = localPlayer.PlayerScripts
 playingFolder.Name = "PlayingSounds"
 
--- Index is original, value is clone
-local playingSounds: { [Sound]: Sound } = {}
 local ambience: Sound? = nil
 local muted: boolean = false
 
@@ -52,27 +50,19 @@ end
 function SoundController:_PlaySound(sound: Sound, anchor: Instance?)
 	print("Playing", sound.Name, "in", anchor)
 	assert(sound, "Nil sound passed to PlaySound " .. sound.Name)
-	local clonedSound = playingSounds[sound]
-	if clonedSound then
-		clonedSound:Destroy()
-		playingSounds[sound] = nil
-	end
 
-	clonedSound = sound:Clone()
+	local clonedSound = sound:Clone()
 	if anchor then
 		clonedSound.Parent = anchor
 	else
 		clonedSound.Parent = playingFolder
 	end
 
-	playingSounds[sound] = clonedSound
 	task.spawn(function()
+		clonedSound.Looped = false
 		clonedSound:Play()
-		if not clonedSound.Looped then
-			clonedSound.Ended:Wait()
-			clonedSound:Destroy()
-			playingSounds[sound] = nil
-		end
+		clonedSound.Ended:Wait()
+		clonedSound:Destroy()
 	end)
 end
 
