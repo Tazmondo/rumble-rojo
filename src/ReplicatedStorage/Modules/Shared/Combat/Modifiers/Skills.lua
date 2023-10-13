@@ -175,12 +175,12 @@ Skills.Haste = {
 	Length = 3,
 	Type = "Ability",
 	Activated = function(self)
-		self.baseAmmoRegen *= 0.5
+		self.baseAmmoRegen *= 0.65
 		self.baseReloadSpeed *= 0.8
 
 		self:SetStatusEffect("Haste", true)
 		task.delay(3, function()
-			self.baseAmmoRegen /= 0.5
+			self.baseAmmoRegen /= 0.65
 			self.baseReloadSpeed /= 0.8
 
 			self:SetStatusEffect("Haste")
