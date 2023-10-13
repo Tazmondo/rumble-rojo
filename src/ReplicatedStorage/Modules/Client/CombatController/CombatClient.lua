@@ -30,6 +30,7 @@ local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
 local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
+local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
 local SkillAbilityEvent = require(ReplicatedStorage.Events.Combat.SkillAbilityEvent):Client()
@@ -140,8 +141,10 @@ end
 -- we already check if the hit is a combatplayer before this function is called
 function CombatClient.RayHit(self: CombatClient, instance: BasePart, position: Vector3, id: number)
 	-- Wait to make sure server has
-	task.wait()
-	HitEvent:Fire(instance, position, id)
+	Spawn(function()
+		task.wait()
+		HitEvent:Fire(instance, position, id)
+	end)
 end
 
 function CombatClient.ExplosionHit(

@@ -13,7 +13,7 @@ local arenaFolder = workspace:WaitForChild("Arena")
 type IdFunction = () -> number
 
 function AttackLogic.MakeAttack(
-	combatPlayer: CombatPlayer.CombatPlayer,
+	combatPlayer: CombatPlayer.CombatPlayer?,
 	origin: CFrame,
 	attackData,
 	target: Vector3?,
@@ -22,7 +22,11 @@ function AttackLogic.MakeAttack(
 	attackData = attackData :: Types.AbilityData
 
 	local idFunction: any = function()
-		return combatPlayer:GetNextAttackId()
+		if combatPlayer then
+			return combatPlayer:GetNextAttackId()
+		else
+			return 0
+		end
 	end
 
 	if attackData.Data.AttackType == "Shotgun" then

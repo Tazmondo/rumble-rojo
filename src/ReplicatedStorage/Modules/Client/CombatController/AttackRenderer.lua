@@ -30,6 +30,9 @@ local attackVFXFolder = ReplicatedStorage.Assets.VFX.Attack
 local partFolder = Instance.new("Folder", workspace)
 partFolder.Name = "Part Folder"
 
+local arena = assert(workspace:FindFirstChild("Arena"))
+local lobby = assert(workspace:FindFirstChild("Lobby"))
+
 local cylinderTemplate = assert(ReplicatedStorage.Assets.Cylinder, "Could not find cylinder hitbox part!") :: BasePart
 
 local VALIDPARTS = {
@@ -90,6 +93,24 @@ function GetRaycastParams(excludeCharacter: Model?)
 	return raycastParams
 end
 
+function GetArenaCastParams()
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Include
+
+	raycastParams.FilterDescendantsInstances = { arena, lobby } -- Include the lobby for testing purposes
+
+	return raycastParams
+end
+
+function GetFloor(position: Vector3)
+	local cast = workspace:Raycast(position, Vector3.new(0, -20, 0), GetArenaCastParams())
+	if cast then
+		return cast.Position
+	else
+		return nil
+	end
+end
+
 function InitializeHitboxParams(raycastHitbox, raycastParams: RaycastParams): nil
 	raycastHitbox.RaycastParams = raycastParams
 	raycastHitbox.Visualizer = RunService:IsStudio()
@@ -148,53 +169,71 @@ function CreateAttackProjectile(
 	id: number,
 	onHit: HitFunction?
 )
-	local pelletPart: BasePart = attackVFXFolder[attackData.Name]:Clone()
-	pelletPart.CFrame = origin
+	return Future.new(function()
+		local pelletPart: PVInstance = attackVFXFolder[attackData.Name]:Clone()
+		pelletPart:PivotTo(origin)
 
-	local velocityVector = origin.LookVector * speed
-	pelletPart.Anchored = false
-	pelletPart.Parent = partFolder
+		pelletPart.Parent = partFolder
 
-	local attachment = Instance.new("Attachment", pelletPart)
-	local linearVelocity = Instance.new("LinearVelocity", pelletPart)
-	linearVelocity.MaxForce = math.huge
-	linearVelocity.Attachment0 = attachment
-	linearVelocity.VectorVelocity = velocityVector
+		TriggerAllDescendantParticleEmitters(pelletPart, true)
 
-	TriggerAllDescendantParticleEmitters(pelletPart, true)
+		local sizeVector = if pelletPart:IsA("BasePart")
+			then pelletPart.Size
+			elseif pelletPart:IsA("Model") then pelletPart:GetExtentsSize()
+			else Vector3.zero
+		local projectileSize = sizeVector.Z
+		local projectileTime = (attackData.Range - 1 - sizeVector.Z / 2) / speed
 
-	local projectileSize = pelletPart.Size.Z
-	local projectileTime = (attackData.Range - 1 - pelletPart.Size.Z / 2) / speed
+		local destroyed = false
+		local hitPos = nil
 
-	local destroyed = false
-
-	local function destroyBullet()
-		if not destroyed then
-			destroyed = true
-			RenderBulletHit(pelletPart.Position, projectileSize)
-			pelletPart:Destroy()
-		end
-	end
-
-	-- assumes physics doesnt drop any frames, which could result in range being reduced when laggy
-	task.delay(projectileTime, destroyBullet)
-
-	local hitbox = RaycastHitbox.new(pelletPart)
-	InitializeHitboxParams(hitbox, GetRaycastParams(player.Character))
-	hitbox:HitStart()
-
-	hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult, group: string)
-		if destroyed then
-			return
+		local function destroyBullet()
+			if not destroyed then
+				destroyed = true
+				RenderBulletHit(pelletPart:GetPivot().Position, projectileSize)
+				if not hitPos then
+					hitPos = pelletPart:GetPivot()
+				end
+				pelletPart:Destroy()
+			end
 		end
 
-		local character = AttackRenderer.GetCombatPlayerFromValidPart(hitPart)
-		if group ~= "nocollide" or character then
-			destroyBullet()
+		local start = os.clock()
+		local stepped
+		stepped = RunService.PreSimulation:Connect(function(dt)
+			pelletPart:PivotTo(
+				pelletPart:GetPivot() * CFrame.new(0, 0, -speed * dt) * CFrame.Angles(0, 0, dt * math.rad(270))
+			)
+			if os.clock() - start > projectileTime then
+				stepped:Disconnect()
+				destroyBullet()
+			end
+		end)
+
+		local hitbox = RaycastHitbox.new(pelletPart)
+		InitializeHitboxParams(hitbox, GetRaycastParams(player.Character))
+		hitbox:HitStart()
+
+		hitbox.OnHit:Connect(function(hitPart: BasePart, _: nil, result: RaycastResult, group: string)
+			if destroyed then
+				return
+			end
+
+			local character = AttackRenderer.GetCombatPlayerFromValidPart(hitPart)
+			if onHit and character then
+				hitPos = CFrame.new(result.Position) * pelletPart:GetPivot().Rotation
+				onHit(hitPart, result.Position, id)
+			end
+
+			if group ~= "nocollide" or character then
+				destroyBullet()
+			end
+		end)
+
+		while not hitPos do
+			task.wait()
 		end
-		if onHit and character then
-			onHit(hitPart, result.Position, id)
-		end
+		return hitPos
 	end)
 end
 
@@ -396,6 +435,8 @@ function AttackRenderer.RenderAttack(
 	assert(attackDetails, "Called attack renderer without providing attack details")
 
 	return Future.new(function()
+		local endCFrame
+
 		if attackData.Data.AttackType == "Shotgun" then
 			local details = attackDetails :: AttackLogic.ShotgunDetails
 
@@ -417,14 +458,14 @@ function AttackRenderer.RenderAttack(
 		elseif attackData.Data.AttackType == "Shot" then
 			local details = attackDetails :: AttackLogic.ShotDetails
 
-			CreateAttackProjectile(
+			endCFrame = CreateAttackProjectile(
 				player,
 				attackData,
 				details.origin,
 				attackData.Data.ProjectileSpeed,
 				details.id,
 				onHit :: HitFunction?
-			)
+			):Await()
 		elseif attackData.Data.AttackType == "Arced" then
 			local details = attackDetails :: AttackLogic.ArcDetails
 
@@ -441,6 +482,29 @@ function AttackRenderer.RenderAttack(
 		elseif attackData.Data.AttackType == "Field" then
 			local details = attackDetails :: AttackLogic.FieldDetails
 			CreateFieldAttack(details.origin, attackData.Data.Radius, attackData.Name, attackData.Data.Duration)
+		end
+
+		local chainAttack = attackData.Data.Chain
+		if chainAttack and endCFrame then
+			local newData: any = table.clone(attackData)
+
+			newData.Data = newData.Data.Chain
+			newData.Name = newData.Name .. "_Chain"
+
+			local newData = newData :: Types.AbilityData
+
+			-- Since fields expect origin to be on the floor, we need to adjust it here
+			if newData.Data.AttackType == "Field" then
+				local floorPos = GetFloor(endCFrame.Position)
+				if floorPos then
+					endCFrame = CFrame.new(floorPos)
+				end
+			end
+
+			local newDetails = AttackLogic.MakeAttack(nil, endCFrame, newData, endCFrame.Position)
+
+			print("rendering chain", newDetails)
+			AttackRenderer.RenderAttack(player, newData, endCFrame, newDetails, onHit, originPart)
 		end
 	end)
 end
