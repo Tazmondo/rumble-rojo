@@ -47,7 +47,10 @@ function ArenaService.HandleResults(player)
 		DataService.AddKills(privateData, battleData.Kills)
 
 		privateData.Money += money
-		privateData.OwnedHeroes[battleData.Hero].Trophies += trophies
+
+		-- Do not let hero trophies go below 0
+		privateData.OwnedHeroes[battleData.Hero].Trophies =
+			math.max(0, privateData.OwnedHeroes[battleData.Hero].Trophies + trophies)
 
 		privateData.Stats.KillStreak += battleData.Kills
 		privateData.Stats.BestKillStreak = math.max(privateData.Stats.BestKillStreak, privateData.Stats.KillStreak)

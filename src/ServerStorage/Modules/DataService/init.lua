@@ -69,6 +69,9 @@ function CorrectOwnedHero(heroData: HeroDetails.Hero, ownedHero: Data.OwnedHeroD
 	end
 	local ownedHero = ownedHero :: Data.OwnedHeroData
 
+	-- Do not allow negative trophy count for heroes
+	ownedHero.Trophies = math.max(0, ownedHero.Trophies)
+
 	for skinName, skinData in pairs(heroData.Skins) do
 		if skinData.Price == 0 then
 			ownedHero.Skins[skinName] = true
