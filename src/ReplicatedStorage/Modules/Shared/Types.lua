@@ -22,7 +22,7 @@ export type KillData = {
 	Attack: AbilityData?,
 }
 
-export type Attack = {
+export type Bullet = {
 	AttackId: number,
 	FiredTime: number,
 	FiredCFrame: CFrame,
@@ -100,6 +100,7 @@ export type AttackData = {
 	ReloadSpeed: number,
 
 	Data: AttackType,
+	Chain: AttackType?,
 }
 
 export type SuperData = {
@@ -110,6 +111,7 @@ export type SuperData = {
 	Range: number,
 
 	Data: AttackType,
+	Chain: AttackType?,
 }
 
 export type SkillData = {
@@ -119,12 +121,14 @@ export type SkillData = {
 	Range: number,
 
 	Data: AttackType,
+	Chain: AttackType?,
 }
 export type ShotgunData = {
 	AttackType: "Shotgun",
 	Angle: number,
 	ShotCount: number,
 	ProjectileSpeed: number,
+	TimeBetweenShots: number?,
 }
 
 export type ShotData = {
@@ -205,7 +209,7 @@ export type CombatPlayer = {
 	statusEffects: { [string]: { any } },
 
 	attackId: number,
-	attacks: { [number]: Attack },
+	attacks: { [number]: Bullet },
 	aiming: string?,
 
 	DamageDealtSignal: Signal,

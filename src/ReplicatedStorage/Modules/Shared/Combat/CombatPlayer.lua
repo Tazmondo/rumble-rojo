@@ -138,7 +138,7 @@ function InitializeSelf(
 	self.state = "Idle"
 	self.lastAttackTime = 0 -- os.clock based
 	self.attackId = 1
-	self.attacks = {} :: { [number]: Types.Attack }
+	self.attacks = {} :: { [number]: Types.Bullet }
 	self.player = player
 
 	self.skill = skill or Skill[""] -- If no skill given then use default

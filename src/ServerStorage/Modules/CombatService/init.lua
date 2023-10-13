@@ -396,7 +396,7 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 
 	local attackDetails = combatPlayer.attacks[attackId]
 	if not attackDetails then
-		warn("Invalid attack id for hit given", attackId)
+		warn("Invalid attack id for hit given")
 		return
 	end
 	combatPlayer.attacks[attackId] = nil

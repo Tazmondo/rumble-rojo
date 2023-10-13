@@ -42,77 +42,121 @@ local ChestData: Types.HeroData = {
 
 ChestData = table.freeze(ChestData)
 
+local Taz: Types.HeroData = {
+	Name = "Taz",
+	Health = 3800,
+	MovementSpeed = Enums.MovementSpeed.Normal,
+	Attack = {
+		AbilityType = "Attack" :: "Attack",
+		Name = "Buckshot",
+		Damage = 230,
+		Ammo = 3,
+		AmmoRegen = 2,
+		Range = Enums.AttackRange.Short,
+		ReloadSpeed = 0.5,
+
+		Data = {
+			AttackType = "Shotgun" :: "Shotgun",
+			ShotCount = 10,
+			Angle = 35,
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+		},
+	},
+	Super = {
+		AbilityType = "Super" :: "Super",
+		Name = "Super Shell",
+		Charge = 16,
+		Damage = 240,
+		Range = Enums.AttackRange.Short,
+
+		Data = {
+			AttackType = "Shotgun" :: "Shotgun",
+			ShotCount = 8,
+			Angle = 20,
+			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+		},
+	},
+}
+
+local Frankie: Types.HeroData = {
+	Name = "Frankie",
+	Health = 4100,
+	MovementSpeed = Enums.MovementSpeed.Normal,
+	Attack = {
+		AbilityType = "Attack" :: "Attack",
+		Name = "Energy Ball",
+		Damage = 800,
+		Ammo = 3,
+		AmmoRegen = 1.5,
+		Range = Enums.AttackRange.Short, -- to account for size of projectile
+		ReloadSpeed = 0.5,
+
+		Data = {
+			AttackType = "Shot" :: "Shot",
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+		},
+	},
+	Super = {
+		AbilityType = "Super" :: "Super",
+		Name = "Slime Bomb",
+		Charge = 4,
+		Damage = 1500,
+		Range = Enums.AttackRange.Medium,
+
+		Data = {
+			AttackType = "Arced" :: "Arced",
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			Height = Enums.ArcHeight.Medium,
+			TimeToDetonate = 0.8,
+			Radius = Enums.Radius.Medium,
+			ExplosionColour = Color3.fromRGB(122, 255, 85),
+		},
+	},
+}
+
+local Gobzie: Types.HeroData = {
+	Name = "Frankie",
+	Health = 4100,
+	MovementSpeed = Enums.MovementSpeed.Normal,
+	Attack = {
+		AbilityType = "Attack" :: "Attack",
+		Name = "Long Shotgun",
+		Damage = 300,
+		Ammo = 3,
+		AmmoRegen = 2,
+		Range = Enums.AttackRange.Medium,
+		ReloadSpeed = 0.5,
+
+		Data = {
+			AttackType = "Shotgun",
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			Angle = 10,
+			ShotCount = 4,
+			TimeBetweenShots = 0.2,
+		},
+	},
+	Super = {
+		AbilityType = "Super" :: "Super",
+		Name = "Slime Bomb",
+		Charge = 4,
+		Damage = 1500,
+		Range = Enums.AttackRange.Medium,
+
+		Data = {
+			AttackType = "Arced" :: "Arced",
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
+			Height = Enums.ArcHeight.Medium,
+			TimeToDetonate = 0.8,
+			Radius = Enums.Radius.Medium,
+			ExplosionColour = Color3.fromRGB(122, 255, 85),
+		},
+	},
+}
+
 local HeroData: { [string]: Types.HeroData } = {
-	Taz = {
-		Name = "Taz",
-		Health = 3800,
-		MovementSpeed = Enums.MovementSpeed.Normal,
-		Attack = {
-			AbilityType = "Attack" :: "Attack",
-			Name = "Buckshot",
-			Damage = 230,
-			Ammo = 3,
-			AmmoRegen = 2,
-			Range = Enums.AttackRange.Short,
-			ReloadSpeed = 0.5,
-
-			Data = {
-				AttackType = "Shotgun" :: "Shotgun",
-				ShotCount = 10,
-				Angle = 35,
-				ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
-			},
-		},
-		Super = {
-			AbilityType = "Super" :: "Super",
-			Name = "Super Shell",
-			Charge = 16,
-			Damage = 240,
-			Range = Enums.AttackRange.Short,
-
-			Data = {
-				AttackType = "Shotgun" :: "Shotgun",
-				ShotCount = 8,
-				Angle = 20,
-				ProjectileSpeed = Enums.ProjectileSpeed.Fast,
-			},
-		},
-	},
-	Frankie = {
-		Name = "Frankie",
-		Health = 4100,
-		MovementSpeed = Enums.MovementSpeed.Normal,
-		Attack = {
-			AbilityType = "Attack" :: "Attack",
-			Name = "Energy Ball",
-			Damage = 800,
-			Ammo = 3,
-			AmmoRegen = 1.5,
-			Range = Enums.AttackRange.Short, -- to account for size of projectile
-			ReloadSpeed = 0.5,
-
-			Data = {
-				AttackType = "Shot" :: "Shot",
-				ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
-			},
-		},
-		Super = {
-			AbilityType = "Super" :: "Super",
-			Name = "Slime Bomb",
-			Charge = 4,
-			Damage = 1500,
-			Range = Enums.AttackRange.Medium,
-
-			Data = {
-				AttackType = "Arced" :: "Arced",
-				ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
-				Height = Enums.ArcHeight.Medium,
-				TimeToDetonate = 0.8,
-				Radius = Enums.Radius.Medium,
-				ExplosionColour = Color3.fromRGB(122, 255, 85),
-			},
-		},
-	},
+	Taz = Taz,
+	Frankie = Frankie,
+	Gobzie = Gobzie,
 }
 
 -- Ensures we dont accidentally change any of the data in the table, as this would be a bug.

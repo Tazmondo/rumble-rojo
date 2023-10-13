@@ -225,9 +225,9 @@ local orderedHeroDetails: { OrderedHero } = {
 		Price = 500,
 		DefaultSkin = "Dino",
 		Unavailable = true,
-		Modifiers = {},
+		Modifiers = table.clone(DefaultModifiers),
 		Talents = {},
-		Skills = {},
+		Skills = table.clone(DefaultSkills),
 		Skins = {
 			{
 				Name = "Dino",
@@ -243,9 +243,9 @@ local orderedHeroDetails: { OrderedHero } = {
 		Price = 500,
 		DefaultSkin = "Gobzie",
 		Unavailable = true,
-		Modifiers = {},
+		Modifiers = table.clone(DefaultModifiers),
 		Talents = {},
-		Skills = {},
+		Skills = table.clone(DefaultSkills),
 		Skins = {
 			{
 				Name = "Gobzie",
