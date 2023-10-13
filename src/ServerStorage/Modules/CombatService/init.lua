@@ -29,13 +29,15 @@ local ServerConfig = require(ReplicatedStorage.Modules.Shared.ServerConfig)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Signal = require(ReplicatedStorage.Packages.Signal)
-
-local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Server()
-local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
-local SkillAbilityEvent = require(ReplicatedStorage.Events.Combat.SkillAbilityEvent):Server()
+local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
-local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
+
+local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
+
+local AimEvent = require(ReplicatedStorage.Events.Combat.AimEvent):Server()
+local FirePelletEvent = require(ReplicatedStorage.Events.Combat.FirePelletEvent):Server()
+local SkillAbilityEvent = require(ReplicatedStorage.Events.Combat.SkillAbilityEvent):Server()
 local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Server()
 local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Server()
 local DamagedEvent = require(ReplicatedStorage.Events.Combat.DamagedEvent):Server()
@@ -77,12 +79,14 @@ local function replicateAttack(
 		local attackDetails =
 			AttackLogic.MakeAttack(combatPlayer, origin, attackData, nil, localAttackDetails.seed) :: AttackLogic.ShotgunDetails
 
+		local delayTime = attackData.Data.TimeBetweenShots or 0
+
 		for index, pellet in pairs(attackDetails.pellets) do
 			if pellet.id ~= localAttackDetails.pellets[index].id then
 				warn(player, "mismatched attack ids, could be cheating.")
 				return
 			end
-			combatPlayer:RegisterBullet(pellet.id, pellet.CFrame, pellet.speed, attackData)
+			combatPlayer:RegisterBullet(pellet.id, pellet.CFrame, pellet.speed, attackData, (index - 1) * delayTime)
 		end
 
 		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
@@ -181,6 +185,50 @@ local function handleAttack(player: Player, origin: CFrame, localAttackDetails):
 	combatPlayer:Attack()
 
 	return combatPlayer.attackId
+end
+
+-- For handling delayed shots
+function handleBulletFire(player: Player, attackId: number, position: Vector3)
+	if not player.Character then
+		warn("Tried to bullet fire without a character!")
+		return
+	end
+
+	local combatPlayer = CombatPlayerData[player.Character]
+	if not combatPlayer then
+		warn("Tried to bullet fire without a combatplayer!")
+		return
+	end
+
+	local HRP = combatPlayer.HRP
+	if not HRP then
+		warn("Tried to process new bullet fire on combatplayer without an HRP.")
+		return
+	end
+
+	if (HRP.Position - position).Magnitude > Config.MaximumPlayerPositionDifference then
+		warn("Tried to update bullet with position too far away")
+		return
+	end
+
+	local attack = combatPlayer.attacks[attackId]
+	if not attack then
+		warn("Tried to update a non-existing or non-pending attack.")
+		return
+	end
+
+	if not attack.Pending then
+		warn("Tried to update a non-pending attack")
+		return
+	end
+
+	if math.abs(os.clock() - attack.FiredTime) > Config.MaximumAllowedLatencyVariation then
+		warn("Tried to update an attack too early or too late")
+		return
+	end
+
+	attack.FiredCFrame = CFrame.new(position) * attack.FiredCFrame.Rotation
+	attack.Pending = false
 end
 
 local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
@@ -408,6 +456,11 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 
 	local victimCombatPlayer = CombatPlayerData[victimCharacter]
 
+	if attackDetails.Pending then
+		warn("Tried to hit before bullet was fired.")
+		return
+	end
+
 	-- flatten everything because the target can be at a different height to the initial firing position
 	local flatVector = Vector3.new(1, 0, 1)
 
@@ -453,6 +506,11 @@ function handleClientExplosionHit(player: Player, hitList: Types.HitList, attack
 		return
 	end
 	combatPlayer.attacks[attackId] = nil
+
+	if attackDetails.Pending then
+		warn("Tried to hit before bullet was fired.")
+		return
+	end
 
 	-- flatten everything because the target can be at a different height to the initial firing position
 	local flatVector = Vector3.new(1, 0, 1)
@@ -773,6 +831,7 @@ function CombatService:Initialize()
 	HitMultipleEvent:On(handleClientExplosionHit)
 	AimEvent:On(handleAim)
 	SkillAbilityEvent:On(handleAbilitySkill)
+	FirePelletEvent:On(handleBulletFire)
 
 	for _, v in pairs(workspace:GetChildren()) do
 		if v.Name == "TestDummy" and v:IsA("Model") then

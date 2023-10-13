@@ -28,6 +28,7 @@ export type Bullet = {
 	FiredCFrame: CFrame,
 	Speed: number,
 	Data: AbilityData,
+	Pending: boolean,
 	-- HitPosition: Vector3?,
 }
 
@@ -192,6 +193,7 @@ export type CombatPlayer = {
 	player: Player?,
 	character: Model,
 	humanoid: Humanoid?,
+	HRP: BasePart?,
 	humanoidData: any,
 	isObject: boolean,
 
@@ -267,7 +269,7 @@ export type CombatPlayer = {
 	CanUseSkill: (CombatPlayer) -> boolean,
 	UseSkill: (CombatPlayer) -> (),
 
-	RegisterBullet: (CombatPlayer, number, CFrame, number, AbilityData) -> (),
+	RegisterBullet: (CombatPlayer, number, CFrame, number, AbilityData, number?) -> (),
 
 	AddBooster: (CombatPlayer, number) -> (),
 	UpdateSpeed: (CombatPlayer) -> (),

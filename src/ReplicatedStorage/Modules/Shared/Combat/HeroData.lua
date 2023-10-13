@@ -125,7 +125,7 @@ local Gobzie: Types.HeroData = {
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
 		Name = "Long Shotgun",
-		Damage = 450,
+		Damage = 250,
 		Ammo = 3,
 		AmmoRegen = 2,
 		Range = Enums.AttackRange.Medium,
@@ -133,7 +133,7 @@ local Gobzie: Types.HeroData = {
 
 		Data = {
 			AttackType = "Shotgun",
-			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			Angle = 7,
 			ShotCount = 6,
 			TimeBetweenShots = 0.1,

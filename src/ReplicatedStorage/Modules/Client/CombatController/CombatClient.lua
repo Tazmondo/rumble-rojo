@@ -458,8 +458,7 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 
 	-- AnimationController.AttemptPlay(self.animationController, "Attack")
 
-	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction)
-
+	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction, self.HRP)
 	self.combatPlayer.attackId = AttackFunction:Call(type, origin, attackDetails):Await()
 end
 

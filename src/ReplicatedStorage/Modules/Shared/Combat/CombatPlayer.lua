@@ -122,6 +122,7 @@ function InitializeSelf(
 	self.character:AddTag(Config.CombatPlayerTag)
 
 	self.humanoid = model:FindFirstChildOfClass("Humanoid") :: Humanoid?
+	self.HRP = model:FindFirstChild("HumanoidRootPart") :: BasePart?
 	self.isObject = if object then true else false
 
 	if self.humanoid then
@@ -569,15 +570,18 @@ function CombatPlayer.RegisterBullet(
 	attackId: number,
 	attackCF: CFrame,
 	attackSpeed: number,
-	attackData: Types.AbilityData
+	attackData: Types.AbilityData,
+	delay: number?
 )
+	local pending = (delay or 0) > 0
 	self.attacks[attackId] = {
 		AttackId = attackId,
-		FiredTime = os.clock(),
+		FiredTime = os.clock() + (delay or 0),
 		FiredCFrame = attackCF,
 		Speed = attackSpeed,
 		Data = attackData,
 		HitPosition = nil,
+		Pending = pending,
 	}
 	task.delay(Config.MaxAttackTimeout, function()
 		self.attacks[attackId] = nil

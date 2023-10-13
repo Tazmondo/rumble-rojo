@@ -16,7 +16,10 @@ local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
+local Future = require(ReplicatedStorage.Packages.Future)
 local RaycastHitbox = require(ReplicatedStorage.Packages.RaycastHitbox)
+
+local FirePelletEvent = require(ReplicatedStorage.Events.Combat.FirePelletEvent):Client()
 
 local localPlayer = game:GetService("Players").LocalPlayer
 
@@ -361,44 +364,59 @@ function AttackRenderer.RenderAttack(
 	attackData: Types.AbilityData,
 	origin: CFrame,
 	attackDetails: AttackLogic.AttackDetails,
-	onHit: HitFunction? | MultiHit?
+	onHit: HitFunction? | MultiHit?,
+	originPart: BasePart?
 )
 	assert(attackDetails, "Called attack renderer without providing attack details")
 
-	if attackData.Data.AttackType == "Shotgun" then
-		local details = attackDetails :: AttackLogic.ShotgunDetails
+	return Future.new(function()
+		if attackData.Data.AttackType == "Shotgun" then
+			local details = attackDetails :: AttackLogic.ShotgunDetails
 
-		for index, pellet in pairs(details.pellets) do
-			CreateAttackProjectile(player, attackData, pellet.CFrame, pellet.speed, pellet.id, onHit :: HitFunction?)
+			for index, pellet in pairs(details.pellets) do
+				local newCF = if originPart
+					then CFrame.new(originPart.Position) * pellet.CFrame.Rotation
+					else pellet.CFrame
+
+				CreateAttackProjectile(player, attackData, newCF, pellet.speed, pellet.id, onHit :: HitFunction?)
+
+				if attackData.Data.TimeBetweenShots then
+					if player == localPlayer and index > 1 then
+						assert(originPart, "Tried to fire a delayed attack without an origin part.")
+						FirePelletEvent:Fire(pellet.id, originPart.Position)
+					end
+					task.wait(attackData.Data.TimeBetweenShots)
+				end
+			end
+		elseif attackData.Data.AttackType == "Shot" then
+			local details = attackDetails :: AttackLogic.ShotDetails
+
+			CreateAttackProjectile(
+				player,
+				attackData,
+				details.origin,
+				attackData.Data.ProjectileSpeed,
+				details.id,
+				onHit :: HitFunction?
+			)
+		elseif attackData.Data.AttackType == "Arced" then
+			local details = attackDetails :: AttackLogic.ArcDetails
+
+			CreateArcedAttack(
+				player,
+				attackData,
+				origin,
+				details.timeToLand,
+				attackData.Data.ProjectileSpeed,
+				details.id,
+				details.target,
+				onHit :: MultiHit?
+			)
+		elseif attackData.Data.AttackType == "Field" then
+			local details = attackDetails :: AttackLogic.FieldDetails
+			CreateFieldAttack(details.origin, attackData.Data.Radius, attackData.Name, attackData.Data.Duration)
 		end
-	elseif attackData.Data.AttackType == "Shot" then
-		local details = attackDetails :: AttackLogic.ShotDetails
-
-		CreateAttackProjectile(
-			player,
-			attackData,
-			details.origin,
-			attackData.Data.ProjectileSpeed,
-			details.id,
-			onHit :: HitFunction?
-		)
-	elseif attackData.Data.AttackType == "Arced" then
-		local details = attackDetails :: AttackLogic.ArcDetails
-
-		CreateArcedAttack(
-			player,
-			attackData,
-			origin,
-			details.timeToLand,
-			attackData.Data.ProjectileSpeed,
-			details.id,
-			details.target,
-			onHit :: MultiHit?
-		)
-	elseif attackData.Data.AttackType == "Field" then
-		local details = attackDetails :: AttackLogic.FieldDetails
-		CreateFieldAttack(details.origin, attackData.Data.Radius, attackData.Name, attackData.Data.Duration)
-	end
+	end)
 end
 
 function AttackRenderer.RenderOtherClientAttack(
@@ -413,7 +431,12 @@ function AttackRenderer.RenderOtherClientAttack(
 		return
 	end
 
-	AttackRenderer.RenderAttack(player, attackData, origin, attackDetails)
+	local character = player.Character
+	local originPart
+	if character then
+		originPart = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	end
+	AttackRenderer.RenderAttack(player, attackData, origin, attackDetails, nil, originPart)
 end
 
 -- HitPart, Position, Id
