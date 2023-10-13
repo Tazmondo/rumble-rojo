@@ -155,7 +155,7 @@ local Gobzie: Types.HeroData = {
 				AttackType = "Field",
 				Damage = 50,
 				Duration = 5,
-				Radius = 10,
+				Radius = Enums.Radius.Large,
 			},
 		},
 	},

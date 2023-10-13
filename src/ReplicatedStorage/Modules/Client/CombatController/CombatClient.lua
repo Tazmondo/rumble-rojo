@@ -25,17 +25,15 @@ local NameTag = require(script.Parent.NameTag)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
 local AttackLogic = require(combatFolder.AttackLogic)
 local CombatPlayer = require(combatFolder.CombatPlayer)
-local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
 local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
 local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
-local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
+local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
+
 local SkillAbilityEvent = require(ReplicatedStorage.Events.Combat.SkillAbilityEvent):Client()
-local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Client()
-local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Client()
 
 local function _VisualiseRay(ray: Ray)
 	local part = Instance.new("Part")
@@ -136,30 +134,6 @@ function CombatClient.Destroy(self: CombatClient)
 	self.humanoid.AutoRotate = true
 
 	self.destroyed = true
-end
-
--- we already check if the hit is a combatplayer before this function is called
-function CombatClient.RayHit(self: CombatClient, instance: BasePart, position: Vector3, id: number)
-	-- Wait to make sure server has
-	Spawn(function()
-		task.wait()
-		HitEvent:Fire(instance, position, id)
-	end)
-end
-
-function CombatClient.ExplosionHit(
-	self: CombatClient,
-	hits: {
-		{
-			instance: BasePart,
-			position: Vector3,
-		}
-	},
-	id: number,
-	explosionCentre: Vector3
-)
-	task.wait()
-	HitMultipleEvent:Fire(hits, id, explosionCentre)
 end
 
 -- Returns point of intersection between a ray and a plane
@@ -451,17 +425,9 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 
 	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, attackData, target)
 
-	local hitFunction = if attackData.Data.AttackType == "Arced"
-		then function(...)
-			self:ExplosionHit(...)
-		end
-		else function(...)
-			self:RayHit(...)
-		end
-
 	-- AnimationController.AttemptPlay(self.animationController, "Attack")
 
-	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, hitFunction, self.HRP)
+	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, self.HRP)
 	self.combatPlayer.attackId = AttackFunction:Call(type, origin, attackDetails):Await()
 end
 

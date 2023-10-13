@@ -19,8 +19,11 @@ local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Future = require(ReplicatedStorage.Packages.Future)
 local RaycastHitbox = require(ReplicatedStorage.Packages.RaycastHitbox)
+local Spawn = require(ReplicatedStorage.Packages.Spawn)
 
 local FirePelletEvent = require(ReplicatedStorage.Events.Combat.FirePelletEvent):Client()
+local HitEvent = require(ReplicatedStorage.Events.Combat.HitEvent):Client()
+local HitMultipleEvent = require(ReplicatedStorage.Events.Combat.HitMultipleEvent):Client()
 
 local localPlayer = game:GetService("Players").LocalPlayer
 
@@ -29,9 +32,6 @@ local attackVFXFolder = ReplicatedStorage.Assets.VFX.Attack
 
 local partFolder = Instance.new("Folder", workspace)
 partFolder.Name = "Part Folder"
-
-local arena = assert(workspace:FindFirstChild("Arena"))
-local lobby = assert(workspace:FindFirstChild("Lobby"))
 
 local cylinderTemplate = assert(ReplicatedStorage.Assets.Cylinder, "Could not find cylinder hitbox part!") :: BasePart
 
@@ -93,22 +93,27 @@ function GetRaycastParams(excludeCharacter: Model?)
 	return raycastParams
 end
 
-function GetArenaCastParams()
-	local raycastParams = RaycastParams.new()
-	raycastParams.FilterType = Enum.RaycastFilterType.Include
-
-	raycastParams.FilterDescendantsInstances = { arena, lobby } -- Include the lobby for testing purposes
-
-	return raycastParams
+function OnBulletHit(instance: BasePart?, position: Vector3, id: number)
+	Spawn(function()
+		task.wait()
+		HitEvent:Fire(instance, position, id)
+	end)
 end
 
-function GetFloor(position: Vector3)
-	local cast = workspace:Raycast(position, Vector3.new(0, -20, 0), GetArenaCastParams())
-	if cast then
-		return cast.Position
-	else
-		return nil
-	end
+function OnExplosionHit(
+	hits: {
+		{
+			instance: BasePart,
+			position: Vector3,
+		}
+	},
+	id: number,
+	explosionCentre: Vector3
+)
+	Spawn(function()
+		task.wait()
+		HitMultipleEvent:Fire(hits, id, explosionCentre)
+	end)
 end
 
 function InitializeHitboxParams(raycastHitbox, raycastParams: RaycastParams): nil
@@ -193,6 +198,9 @@ function CreateAttackProjectile(
 				RenderBulletHit(pelletPart:GetPivot().Position, projectileSize)
 				if not hitPos then
 					hitPos = pelletPart:GetPivot()
+					if onHit then
+						onHit(nil, hitPos.Position, id)
+					end
 				end
 				pelletPart:Destroy()
 			end
@@ -220,7 +228,7 @@ function CreateAttackProjectile(
 			end
 
 			local character = AttackRenderer.GetCombatPlayerFromValidPart(hitPart)
-			if onHit and character then
+			if onHit and character and not hitPos then
 				hitPos = CFrame.new(result.Position) * pelletPart:GetPivot().Rotation
 				onHit(hitPart, result.Position, id)
 			end
@@ -313,11 +321,10 @@ function CreateExplosion(bombPart: Model, player: Player, attackData: Types.Arce
 		for _, part in ipairs(explosionParts) do
 			local character = AttackRenderer.GetCombatPlayerFromValidPart(part)
 			if character and not hitCharacters[character] then
-				print("hit", character)
 				hitCharacters[character] = true
 
 				table.insert(hitRegisters, {
-					instance = part :: Instance,
+					instance = part :: BasePart,
 					position = target,
 				})
 			end
@@ -429,7 +436,6 @@ function AttackRenderer.RenderAttack(
 	attackData: Types.AbilityData,
 	origin: CFrame,
 	attackDetails: AttackLogic.AttackDetails,
-	onHit: HitFunction? | MultiHit?,
 	originPart: BasePart?
 )
 	assert(attackDetails, "Called attack renderer without providing attack details")
@@ -445,7 +451,7 @@ function AttackRenderer.RenderAttack(
 					then CFrame.new(originPart.Position) * pellet.CFrame.Rotation
 					else pellet.CFrame
 
-				CreateAttackProjectile(player, attackData, newCF, pellet.speed, pellet.id, onHit :: HitFunction?)
+				CreateAttackProjectile(player, attackData, newCF, pellet.speed, pellet.id, OnBulletHit)
 
 				if attackData.Data.TimeBetweenShots then
 					if player == localPlayer and index > 1 then
@@ -464,7 +470,7 @@ function AttackRenderer.RenderAttack(
 				details.origin,
 				attackData.Data.ProjectileSpeed,
 				details.id,
-				onHit :: HitFunction?
+				OnBulletHit
 			):Await()
 		elseif attackData.Data.AttackType == "Arced" then
 			local details = attackDetails :: AttackLogic.ArcDetails
@@ -477,7 +483,7 @@ function AttackRenderer.RenderAttack(
 				attackData.Data.ProjectileSpeed,
 				details.id,
 				details.target,
-				onHit :: MultiHit?
+				OnExplosionHit
 			)
 		elseif attackData.Data.AttackType == "Field" then
 			local details = attackDetails :: AttackLogic.FieldDetails
@@ -493,18 +499,10 @@ function AttackRenderer.RenderAttack(
 
 			local newData = newData :: Types.AbilityData
 
-			-- Since fields expect origin to be on the floor, we need to adjust it here
-			if newData.Data.AttackType == "Field" then
-				local floorPos = GetFloor(endCFrame.Position)
-				if floorPos then
-					endCFrame = CFrame.new(floorPos)
-				end
-			end
-
-			local newDetails = AttackLogic.MakeAttack(nil, endCFrame, newData, endCFrame.Position)
+			local newDetails = AttackLogic.MakeAttack(nil, endCFrame, newData)
 
 			print("rendering chain", newDetails)
-			AttackRenderer.RenderAttack(player, newData, endCFrame, newDetails, onHit, originPart)
+			AttackRenderer.RenderAttack(player, newData, endCFrame, newDetails, originPart)
 		end
 	end)
 end
@@ -526,14 +524,14 @@ function AttackRenderer.RenderOtherClientAttack(
 	if character then
 		originPart = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	end
-	AttackRenderer.RenderAttack(player, attackData, origin, attackDetails, nil, originPart)
+	AttackRenderer.RenderAttack(player, attackData, origin, attackDetails, originPart)
 end
 
 -- HitPart, Position, Id
-export type HitFunction = (hitPart: Instance, position: Vector3, id: number) -> any
+export type HitFunction = (hitPart: BasePart?, position: Vector3, id: number) -> any
 export type MultiHit = ({
 	{
-		instance: Instance,
+		instance: BasePart,
 		position: Vector3,
 	}
 }, number, Vector3) -> any

@@ -62,22 +62,29 @@ local function replicateAttack(
 	origin: CFrame,
 	combatPlayer: CombatPlayer.CombatPlayer,
 	attackData: Types.AbilityData,
-	localAttackDetails: AttackLogic.AttackDetails
+	localAttackDetails: AttackLogic.AttackDetails,
+	chained: boolean?
 )
 	local character = assert(player.Character, "character does not exist")
 	local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
-	if (HRP.Position - origin.Position).Magnitude > Config.MaximumPlayerPositionDifference then
+	if (HRP.Position - origin.Position).Magnitude > Config.MaximumPlayerPositionDifference and not chained then
 		warn(player, "fired from a position too far from their server position")
 		return
 	end
 
 	print("registering1")
+	local attackLogicCombatPlayer = if chained then nil else combatPlayer
 
 	if attackData.Data.AttackType == "Shotgun" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotgunDetails
 
-		local attackDetails =
-			AttackLogic.MakeAttack(combatPlayer, origin, attackData, nil, localAttackDetails.seed) :: AttackLogic.ShotgunDetails
+		local attackDetails = AttackLogic.MakeAttack(
+			attackLogicCombatPlayer,
+			origin,
+			attackData,
+			nil,
+			localAttackDetails.seed
+		) :: AttackLogic.ShotgunDetails
 
 		local delayTime = attackData.Data.TimeBetweenShots or 0
 
@@ -93,7 +100,8 @@ local function replicateAttack(
 	elseif attackData.Data.AttackType == "Shot" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotDetails
 
-		local attackDetails = AttackLogic.MakeAttack(combatPlayer, origin, attackData) :: AttackLogic.ShotDetails
+		local attackDetails =
+			AttackLogic.MakeAttack(attackLogicCombatPlayer, origin, attackData) :: AttackLogic.ShotDetails
 
 		if localAttackDetails.id ~= attackDetails.id then
 			warn(player, "mismatched attack ids, could be cheating.")
@@ -106,8 +114,12 @@ local function replicateAttack(
 	elseif attackData.Data.AttackType == "Arced" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ArcDetails
 
-		local attackDetails =
-			AttackLogic.MakeAttack(combatPlayer, origin, attackData, localAttackDetails.target) :: AttackLogic.ArcDetails
+		local attackDetails = AttackLogic.MakeAttack(
+			attackLogicCombatPlayer,
+			origin,
+			attackData,
+			localAttackDetails.target
+		) :: AttackLogic.ArcDetails
 
 		if localAttackDetails.id ~= attackDetails.id then
 			warn(player, "mismatched attack ids, could be cheating.")
@@ -121,10 +133,10 @@ local function replicateAttack(
 		local localAttackDetails = localAttackDetails :: AttackLogic.FieldDetails
 
 		local attackDetails = AttackLogic.MakeAttack(
-			combatPlayer,
+			attackLogicCombatPlayer,
 			origin,
 			attackData,
-			localAttackDetails.origin.Position
+			if not chained then localAttackDetails.origin.Position else nil
 		) :: AttackLogic.FieldDetails
 
 		FieldEffect.new(
@@ -146,7 +158,9 @@ local function replicateAttack(
 			end
 		)
 
-		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
+		if not chained then
+			ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
+		end
 	else
 		warn("Invalid attack received: ", attackData.Data.AttackType)
 	end
@@ -433,8 +447,8 @@ function processHit(
 	end
 end
 
-local function handleClientHit(player: Player, target: BasePart, localTargetPosition: Vector3, attackId: number)
-	if not player.Character or not target or not localTargetPosition or not attackId then
+local function handleClientHit(player: Player, target: BasePart?, localTargetPosition: Vector3, attackId: number)
+	if not player.Character or not localTargetPosition or not attackId then
 		return
 	end
 	local combatPlayer = CombatPlayerData[player.Character]
@@ -444,22 +458,15 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 
 	local attackDetails = combatPlayer.attacks[attackId]
 	if not attackDetails then
-		warn("Invalid attack id for hit given")
+		warn("Invalid attack id for hit given", attackId, combatPlayer.attacks)
 		return
 	end
-	combatPlayer.attacks[attackId] = nil
-
-	local victimCharacter = CombatPlayer.GetAncestorWhichIsACombatPlayer(target)
-	if not victimCharacter then
-		return
-	end
-
-	local victimCombatPlayer = CombatPlayerData[victimCharacter]
-
 	if attackDetails.Pending then
 		warn("Tried to hit before bullet was fired.")
 		return
 	end
+
+	combatPlayer.attacks[attackId] = nil
 
 	-- flatten everything because the target can be at a different height to the initial firing position
 	local flatVector = Vector3.new(1, 0, 1)
@@ -478,6 +485,32 @@ local function handleClientHit(player: Player, target: BasePart, localTargetPosi
 		warn(player, "Almost certainly exploiting, mismatched fired and hit bullet trajectories.")
 		return
 	end
+
+	if attackDetails.Data.Data.Chain then
+		-- TODO
+		local chainData: any = table.clone(attackDetails.Data)
+		chainData.Data = chainData.Data.Chain
+
+		replicateAttack(
+			player,
+			CFrame.new(localTargetPosition),
+			combatPlayer,
+			chainData,
+			AttackLogic.MakeAttack(nil, CFrame.new(localTargetPosition), chainData),
+			true
+		)
+	end
+
+	if not target then
+		return
+	end
+
+	local victimCharacter = CombatPlayer.GetAncestorWhichIsACombatPlayer(target)
+	if not victimCharacter then
+		return
+	end
+
+	local victimCombatPlayer = CombatPlayerData[victimCharacter]
 
 	processHit(
 		player,
