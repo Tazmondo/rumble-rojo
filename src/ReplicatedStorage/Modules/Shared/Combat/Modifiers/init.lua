@@ -276,7 +276,9 @@ Modifiers.Missile = {
 	Modify = function(self)
 		local data = self.heroData
 		local super = data.Super.Data :: Types.ArcedData
-		super.TimeToDetonate = 0.1
+		super.TimeToDetonate = 0.2
+		super.ProjectileSpeed *= 0.8
+		super.Radius *= 0.8
 	end,
 }
 

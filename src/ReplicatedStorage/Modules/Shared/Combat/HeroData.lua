@@ -45,7 +45,7 @@ ChestData = table.freeze(ChestData)
 local HeroData: { [string]: Types.HeroData } = {
 	Taz = {
 		Name = "Taz",
-		Health = 3600,
+		Health = 3800,
 		MovementSpeed = Enums.MovementSpeed.Normal,
 		Attack = {
 			AbilityType = "Attack" :: "Attack",
@@ -59,7 +59,7 @@ local HeroData: { [string]: Types.HeroData } = {
 			Data = {
 				AttackType = "Shotgun" :: "Shotgun",
 				ShotCount = 10,
-				Angle = 27,
+				Angle = 35,
 				ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			},
 		},
@@ -67,12 +67,12 @@ local HeroData: { [string]: Types.HeroData } = {
 			AbilityType = "Super" :: "Super",
 			Name = "Super Shell",
 			Charge = 16,
-			Damage = 250,
+			Damage = 240,
 			Range = Enums.AttackRange.Short,
 
 			Data = {
 				AttackType = "Shotgun" :: "Shotgun",
-				ShotCount = 10,
+				ShotCount = 8,
 				Angle = 20,
 				ProjectileSpeed = Enums.ProjectileSpeed.Fast,
 			},
@@ -80,14 +80,14 @@ local HeroData: { [string]: Types.HeroData } = {
 	},
 	Frankie = {
 		Name = "Frankie",
-		Health = 4500,
+		Health = 4100,
 		MovementSpeed = Enums.MovementSpeed.Normal,
 		Attack = {
 			AbilityType = "Attack" :: "Attack",
 			Name = "Energy Ball",
-			Damage = 850,
+			Damage = 800,
 			Ammo = 3,
-			AmmoRegen = 2,
+			AmmoRegen = 1.5,
 			Range = Enums.AttackRange.Short, -- to account for size of projectile
 			ReloadSpeed = 0.5,
 
@@ -100,14 +100,14 @@ local HeroData: { [string]: Types.HeroData } = {
 			AbilityType = "Super" :: "Super",
 			Name = "Slime Bomb",
 			Charge = 4,
-			Damage = 2000,
+			Damage = 1500,
 			Range = Enums.AttackRange.Medium,
 
 			Data = {
 				AttackType = "Arced" :: "Arced",
 				ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 				Height = Enums.ArcHeight.Medium,
-				TimeToDetonate = 0.6,
+				TimeToDetonate = 0.8,
 				Radius = Enums.Radius.Medium,
 				ExplosionColour = Color3.fromRGB(122, 255, 85),
 			},
