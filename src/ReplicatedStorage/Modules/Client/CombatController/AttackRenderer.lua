@@ -211,8 +211,6 @@ function CreateAttackProjectile(
 		local rotationAngle = random:NextNumber(1000, 1200)
 		local exitAngle = random:NextNumber(0, 360)
 
-		print(rotationAngle, exitAngle)
-
 		pelletPart:PivotTo(pelletPart:GetPivot() * CFrame.Angles(0, 0, math.rad(exitAngle)))
 
 		local start = os.clock()
@@ -512,7 +510,6 @@ function AttackRenderer.RenderAttack(
 
 			local newDetails = AttackLogic.MakeAttack(nil, endCFrame, newData)
 
-			print("rendering chain", newDetails)
 			AttackRenderer.RenderAttack(player, newData, endCFrame, newDetails, originPart)
 		end
 	end)
