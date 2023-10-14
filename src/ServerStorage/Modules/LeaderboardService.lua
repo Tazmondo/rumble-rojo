@@ -207,8 +207,10 @@ end
 function DataStoreLoop()
 	while true do
 		task.wait(DATASTORECOOLDOWN)
+		debug.profilebegin("Leaderboard_DatastoreLoop")
 		SaveAll()
 		Load()
+		debug.profileend()
 	end
 end
 
@@ -269,11 +271,13 @@ function DataServiceLoop()
 	print("Leaderboard dataservice loop started")
 
 	while true do
+		debug.profilebegin("Leaderboard_DataServiceLoop")
 		LoadFromDataService()
 
 		UpdateLeaderBoard()
 
 		CheckPeriodPassed()
+		debug.profileend()
 
 		task.wait(DATASERVICECOOLDOWN)
 	end
