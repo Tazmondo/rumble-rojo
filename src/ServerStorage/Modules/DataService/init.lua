@@ -35,7 +35,7 @@ local SelectTalentEvent = require(ReplicatedStorage.Events.Data.SelectTalentEven
 local SelectSkillEvent = require(ReplicatedStorage.Events.Data.SelectSkillEvent):Server()
 
 -- increment this to reset the datastore
-local studioPrefix = if RunService:IsStudio() then "Studio2_" else ""
+local studioPrefix = if RunService:IsStudio() then "Studio7_" else ""
 local STOREPREFIX = studioPrefix .. "Player5_"
 
 local Profiles = {} :: { [Player]: Profile }

@@ -16,14 +16,24 @@ function Table.HookTable<T>(
 		end
 	end
 
+	local ignore = false
 	-- Must call this afterwards to prevent interfering with above code
 	setmetatable(newProxy, {
 		__newindex = function(self, i, v)
+			if ignore then
+				return
+			end
 			if callback then
 				callback(self, i, v)
 			end
 
 			(t :: any)[i] = v
+
+			if typeof(v) == "table" then
+				ignore = true
+				newProxy[i] = Table.HookTable(v, callback, after)
+				ignore = false
+			end
 
 			if after then
 				after(self, i, v)

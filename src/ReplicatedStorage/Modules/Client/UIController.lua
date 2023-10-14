@@ -788,6 +788,10 @@ function RenderCharacterSelectButtons()
 				button.Name = hero
 				button.LayoutOrder = heroData.Order
 				button.Activated:Connect(function()
+					-- Data can change inbetween rendering and this code running, so we need to fetch it again.
+					data = DataController.GetLocalData():Await()
+					ownedHeroes = data.Private.OwnedHeroes
+
 					shouldReRenderSkinSelectButtons = true
 					updateBoost = true
 
