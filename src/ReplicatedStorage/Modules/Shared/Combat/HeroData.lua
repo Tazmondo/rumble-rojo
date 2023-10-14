@@ -144,7 +144,7 @@ local Gobzie: Types.HeroData = {
 	Super = {
 		AbilityType = "Super",
 		Name = "Zombie Infection",
-		Charge = 10,
+		Charge = 8,
 		Range = Enums.AttackRange.Short, -- to account for size of projectile
 
 		Data = {
@@ -156,6 +156,9 @@ local Gobzie: Types.HeroData = {
 				Damage = 1000,
 				Duration = 8,
 				Radius = Enums.Radius.Large,
+				Effect = function(combatPlayer)
+					combatPlayer:SetStatusEffect("Slow", 0.8, 0.2)
+				end,
 			},
 		},
 	},
