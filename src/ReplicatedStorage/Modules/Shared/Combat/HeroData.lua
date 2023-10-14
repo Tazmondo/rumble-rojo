@@ -137,24 +137,24 @@ local Gobzie: Types.HeroData = {
 			Angle = 7,
 			ShotCount = 6,
 			TimeBetweenShots = 0.08,
-			SpeedVariation = 2,
-			AngleVariation = 2,
+			SpeedVariation = 1.5,
+			AngleVariation = 4,
 		},
 	},
 	Super = {
 		AbilityType = "Super",
 		Name = "Zombie Infection",
-		Charge = 0,
+		Charge = 10,
 		Range = Enums.AttackRange.Short, -- to account for size of projectile
 
 		Data = {
 			AttackType = "Shot" :: "Shot",
-			Damage = 200,
+			Damage = 500,
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			Chain = {
 				AttackType = "Field",
-				Damage = 50,
-				Duration = 5,
+				Damage = 1000,
+				Duration = 8,
 				Radius = Enums.Radius.Large,
 			},
 		},

@@ -33,6 +33,8 @@ local attackVFXFolder = ReplicatedStorage.Assets.VFX.Attack
 local partFolder = Instance.new("Folder", workspace)
 partFolder.Name = "Part Folder"
 
+local random = Random.new()
+
 local cylinderTemplate = assert(ReplicatedStorage.Assets.Cylinder, "Could not find cylinder hitbox part!") :: BasePart
 
 local VALIDPARTS = {
@@ -206,11 +208,20 @@ function CreateAttackProjectile(
 			end
 		end
 
+		local rotationAngle = random:NextNumber(1000, 1200)
+		local exitAngle = random:NextNumber(0, 360)
+
+		print(rotationAngle, exitAngle)
+
+		pelletPart:PivotTo(pelletPart:GetPivot() * CFrame.Angles(0, 0, math.rad(exitAngle)))
+
 		local start = os.clock()
 		local stepped
 		stepped = RunService.PreSimulation:Connect(function(dt)
 			pelletPart:PivotTo(
-				pelletPart:GetPivot() * CFrame.new(0, 0, -speed * dt) * CFrame.Angles(0, 0, dt * math.rad(270))
+				pelletPart:GetPivot()
+					* CFrame.new(0, 0, -speed * dt)
+					* CFrame.Angles(0, 0, dt * math.rad(rotationAngle))
 			)
 			if os.clock() - start > projectileTime then
 				stepped:Disconnect()
