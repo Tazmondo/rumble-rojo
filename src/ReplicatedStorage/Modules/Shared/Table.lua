@@ -12,7 +12,7 @@ function Table.HookTable<T>(
 
 	for k, v in pairs(t :: any) do
 		if typeof(v) == "table" then
-			newProxy[k] = Table.HookTable(v, callback)
+			newProxy[k] = Table.HookTable(v, callback, after)
 		end
 	end
 
@@ -22,7 +22,9 @@ function Table.HookTable<T>(
 			if callback then
 				callback(self, i, v)
 			end
+
 			(t :: any)[i] = v
+
 			if after then
 				after(self, i, v)
 			end
@@ -31,6 +33,14 @@ function Table.HookTable<T>(
 	})
 
 	return (newProxy :: any) :: T
+end
+
+function Table.ReplaceTable(table, key, newTable)
+	local oldTable = table[key]
+	assert(typeof(oldTable) == "table")
+
+	setmetatable(newTable, getmetatable(oldTable))
+	table[key] = newTable
 end
 
 return Table

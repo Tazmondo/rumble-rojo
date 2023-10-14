@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerConfig = require(script.Parent.ServerConfig)
+local Types = require(script.Parent.Types)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local Data = {}
 
@@ -46,6 +47,8 @@ Data.ProfileTemplate = {
 	PeriodTrophies = 0,
 	PeriodKills = 0,
 	LastLoggedIn = os.time(),
+
+	Quests = {} :: { Types.Quest },
 }
 TableUtil.Lock(Data.ProfileTemplate)
 
@@ -95,6 +98,10 @@ function Data.ReplicateToPublic(privateData: PrivatePlayerData, publicData: Publ
 	end
 
 	local heroData = privateData.OwnedHeroes[privateData.SelectedHero]
+	if not heroData then
+		privateData.SelectedHero = "Taz"
+		heroData = privateData.OwnedHeroes["Taz"]
+	end
 
 	local newSkin = assert(heroData.SelectedSkin)
 	if publicData.SelectedSkin ~= newSkin then

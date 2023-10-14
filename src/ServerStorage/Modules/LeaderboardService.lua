@@ -207,10 +207,8 @@ end
 function DataStoreLoop()
 	while true do
 		task.wait(DATASTORECOOLDOWN)
-		debug.profilebegin("Leaderboard_DatastoreLoop")
 		SaveAll()
 		Load()
-		debug.profileend()
 	end
 end
 

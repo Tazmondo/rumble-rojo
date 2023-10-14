@@ -286,4 +286,13 @@ export type CombatPlayer = {
 	Destroy: (CombatPlayer) -> (),
 }
 
+export type Quest = {
+	Type: string,
+	Difficulty: "Easy" | "Medium" | "Hard",
+	RequiredNumber: number,
+	CurrentNumber: number,
+	Reward: number,
+	Text: string,
+}
+
 return {}
