@@ -487,7 +487,6 @@ local function handleClientHit(player: Player, target: BasePart?, localTargetPos
 	end
 
 	if attackDetails.Data.Data.Chain then
-		-- TODO
 		local chainData: any = table.clone(attackDetails.Data)
 		chainData.Data = chainData.Data.Chain
 

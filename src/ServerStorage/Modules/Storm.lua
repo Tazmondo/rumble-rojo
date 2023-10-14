@@ -194,12 +194,14 @@ function Storm.ProgressLayers(self: Storm)
 end
 
 function Storm.Start(self: Storm)
+	debug.profilebegin("Registering Storm")
 	self:RegisterLayers()
 
 	Spawn(function()
 		self:ProgressLayers()
 	end)
 	self:DamageLoop()
+	debug.profileend()
 end
 
 function Storm.Destroy(self: Storm)
