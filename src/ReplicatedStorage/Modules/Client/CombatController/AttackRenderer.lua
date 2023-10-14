@@ -188,7 +188,7 @@ function CreateAttackProjectile(
 			then pelletPart.Size
 			elseif pelletPart:IsA("Model") then pelletPart:GetExtentsSize()
 			else Vector3.zero
-		local projectileSize = sizeVector.Z
+		local projectileSize = (sizeVector.Z + sizeVector.X + sizeVector.Y) / 3
 		local projectileTime = (attackData.Range - 1 - sizeVector.Z / 2) / speed
 
 		local destroyed = false
