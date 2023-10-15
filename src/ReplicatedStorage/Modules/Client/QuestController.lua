@@ -21,9 +21,13 @@ template.Parent = nil -- So we can clear children without destroying this templa
 
 local REFRESHID = 1669000393
 
+local claimableQuests = 0
+
 function RenderQuests()
 	local data = DataController.GetLocalData():Await().Private
 	local quests = data.Quests
+
+	claimableQuests = 0
 
 	for i, child in ipairs(questListFrame:GetChildren()) do
 		if child:IsA("Frame") then
@@ -52,11 +56,13 @@ function RenderQuests()
 			progressFrame.Progress.Visible = false
 			progressFrame.Reward.Visible = false
 
-			progressFrame.Claim.Activated:Connect(function()
+			progressFrame.Claim.Claim.Activated:Connect(function()
 				ClaimQuestEvent:Fire(i)
 				quest.Claimed = true
 				RenderQuests()
 			end)
+
+			claimableQuests += 1
 		else
 			progressFrame.Claim.Visible = false
 			progressFrame.Progress.Visible = true
@@ -88,6 +94,10 @@ function RenderQuests()
 		newQuest.Visible = true
 		newQuest.Parent = questListFrame
 	end
+end
+
+function QuestController.GetClaimableQuests()
+	return claimableQuests
 end
 
 function QuestController.Initialize()

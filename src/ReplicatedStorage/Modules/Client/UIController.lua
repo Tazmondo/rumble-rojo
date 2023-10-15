@@ -31,6 +31,7 @@ local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local DataController = require(script.Parent.DataController)
 local PurchaseController = require(script.Parent.PurchaseController)
+local QuestController = require(script.Parent.QuestController)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local SoundController = require(script.Parent.SoundController)
@@ -97,6 +98,7 @@ function HideAll()
 	MainUI.Queue.Visible = false
 	MainUI.Interface.Inventory.Visible = false
 	MainUI.Interface.MenuBar.Visible = false
+	MainUI.Interface.Quest.Visible = false
 	ArenaUI.Interface.CharacterSelection.Visible = false
 	ArenaUI.Interface.Game.Visible = false
 	HeroSelect.Enabled = false
@@ -126,6 +128,12 @@ function RenderStats()
 
 	HeroSelect.Frame.Inventory.Trophies.TrophyCount.Text = trophies
 	HeroSelect.Frame.Inventory["G Bucks"].GBucksCount.Text = money
+
+	local questButton = MainUI.Interface.Inventory.Quests
+	local questCount = QuestController.GetClaimableQuests()
+
+	questButton.Notification.Visible = questCount > 0
+	questButton.Notification.Number.Text = questCount
 end
 
 function OpenHeroSelect()
@@ -1174,6 +1182,14 @@ function UIController:Initialize()
 	HeroSelect.BoostShop.ItemShop.Header.Exit.Activated:Connect(function()
 		updateBoost = true
 		HeroSelect.BoostShop.Visible = false
+	end)
+
+	MainUI.Interface.Inventory.Quests.Activated:Connect(function()
+		MainUI.Interface.Quest.Visible = true
+	end)
+
+	MainUI.Interface.Quest.Header.Exit.Activated:Connect(function()
+		MainUI.Interface.Quest.Visible = false
 	end)
 
 	-- For clicking on the background to close the booster shop
