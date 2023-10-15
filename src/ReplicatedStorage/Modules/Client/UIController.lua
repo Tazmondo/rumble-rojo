@@ -163,7 +163,10 @@ function RenderHeroIcon()
 		button.Size = UDim2.fromScale(1, 1)
 		button.ViewportFrame.Equipped.Visible = false
 
-		button.Activated:Connect(OpenHeroSelect)
+		button.Activated:Connect(function()
+			SoundController:ButtonClick()
+			OpenHeroSelect()
+		end)
 		button.Parent = frame
 	end
 end
@@ -531,6 +534,7 @@ function RenderHeroSelectScreen()
 					newButton.HoverImage = ""
 				else
 					newButton.Icon.Activated:Connect(function()
+						SoundController:ButtonClick()
 						updateBoost = true
 						displayBoost = modifierName
 					end)
@@ -585,6 +589,7 @@ function RenderHeroSelectScreen()
 					newButton.HoverImage = ""
 				else
 					newButton.Icon.Activated:Connect(function()
+						SoundController:ButtonClick()
 						updateBoost = true
 						displayBoost = talentName
 					end)
@@ -639,6 +644,7 @@ function RenderHeroSelectScreen()
 					newButton.HoverImage = ""
 				else
 					newButton.Icon.Activated:Connect(function()
+						SoundController:ButtonClick()
 						updateBoost = true
 						displayBoost = skillName
 					end)
@@ -797,6 +803,8 @@ function RenderCharacterSelectButtons()
 				button.Name = hero
 				button.LayoutOrder = heroData.Order
 				button.Activated:Connect(function()
+					SoundController:ButtonClick()
+
 					-- Data can change inbetween rendering and this code running, so we need to fetch it again.
 					data = DataController.GetLocalData():Await()
 					ownedHeroes = data.Private.OwnedHeroes
@@ -874,6 +882,7 @@ function RenderSkinSelectButtons()
 				button.Name = skin
 				button.LayoutOrder = skinData.Order
 				button.Activated:Connect(function()
+					SoundController:ButtonClick()
 					displayedSkin = skin
 				end)
 			end
@@ -902,14 +911,17 @@ function RenderSkinSelectButtons()
 end
 
 function Mute()
+	SoundController:ButtonClick()
 	SoundController:MuteMusic(true)
 end
 
 function UnMute()
+	SoundController:ButtonClick()
 	SoundController:MuteMusic(false)
 end
 
 function ShowModifier1()
+	SoundController:ButtonClick()
 	local data = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero]
 	displayBoost = if data then data.SelectedModifiers[1] else ""
 	updateBoost = true
@@ -917,6 +929,7 @@ function ShowModifier1()
 end
 
 function ShowModifier2()
+	SoundController:ButtonClick()
 	local data = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero]
 	displayBoost = if data then data.SelectedModifiers[2] else ""
 	updateBoost = true
@@ -924,6 +937,7 @@ function ShowModifier2()
 end
 
 function ShowSkill()
+	SoundController:ButtonClick()
 	local data = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero]
 	displayBoost = if data then data.SelectedSkill else ""
 	updateBoost = true
@@ -931,6 +945,7 @@ function ShowSkill()
 end
 
 function ShowTalent()
+	SoundController:ButtonClick()
 	local data = DataController.GetLocalData():Await().Private.OwnedHeroes[displayedHero]
 	displayBoost = if data then data.SelectedTalent else ""
 	updateBoost = true
@@ -971,10 +986,10 @@ function UIController:Initialize()
 		UIController:RenderAllUI(...)
 	end)
 
-	MainUI.Queue.Ready.MouseButton1Down:Connect(function()
+	MainUI.Queue.Ready.Activated:Connect(function()
 		UIController:ReadyClick()
 	end)
-	MainUI.Queue.Exit.MouseButton1Down:Connect(function()
+	MainUI.Queue.Exit.Activated:Connect(function()
 		UIController:ExitClick()
 	end)
 
@@ -982,11 +997,13 @@ function UIController:Initialize()
 	MainUI.Interface.Inventory.Unmute.Activated:Connect(UnMute)
 
 	HeroSelect.Frame.Inventory.Exit.Activated:Connect(function(input: InputObject)
+		SoundController:ButtonClick()
 		heroSelectOpen = false
 		shouldTryHide = true
 	end)
 
 	HeroSelect.Frame.Skin.Info.Equip.Activated:Connect(function()
+		SoundController:ButtonClick()
 		shouldReRenderCharacterSelectButtons = true
 		DataController.SelectSkin(selectedHero, displayedSkin)
 
@@ -1010,6 +1027,7 @@ function UIController:Initialize()
 	local tweenInfo = TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out)
 
 	HeroSelect.Frame.Select.Information["2-Details"].ChangeOutfit.Activated:Connect(function()
+		SoundController:ButtonClick()
 		if transitioning then
 			return
 		end
@@ -1031,6 +1049,7 @@ function UIController:Initialize()
 	end)
 
 	HeroSelect.Frame.Skin.Back.Exit.Activated:Connect(function()
+		SoundController:ButtonClick()
 		if transitioning then
 			return
 		end
@@ -1058,7 +1077,7 @@ function UIController:Initialize()
 			ShowBuyBucks()
 			return
 		end
-
+		SoundController:ButtonClick(true)
 		DataController.PurchaseHero(displayedHero, true)
 		shouldReRenderSkinSelectButtons = true
 
@@ -1075,22 +1094,27 @@ function UIController:Initialize()
 			ShowBuyBucks()
 			return
 		end
+		SoundController:ButtonClick(true)
 		DataController.PurchaseSkin(displayedHero, displayedSkin)
 	end)
 
 	MainUI.Interface.Inventory["G Bucks"].Activated:Connect(function()
+		SoundController:ButtonClick()
 		ShowBuyBucks()
 	end)
 
 	HeroSelect.Frame.Inventory["G Bucks"].Activated:Connect(function()
+		SoundController:ButtonClick()
 		ShowBuyBucks()
 	end)
 
 	BuyBucksUI.Frame.ImageLabel.Header.Title.Exit.Activated:Connect(function()
+		SoundController:ButtonClick()
 		BuyBucksUI.Enabled = false
 	end)
 
 	MainUI.Interface.Inventory.Shop.Activated:Connect(function()
+		SoundController:ButtonClick()
 		OpenHeroSelect()
 	end)
 
@@ -1104,6 +1128,7 @@ function UIController:Initialize()
 			return
 		end
 		button.Activated:Connect(function()
+			SoundController:ButtonClick()
 			PurchaseController.Purchase(idNum)
 		end)
 	end
@@ -1125,18 +1150,21 @@ function UIController:Initialize()
 				return
 			end
 			DataController.PurchaseModifier(displayedHero, displayBoost)
+			SoundController:ButtonClick(true)
 		elseif boostPage == "Talent" then
 			if not DataController.CanAffordTalent(displayBoost) then
 				ShowBuyBucks()
 				return
 			end
 			DataController.PurchaseTalent(displayedHero, displayBoost)
+			SoundController:ButtonClick(true)
 		elseif boostPage == "Skill" then
 			if not DataController.CanAffordSkill(displayBoost) then
 				ShowBuyBucks()
 				return
 			end
 			DataController.PurchaseSkill(displayedHero, displayBoost)
+			SoundController:ButtonClick(true)
 		end
 	end)
 
@@ -1154,6 +1182,7 @@ function UIController:Initialize()
 		elseif boostPage == "Skill" then
 			DataController.SelectSkill(displayedHero, displayBoost)
 		end
+		SoundController:ButtonClick()
 	end)
 
 	boostShopButtons:FindFirstChild("Remove").Activated:Connect(function()
@@ -1167,6 +1196,7 @@ function UIController:Initialize()
 		elseif boostPage == "Skill" then
 			DataController.SelectSkill(displayedHero, "")
 		end
+		SoundController:ButtonClick()
 	end)
 
 	boostHeaderFrame.Modifier1.Modifier.Icon.Activated:Connect(ShowModifier1)
@@ -1175,20 +1205,24 @@ function UIController:Initialize()
 	boostHeaderFrame.Talent.Modifier.Icon.Activated:Connect(ShowTalent)
 
 	HeroSelect.Frame.Select.Stats.Frame.Boosts.Activated:Connect(function()
+		SoundController:ButtonClick()
 		updateBoost = true
 		HeroSelect.BoostShop.Visible = true
 	end)
 
 	HeroSelect.BoostShop.ItemShop.Header.Exit.Activated:Connect(function()
+		SoundController:ButtonClick()
 		updateBoost = true
 		HeroSelect.BoostShop.Visible = false
 	end)
 
 	MainUI.Interface.Inventory.Quests.Activated:Connect(function()
+		SoundController:ButtonClick()
 		MainUI.Interface.Quest.Visible = true
 	end)
 
 	MainUI.Interface.Quest.Header.Exit.Activated:Connect(function()
+		SoundController:ButtonClick()
 		MainUI.Interface.Quest.Visible = false
 	end)
 

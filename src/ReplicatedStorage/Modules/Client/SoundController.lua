@@ -167,6 +167,12 @@ function SoundController:Muted()
 	return muted
 end
 
+function SoundController:ButtonClick(unlock: boolean?)
+	local sound = if unlock then soundFolder.General.UnlockSomething else soundFolder.General.ButtonClick
+
+	SoundController:_PlaySound(sound)
+end
+
 function CharacterAdded(char)
 	local HRP = char:WaitForChild("HumanoidRootPart", 5)
 	if not HRP then

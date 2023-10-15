@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataController = require(script.Parent.DataController)
 local PurchaseController = require(script.Parent.PurchaseController)
+local SoundController = require(script.Parent.SoundController)
 
 local ClaimQuestEvent = require(ReplicatedStorage.Events.Quest.ClaimQuestEvent):Client()
 
@@ -59,6 +60,7 @@ function RenderQuests()
 			progressFrame.Claim.Claim.Activated:Connect(function()
 				ClaimQuestEvent:Fire(i)
 				quest.Claimed = true
+				SoundController:ButtonClick(true)
 				RenderQuests()
 			end)
 
