@@ -51,10 +51,14 @@ function SoundController:_PlaySound(sound: Sound, position: Vector3?)
 	assert(sound, "Nil sound passed to PlaySound " .. sound.Name)
 
 	local clonedSound = sound:Clone()
+	local HRP = if player.Character then player.Character:FindFirstChild("HumanoidRootPart") :: BasePart else nil
 
 	local anchor
 	if position then
-		anchor = Instance.new("Attachment", workspace.Terrain)
+		-- If sound is close to player then attach it to player so it doesnt suddenly change directions and sound odd
+		local anchorParent = if HRP and (HRP.Position - position).Magnitude < 10 then HRP else workspace.Terrain
+		anchor = Instance.new("Attachment", anchorParent)
+		anchor.Name = "Sound Anchor"
 		anchor.WorldPosition = position
 	end
 
