@@ -282,6 +282,41 @@ Modifiers.Missile = {
 	end,
 }
 
+-- GOBZIE --
+Modifiers["Violent Infection"] = {
+	Name = "Violent Infection",
+	Description = "Your super no longer slows, but does 50% more damage.",
+	Price = 1000,
+	UnlockedImage = "",
+	LockedImage = "",
+	Modify = function(self)
+		local data = self.heroData
+		local super = data.Super.Data :: Types.ShotData
+		local superField = super.Chain :: Types.FieldData
+
+		superField.Effect = nil
+		superField.Damage *= 1.5
+	end,
+}
+
+Modifiers["Slowing Infection"] = {
+	Name = "Slowing Infection",
+	Description = "Your super slows 50% more, but does 75% less damage.",
+	Price = 1000,
+	UnlockedImage = "",
+	LockedImage = "",
+	Modify = function(self)
+		local data = self.heroData
+		local super = data.Super.Data :: Types.ShotData
+		local superField = super.Chain :: Types.FieldData
+
+		superField.Damage *= 0.25
+		superField.Effect = function(combatPlayer)
+			combatPlayer:SetStatusEffect("Slow", 0.6, 0.2)
+		end
+	end,
+}
+
 -- Validate modifiers
 for modifier, data in pairs(Modifiers :: any) do
 	if modifier == "" then

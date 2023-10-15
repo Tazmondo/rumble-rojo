@@ -157,6 +157,7 @@ local Gobzie: Types.HeroData = {
 				Duration = 8,
 				Radius = Enums.Radius.Large,
 				Effect = function(combatPlayer)
+					-- Make sure to also update the talent when you update the slow amount
 					combatPlayer:SetStatusEffect("Slow", 0.75, 0.2)
 				end,
 			},
