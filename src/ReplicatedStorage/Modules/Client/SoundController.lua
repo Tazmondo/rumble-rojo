@@ -3,6 +3,7 @@ print("SoundController initializing")
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local DataController = require(script.Parent.DataController)
@@ -146,7 +147,9 @@ function SoundController:StateUpdated()
 	elseif state == "BattleEnded" then
 		SoundController:SetAmbience()
 	else
-		warn("Weird sound state: ", state, inMatch)
+		if not RunService:IsStudio() then
+			warn("Weird sound state: ", state, inMatch)
+		end
 		SoundController:SetAmbience()
 	end
 end
