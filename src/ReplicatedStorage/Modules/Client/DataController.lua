@@ -241,6 +241,37 @@ function DataController.GetPublicDataForPlayer(player: Player)
 	end)
 end
 
+function DataController.GetTotalBoosts(hero: string)
+	local heroDetails = HeroDetails.HeroDetails[hero]
+	return #heroDetails.Skills + #heroDetails.Talents + #heroDetails.Modifiers
+end
+
+function DataController.GetNumberOwnedBoosts(hero: string)
+	local dataFuture = DataController.GetLocalData()
+	if not dataFuture:IsComplete() then
+		return 0
+	end
+
+	local data = dataFuture:Unwrap()
+	local heroData = data.Private.OwnedHeroes[hero]
+	if not heroData then
+		return 0
+	end
+
+	local count = 0
+	for boost, _ in pairs(heroData.Skills) do
+		count += 1
+	end
+	for boost, _ in pairs(heroData.Talents) do
+		count += 1
+	end
+	for boost, _ in pairs(heroData.Modifiers) do
+		count += 1
+	end
+
+	return count
+end
+
 function DataController.Initialize()
 	print("Data controller initialize called")
 	DataController.GameDataUpdated = Signal()

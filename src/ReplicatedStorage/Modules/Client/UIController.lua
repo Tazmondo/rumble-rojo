@@ -506,6 +506,10 @@ function RenderHeroSelectScreen()
 			else emptySkill
 		selectBoostsFrame.Skill.Icon.Image = headerFrame.Skill.Modifier.Icon.Image
 
+		selectBoostsFrame.Count.Number.Text = DataController.GetNumberOwnedBoosts(displayedHero)
+			.. "/"
+			.. DataController.GetTotalBoosts(displayedHero)
+
 		for i, item in ipairs(shopDisplay:GetChildren()) do
 			if item:IsA("ImageButton") then
 				item:Destroy()
