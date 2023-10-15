@@ -478,7 +478,8 @@ function CombatPlayer.DealDamage(self: CombatPlayer, damage: number, targetChara
 	self:Sync("DealDamage", damage, targetCharacter)
 	self.DamageDealtSignal:Fire(damage, targetCharacter)
 
-	if self.health < self.maxHealth then
+	-- Only restart regen if hitting a player, not a chest
+	if self.health < self.maxHealth and targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart") then
 		self:ScheduleRegen(Config.InitialRegenTime)
 	end
 end
