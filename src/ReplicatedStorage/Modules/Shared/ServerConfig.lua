@@ -8,9 +8,9 @@ local CONFIG = {
 	MaxPlayers = 12,
 
 	QueueOnJoin = true,
-	LobbyMovementSpeed = 34,
+	LobbyMovementSpeed = 50,
 	LobbyPlayerScale = 4,
-	LobbyJumpPower = 65,
+	LobbyJumpPower = 75,
 }
 
 -- don't edit this to affect the game, this is just for studio testing
