@@ -48,7 +48,9 @@ Data.ProfileTemplate = {
 	PeriodKills = 0,
 	LastLoggedIn = os.time(),
 
+	QuestGivenTime = 0,
 	Quests = {} :: { Types.Quest },
+	QuestFreeRefresh = true,
 }
 TableUtil.Lock(Data.ProfileTemplate)
 

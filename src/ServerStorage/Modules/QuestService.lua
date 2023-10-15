@@ -99,6 +99,8 @@ assert(#QuestTypes >= (QuestCounts.Easy + QuestCounts.Medium + QuestCounts.Hard)
 
 local random = Random.new()
 
+local DAYTIME = 86400 -- 60 * 60 * 24
+
 function GetQuestText(questType: string, value: number)
 	local questData = QuestData[questType]
 	if value == 1 then
@@ -175,13 +177,23 @@ end
 
 function PlayerAdded(player: Player)
 	return Future.new(function()
-		local loaded = DataService.PlayerLoaded(player):Await()
-		if not loaded then
+		local data = DataService.GetPrivateData(player):Await()
+		if not data then
 			return
 		end
 
-		GenerateQuests(player)
-		ResetStreakQuests(player)
+		local lastQuestTime = data.QuestGivenTime
+		local deltaTime = os.time() - lastQuestTime
+
+		if deltaTime >= DAYTIME then
+			print("Assigning", player, "new quests.")
+			data.QuestGivenTime = os.time()
+			data.QuestFreeRefresh = true
+			GenerateQuests(player)
+		else
+			-- If they left a game mid-way then we need to reset when they join
+			ResetStreakQuests(player)
+		end
 	end)
 end
 
