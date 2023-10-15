@@ -104,6 +104,9 @@ function InitializeCharacter(player: Player, model: Model?, spawnPosition: CFram
 		local _, y, _ = spawnPosition.Rotation:ToEulerAnglesYXZ()
 		model:PivotTo((CFrame.new(spawnPosition.Position) * CFrame.Angles(0, y, 0)) + Vector3.new(0, 10, 0))
 
+		-- If we dont do this then the model can be randomly flung away
+		assert(model.PrimaryPart).AssemblyLinearVelocity = Vector3.zero
+
 		return model
 	end)
 end
