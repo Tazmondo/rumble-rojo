@@ -153,7 +153,7 @@ Skills["Power Pill"] = {
 
 Skills.Reflect = {
 	Name = "Reflect",
-	Description = "For two seconds, reflect 80% of damage taken back to the attacker.",
+	Description = "For one second, reflect 90% of damage taken back to the attacker, and take 50% less damage. However you cannot attack during this time! Time it carefully.",
 	Activation = "Instant",
 	UnlockedImage = "rbxassetid://15010966542",
 	LockedImage = "rbxassetid://15010967489",
@@ -161,7 +161,7 @@ Skills.Reflect = {
 	Price = 1000,
 	Type = "Ability",
 	Activated = function(self)
-		self:SetStatusEffect("Reflect", 0.8, 2)
+		self:SetStatusEffect("Reflect", { 0.9, 0.5 }, 1)
 	end,
 }
 

@@ -241,6 +241,13 @@ function CombatPlayer.GetDamageBetween(
 		victim:SetStatusEffect("Shield")
 	end
 
+	local reflectValues: any = victim:GetStatusEffect("Reflect")
+	if reflectValues then
+		reflectValues = reflectValues[2]
+	else
+		reflectValues = 1
+	end
+
 	local givenMultiplier = multiplier or 1
 	local baseDamage = attacker.baseDamageMultiplier
 		* if attack.AbilityType == "Attack"
@@ -253,6 +260,7 @@ function CombatPlayer.GetDamageBetween(
 		* victim:GetDefenceMultiplier()
 		* shieldMultiplier
 		* givenMultiplier
+		* reflectValues
 
 	return finalDamage
 end
@@ -490,7 +498,8 @@ function CombatPlayer:AbilitiesEnabled()
 		GetGameState() ~= "BattleStarting" or (RunService:IsStudio() and ServerScriptService:GetAttribute("combat"))
 	)
 		and not self.isObject
-		and self.statusEffects["Stun"] == nil
+		and self:GetStatusEffect("Stun") == nil
+		and self:GetStatusEffect("Reflect") == nil
 end
 
 function CombatPlayer.CanAttack(self: CombatPlayer)

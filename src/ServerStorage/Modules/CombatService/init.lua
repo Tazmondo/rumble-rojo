@@ -413,6 +413,11 @@ function processHit(
 	if not reflected and victimCombatPlayer:GetStatusEffect("Reflect") then
 		local HRP = combatPlayer.character:FindFirstChild("HumanoidRootPart") :: BasePart
 		if HRP then
+			local reflectValues = assert(victimCombatPlayer:GetStatusEffect("Reflect"))
+
+			-- Since reflection also reduces the damage taken, we need to adjust the multiplier so it is based off of the original damage value
+			local reflectMultiplier = reflectValues[1] / reflectValues[2]
+
 			processHit(
 				victimCombatPlayer.player,
 				HRP :: BasePart,
@@ -421,7 +426,7 @@ function processHit(
 				combatPlayer.character,
 				combatPlayer,
 				attackDetails,
-				victimCombatPlayer:GetStatusEffect("Reflect")
+				reflectMultiplier
 			)
 		end
 	end
