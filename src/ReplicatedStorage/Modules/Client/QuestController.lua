@@ -4,9 +4,9 @@ local QuestController = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataController = require(script.Parent.DataController)
+local PurchaseController = require(script.Parent.PurchaseController)
 
 local ClaimQuestEvent = require(ReplicatedStorage.Events.Quest.ClaimQuestEvent):Client()
-local RefreshQuestsEvent = require(ReplicatedStorage.Events.Quest.RefreshQuestsEvent):Client()
 
 local Player = Players.LocalPlayer
 
@@ -18,6 +18,8 @@ local questListFrame = QuestUI.Content.Rows.ScrollingFrame
 
 local template = questListFrame.Template
 template.Parent = nil -- So we can clear children without destroying this template
+
+local REFRESHID = 1669000393
 
 function RenderQuests()
 	local data = DataController.GetLocalData():Await().Private
@@ -91,6 +93,10 @@ end
 function QuestController.Initialize()
 	DataController.LocalDataUpdated:Connect(function()
 		RenderQuests()
+	end)
+
+	QuestUI.Content.Rows.ResetFrame.Reset.Activated:Connect(function()
+		PurchaseController.Purchase(REFRESHID)
 	end)
 end
 

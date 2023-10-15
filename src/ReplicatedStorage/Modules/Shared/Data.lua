@@ -50,7 +50,6 @@ Data.ProfileTemplate = {
 
 	QuestGivenTime = 0,
 	Quests = {} :: { Types.Quest },
-	QuestFreeRefresh = true,
 }
 TableUtil.Lock(Data.ProfileTemplate)
 

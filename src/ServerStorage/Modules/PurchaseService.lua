@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local DataService = require(script.Parent.DataService)
+local QuestService = require(script.Parent.QuestService)
 
 local MAXSTOREDPURCHASES = 50
 
@@ -39,6 +40,13 @@ local products: { [number]: Product } = {
 	[1654324789] = RumbleBuckPurchase(1200),
 	[1654328177] = RumbleBuckPurchase(3000),
 	[1654328497] = RumbleBuckPurchase(6000),
+	[1669000393] = {
+		Name = "Reset Challenges",
+		BuyFunction = function(player, profile)
+			QuestService.HandleRefreshQuests(player)
+		end,
+		CanBuy = TrueFunction,
+	},
 }
 
 -- Stolen from ProfileService documentation with adjustments

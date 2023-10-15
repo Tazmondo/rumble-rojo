@@ -12,7 +12,6 @@ local Future = require(ReplicatedStorage.Packages.Future)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
 local ClaimQuestEvent = require(ReplicatedStorage.Events.Quest.ClaimQuestEvent):Server()
-local RefreshQuestsEvent = require(ReplicatedStorage.Events.Quest.RefreshQuestsEvent):Server()
 
 -- QUEST TYPES:
 -- Get X kills
@@ -192,7 +191,6 @@ function PlayerAdded(player: Player)
 		if deltaTime >= DAYTIME then
 			print("Assigning", player, "new quests.")
 			data.QuestGivenTime = os.time()
-			data.QuestFreeRefresh = true
 			GenerateQuests(player)
 		else
 			-- If they left a game mid-way then we need to reset when they join
@@ -243,19 +241,14 @@ function HandleClaimQuest(player: Player, questIndex: number)
 	DataService.SchedulePrivateUpdate(player)
 end
 
-function HandleRefreshQuests(player: Player)
+function QuestService.HandleRefreshQuests(player: Player)
 	local data = DataService.GetPrivateData(player, true):Await()
 	if not data then
 		return
 	end
 
-	if not data.QuestFreeRefresh then
-		warn("Tried to refresh quests without a refresh available", player)
-		return
-	end
-
-	data.QuestFreeRefresh = false
 	GenerateQuests(player)
+	data.QuestGivenTime = os.time()
 
 	DataService.UpdatePrivateData(player)
 end
@@ -275,7 +268,6 @@ function QuestService.Initialize()
 	Players.PlayerAdded:Connect(PlayerAdded)
 
 	ClaimQuestEvent:On(HandleClaimQuest)
-	RefreshQuestsEvent:On(HandleRefreshQuests)
 
 	ItemService.CollectBoost:Connect(function(player)
 		AdvanceQuest(player, "Collect")
