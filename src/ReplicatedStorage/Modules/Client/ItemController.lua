@@ -118,7 +118,7 @@ function RenderAbsorption(model: Model, targetPart: BasePart)
 			model:ScaleTo((1 - alpha) / 2 + 0.5)
 			task.wait()
 		end
-		SoundController:PlayGeneralSound("CollectBooster", targetPart)
+		SoundController:PlayGeneralSound("CollectBooster", targetPart.Position)
 		return
 	end)
 end

@@ -391,7 +391,7 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 		end
 		self.combatCamera:Shake()
 		self.combatPlayer:Attack()
-		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, false)
+		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, false, self.HRP.Position)
 		attackData = self.combatPlayer.heroData.Attack
 	elseif type == "Super" then
 		if not self.combatPlayer:CanSuperAttack() then
@@ -400,7 +400,7 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 		end
 		self.combatCamera:Shake()
 		self.combatPlayer:SuperAttack()
-		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, true)
+		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, true, self.HRP.Position)
 		attackData = self.combatPlayer.heroData.Super
 	elseif type == "Skill" then
 		attackData = assert(self.combatPlayer.skill.AttackData)
@@ -427,7 +427,14 @@ function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Ski
 
 	-- AnimationController.AttemptPlay(self.animationController, "Attack")
 
-	AttackRenderer.RenderAttack(self.player, attackData, origin, attackDetails, self.HRP)
+	AttackRenderer.RenderAttack(
+		self.player,
+		self.combatPlayer.heroData.Name,
+		attackData,
+		origin,
+		attackDetails,
+		self.HRP
+	)
 	self.combatPlayer.attackId = AttackFunction:Call(type, origin, attackDetails):Await()
 end
 

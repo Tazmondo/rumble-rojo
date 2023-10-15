@@ -80,6 +80,7 @@ local function replicateAttack(
 
 	print("registering1")
 	local attackLogicCombatPlayer = if chained then nil else combatPlayer
+	local heroName = combatPlayer.heroData.Name
 
 	if attackData.Data.AttackType == "Shotgun" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotgunDetails
@@ -102,7 +103,7 @@ local function replicateAttack(
 			combatPlayer:RegisterBullet(pellet.id, pellet.CFrame, pellet.speed, attackData, (index - 1) * delayTime)
 		end
 
-		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
+		ReplicateAttackEvent:FireAll(player, heroName, attackData, origin, attackDetails)
 	elseif attackData.Data.AttackType == "Shot" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ShotDetails
 
@@ -116,7 +117,7 @@ local function replicateAttack(
 
 		combatPlayer:RegisterBullet(attackDetails.id, attackDetails.origin, attackData.Data.ProjectileSpeed, attackData)
 
-		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
+		ReplicateAttackEvent:FireAll(player, heroName, attackData, origin, attackDetails)
 	elseif attackData.Data.AttackType == "Arced" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.ArcDetails
 
@@ -134,7 +135,7 @@ local function replicateAttack(
 
 		combatPlayer:RegisterBullet(attackDetails.id, attackDetails.origin, attackData.Data.ProjectileSpeed, attackData)
 
-		ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
+		ReplicateAttackEvent:FireAll(player, heroName, attackData, origin, attackDetails)
 	elseif attackData.Data.AttackType == "Field" then
 		local localAttackDetails = localAttackDetails :: AttackLogic.FieldDetails
 
@@ -165,7 +166,7 @@ local function replicateAttack(
 		)
 
 		if not chained then
-			ReplicateAttackEvent:FireAll(player, attackData, origin, attackDetails)
+			ReplicateAttackEvent:FireAll(player, heroName, attackData, origin, attackDetails)
 		end
 	else
 		warn("Invalid attack received: ", attackData.Data.AttackType)

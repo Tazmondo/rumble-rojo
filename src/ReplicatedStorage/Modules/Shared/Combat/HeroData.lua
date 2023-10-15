@@ -119,7 +119,7 @@ local Frankie: Types.HeroData = {
 }
 
 local Gobzie: Types.HeroData = {
-	Name = "Frankie",
+	Name = "Gobzie",
 	Health = 4100,
 	MovementSpeed = Enums.MovementSpeed.Normal,
 	Attack = {

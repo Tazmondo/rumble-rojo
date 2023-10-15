@@ -170,6 +170,7 @@ end
 
 function CreateAttackProjectile(
 	player: Player,
+	heroName: string,
 	attackData: Types.AbilityData,
 	origin: CFrame,
 	speed: number,
@@ -204,6 +205,7 @@ function CreateAttackProjectile(
 						onHit(nil, hitPos.Position, id)
 					end
 				end
+				SoundController:PlayHeroAttack(heroName, attackData.AbilityType == "Super", hitPos.Position, "Hit")
 				pelletPart:Destroy()
 			end
 		end
@@ -283,10 +285,18 @@ function GetPartsInExplosion(radius: number, position: Vector3)
 	return intersectingParts
 end
 
-function CreateExplosion(bombPart: Model, player: Player, attackData: Types.ArcedData, target: Vector3, hitbox: boolean)
-	local anchor = if player == localPlayer then nil else bombPart
+function CreateExplosion(
+	bombPart: Model,
+	player: Player,
+	heroName: string,
+	super: boolean,
+	attackData: Types.ArcedData,
+	target: Vector3,
+	hitbox: boolean
+)
+	local anchor = bombPart:GetPivot().Position
 
-	SoundController:PlayGeneralAttackSound("BombTimer", anchor)
+	SoundController:PlayHeroAttack(heroName, super, anchor, "Timer")
 
 	local t = 0
 	local expand = RunService.RenderStepped:Connect(function(dt)
@@ -307,7 +317,8 @@ function CreateExplosion(bombPart: Model, player: Player, attackData: Types.Arce
 	expand:Disconnect()
 	bombPart:Destroy()
 
-	SoundController:PlayGeneralAttackSound("BombBlast", anchor)
+	anchor = bombPart:GetPivot().Position
+	SoundController:PlayHeroAttack(heroName, super, anchor, "Explode")
 
 	local defaultExplosionRadius = 9
 	local explosionScale = attackData.Radius / defaultExplosionRadius
@@ -346,6 +357,7 @@ end
 
 function CreateArcedAttack(
 	player: Player,
+	heroName: string,
 	attackData: Types.AbilityData,
 	origin: CFrame,
 	projectileTime: number,
@@ -386,7 +398,15 @@ function CreateArcedAttack(
 	-- Don't care about hit detection with map walls, we should handle that before the target is passed in.
 	task.delay(projectileTime, function()
 		movementTick:Disconnect()
-		local hitRegisters = CreateExplosion(pelletPart, player, attackData.Data, target, onHit ~= nil)
+		local hitRegisters = CreateExplosion(
+			pelletPart,
+			player,
+			heroName,
+			attackData.AbilityType == "Super",
+			attackData.Data,
+			target,
+			onHit ~= nil
+		)
 		if onHit then
 			onHit(hitRegisters, id, target)
 		end
@@ -442,6 +462,7 @@ end
 
 function AttackRenderer.RenderAttack(
 	player: Player,
+	heroName: string,
 	attackData: Types.AbilityData,
 	origin: CFrame,
 	attackDetails: AttackLogic.AttackDetails,
@@ -460,7 +481,7 @@ function AttackRenderer.RenderAttack(
 					then CFrame.new(originPart.Position) * pellet.CFrame.Rotation
 					else pellet.CFrame
 
-				CreateAttackProjectile(player, attackData, newCF, pellet.speed, pellet.id, OnBulletHit)
+				CreateAttackProjectile(player, heroName, attackData, newCF, pellet.speed, pellet.id, OnBulletHit)
 
 				if attackData.Data.TimeBetweenShots then
 					if player == localPlayer and index > 1 then
@@ -475,6 +496,7 @@ function AttackRenderer.RenderAttack(
 
 			endCFrame = CreateAttackProjectile(
 				player,
+				heroName,
 				attackData,
 				details.origin,
 				attackData.Data.ProjectileSpeed,
@@ -486,6 +508,7 @@ function AttackRenderer.RenderAttack(
 
 			CreateArcedAttack(
 				player,
+				heroName,
 				attackData,
 				origin,
 				details.timeToLand,
@@ -510,13 +533,14 @@ function AttackRenderer.RenderAttack(
 
 			local newDetails = AttackLogic.MakeAttack(nil, endCFrame, newData)
 
-			AttackRenderer.RenderAttack(player, newData, endCFrame, newDetails, originPart)
+			AttackRenderer.RenderAttack(player, heroName, newData, endCFrame, newDetails, originPart)
 		end
 	end)
 end
 
 function AttackRenderer.RenderOtherClientAttack(
 	player: Player,
+	heroName: string,
 	attackData: Types.AbilityData,
 	origin: CFrame,
 	attackDetails: AttackLogic.AttackDetails
@@ -532,7 +556,7 @@ function AttackRenderer.RenderOtherClientAttack(
 	if character then
 		originPart = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	end
-	AttackRenderer.RenderAttack(player, attackData, origin, attackDetails, originPart)
+	AttackRenderer.RenderAttack(player, heroName, attackData, origin, attackDetails, originPart)
 end
 
 -- HitPart, Position, Id

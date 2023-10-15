@@ -6,7 +6,7 @@ local AttackSoundEvent = require(ReplicatedStorage.Events.Sound.AttackSoundEvent
 local SoundService = {}
 
 function SoundService:PlayHeroAttack(notPlayer: Player, heroData: Types.HeroData, super: boolean, character: Model)
-	AttackSoundEvent:FireAllExcept(notPlayer, heroData.Name, super, character)
+	AttackSoundEvent:FireAllExcept(notPlayer, heroData.Name, super, assert(character.PrimaryPart).Position)
 end
 
 return SoundService
