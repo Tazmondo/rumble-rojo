@@ -292,6 +292,7 @@ export type Quest = {
 	Difficulty: "Easy" | "Medium" | "Hard",
 	RequiredNumber: number,
 	CurrentNumber: number,
+	Claimed: boolean,
 	Reward: number,
 	Text: string,
 }

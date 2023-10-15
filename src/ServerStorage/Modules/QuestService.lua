@@ -11,6 +11,9 @@ local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Future = require(ReplicatedStorage.Packages.Future)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 
+local ClaimQuestEvent = require(ReplicatedStorage.Events.Quest.ClaimQuestEvent):Server()
+local RefreshQuestsEvent = require(ReplicatedStorage.Events.Quest.RefreshQuestsEvent):Server()
+
 -- QUEST TYPES:
 -- Get X kills
 -- Get X wins
@@ -123,6 +126,7 @@ function GenerateRandomQuest(difficulty: "Easy" | "Medium" | "Hard"): Types.Ques
 		CurrentNumber = 0,
 		RequiredNumber = questNumber,
 		Reward = QuestRewards[difficulty],
+		Claimed = false,
 		Text = GetQuestText(randomType, questNumber),
 	}
 end
@@ -210,6 +214,52 @@ function AdvanceQuest(player: Player, type: Types.QuestType, count: number?)
 	end)
 end
 
+function HandleClaimQuest(player: Player, questIndex: number)
+	local data = DataService.GetPrivateData(player, true):Await()
+	if not data then
+		return
+	end
+
+	local quest = data.Quests[questIndex]
+	if not quest then
+		warn("Passed in an invalid questIndex", player, questIndex)
+		return
+	end
+
+	local claimable = quest.CurrentNumber >= quest.RequiredNumber
+	if not claimable then
+		warn("Tried to complete an incomplete quest", player)
+		return
+	end
+
+	if quest.Claimed then
+		warn("Tried to claim an already claimed quest", player)
+		return
+	end
+
+	quest.Claimed = true
+	data.Money += quest.Reward
+
+	DataService.SchedulePrivateUpdate(player)
+end
+
+function HandleRefreshQuests(player: Player)
+	local data = DataService.GetPrivateData(player, true):Await()
+	if not data then
+		return
+	end
+
+	if not data.QuestFreeRefresh then
+		warn("Tried to refresh quests without a refresh available", player)
+		return
+	end
+
+	data.QuestFreeRefresh = false
+	GenerateQuests(player)
+
+	DataService.UpdatePrivateData(player)
+end
+
 function ResetStreakQuests(player)
 	local quest = GetQuestOfType(player, "KillOneGame"):Await()
 	if quest then
@@ -223,6 +273,9 @@ function QuestService.Initialize()
 		PlayerAdded(player)
 	end
 	Players.PlayerAdded:Connect(PlayerAdded)
+
+	ClaimQuestEvent:On(HandleClaimQuest)
+	RefreshQuestsEvent:On(HandleRefreshQuests)
 
 	ItemService.CollectBoost:Connect(function(player)
 		AdvanceQuest(player, "Collect")
