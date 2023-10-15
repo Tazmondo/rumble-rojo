@@ -9,6 +9,7 @@ Enums.MovementSpeed = {
 }
 
 Enums.AttackRange = {
+	VeryShort = 24,
 	Short = 32,
 	Medium = 48,
 	MediumLarge = 64,
@@ -31,7 +32,7 @@ Enums.ArcHeight = {
 Enums.Radius = {
 	Small = 5,
 	Medium = 7,
-	Large = 12,
+	Large = 14,
 }
 
 Enums.Modifiers = {

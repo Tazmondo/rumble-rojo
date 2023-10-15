@@ -44,14 +44,14 @@ ChestData = table.freeze(ChestData)
 
 local Taz: Types.HeroData = {
 	Name = "Taz",
-	Health = 3800,
-	MovementSpeed = Enums.MovementSpeed.Normal,
+	Health = 3700,
+	MovementSpeed = Enums.MovementSpeed.Fast,
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
 		Name = "Buckshot",
 		Ammo = 3,
 		AmmoRegen = 2,
-		Range = Enums.AttackRange.Short,
+		Range = Enums.AttackRange.VeryShort,
 		ReloadSpeed = 0.5,
 
 		Data = {
@@ -133,12 +133,12 @@ local Gobzie: Types.HeroData = {
 		Data = {
 			AttackType = "Shotgun",
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
-			Damage = 250,
+			Damage = 300,
 			Angle = 7,
-			ShotCount = 6,
+			ShotCount = 8,
 			TimeBetweenShots = 0.08,
 			SpeedVariation = 1.5,
-			AngleVariation = 4,
+			AngleVariation = 5,
 		},
 	},
 	Super = {
@@ -149,15 +149,15 @@ local Gobzie: Types.HeroData = {
 
 		Data = {
 			AttackType = "Shot" :: "Shot",
-			Damage = 500,
+			Damage = 750,
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			Chain = {
 				AttackType = "Field",
-				Damage = 1000,
+				Damage = 1200,
 				Duration = 8,
 				Radius = Enums.Radius.Large,
 				Effect = function(combatPlayer)
-					combatPlayer:SetStatusEffect("Slow", 0.8, 0.2)
+					combatPlayer:SetStatusEffect("Slow", 0.75, 0.2)
 				end,
 			},
 		},
