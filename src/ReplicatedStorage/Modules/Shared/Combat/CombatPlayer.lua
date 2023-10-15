@@ -331,6 +331,8 @@ end
 
 function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value: any?, delay: number?)
 	self:Sync("SetStatusEffect", effect, value)
+	local oldValue = self:GetStatusEffect(effect)
+
 	if value then
 		local save = { value }
 		self.statusEffects[effect] = save
@@ -346,7 +348,7 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 		self.statusEffects[effect] = nil
 	end
 
-	if effect == "Slow" or effect == "Ratty" or effect == "Stun" or effect == "Dash" then
+	if (effect == "Slow" or effect == "Ratty" or effect == "Stun" or effect == "Dash") and oldValue ~= value then
 		self:UpdateSpeed()
 	elseif effect == "Haste" then
 		self.ammoRegen = self.baseAmmoRegen - LATENCYALLOWANCE
@@ -389,7 +391,6 @@ function CombatPlayer.UpdateSpeed(self: CombatPlayer)
 	local modifier = slowModifier * ratModifier * stunModifier * dashModifier
 
 	self.movementSpeed = self.baseSpeed * modifier
-	print("Updating speed", self.movementSpeed)
 	if self.humanoid then
 		self.humanoid.WalkSpeed = self.movementSpeed
 	end
