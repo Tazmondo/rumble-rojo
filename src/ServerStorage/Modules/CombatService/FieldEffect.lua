@@ -5,6 +5,8 @@ local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local FieldEffect = {}
 
+local HITFREQUENCY = 0.5
+
 function FieldEffect.new(
 	origin: Vector3,
 	data: Types.AbilityData,
@@ -16,6 +18,7 @@ function FieldEffect.new(
 	assert(data.Data.AttackType == "Field")
 
 	local start = os.clock()
+	local lastHit = 0
 	local expansionTime = data.Data.ExpansionTime or Config.FieldExpansionTime
 
 	local conn = RunService.PostSimulation:Connect(function(dt)
@@ -37,8 +40,9 @@ function FieldEffect.new(
 					data.Data.Effect(combatPlayer)
 				end
 
-				if data.Data.Damage > 0 and combatPlayer:CanTakeDamage() then
-					OnHit(combatPlayer, dt)
+				if data.Data.Damage > 0 and combatPlayer:CanTakeDamage() and os.clock() - lastHit >= HITFREQUENCY then
+					lastHit = os.clock()
+					OnHit(combatPlayer, HITFREQUENCY)
 				end
 			end
 		end
