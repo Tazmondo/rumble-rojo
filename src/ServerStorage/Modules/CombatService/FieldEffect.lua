@@ -18,11 +18,18 @@ function FieldEffect.new(
 	assert(data.Data.AttackType == "Field")
 
 	local start = os.clock()
-	local lastHit = 0
+	local lastHit = os.clock() - HITFREQUENCY / 2 -- give a bit of time to expand before start hitting
 	local expansionTime = data.Data.ExpansionTime or Config.FieldExpansionTime
 
 	local conn = RunService.PostSimulation:Connect(function(dt)
 		debug.profilebegin("FieldEffect")
+
+		local shouldHit = false
+		if os.clock() - lastHit >= HITFREQUENCY then
+			shouldHit = true
+			lastHit = os.clock()
+		end
+
 		for character, combatPlayer in pairs(combatPlayers) do
 			if Filter and not Filter(combatPlayer) then
 				continue
@@ -40,8 +47,7 @@ function FieldEffect.new(
 					data.Data.Effect(combatPlayer)
 				end
 
-				if data.Data.Damage > 0 and combatPlayer:CanTakeDamage() and os.clock() - lastHit >= HITFREQUENCY then
-					lastHit = os.clock()
+				if data.Data.Damage > 0 and combatPlayer:CanTakeDamage() and shouldHit then
 					OnHit(combatPlayer, HITFREQUENCY)
 				end
 			end
