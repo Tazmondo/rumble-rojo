@@ -95,7 +95,11 @@ function GetRaycastParams(excludeCharacter: Model?)
 	return raycastParams
 end
 
-function OnBulletHit(instance: BasePart?, position: Vector3, id: number)
+function OnBulletHit(player: Player, instance: BasePart?, position: Vector3, id: number)
+	if player ~= localPlayer then
+		return
+	end
+
 	Spawn(function()
 		task.wait()
 		HitEvent:Fire(instance, position, id)
@@ -103,6 +107,7 @@ function OnBulletHit(instance: BasePart?, position: Vector3, id: number)
 end
 
 function OnExplosionHit(
+	player: Player,
 	hits: {
 		{
 			instance: BasePart,
@@ -112,6 +117,10 @@ function OnExplosionHit(
 	id: number,
 	explosionCentre: Vector3
 )
+	if player ~= localPlayer then
+		return
+	end
+
 	Spawn(function()
 		task.wait()
 		HitMultipleEvent:Fire(hits, id, explosionCentre)
@@ -202,7 +211,7 @@ function CreateAttackProjectile(
 				if not hitPos then
 					hitPos = pelletPart:GetPivot()
 					if onHit then
-						onHit(nil, hitPos.Position, id)
+						onHit(player, nil, hitPos.Position, id)
 					end
 				end
 				SoundController:PlayHeroAttack(heroName, attackData.AbilityType == "Super", hitPos.Position, "Hit")
@@ -241,7 +250,7 @@ function CreateAttackProjectile(
 			local character = AttackRenderer.GetCombatPlayerFromValidPart(hitPart)
 			if onHit and character and not hitPos then
 				hitPos = CFrame.new(result.Position) * pelletPart:GetPivot().Rotation
-				onHit(hitPart, result.Position, id)
+				onHit(player, hitPart, result.Position, id)
 			end
 
 			if group ~= "nocollide" or character then
@@ -408,7 +417,7 @@ function CreateArcedAttack(
 			onHit ~= nil
 		)
 		if onHit then
-			onHit(hitRegisters, id, target)
+			onHit(player, hitRegisters, id, target)
 		end
 	end)
 end
@@ -560,8 +569,8 @@ function AttackRenderer.RenderOtherClientAttack(
 end
 
 -- HitPart, Position, Id
-export type HitFunction = (hitPart: BasePart?, position: Vector3, id: number) -> any
-export type MultiHit = ({
+export type HitFunction = (Player, hitPart: BasePart?, position: Vector3, id: number) -> any
+export type MultiHit = (Player, {
 	{
 		instance: BasePart,
 		position: Vector3,
