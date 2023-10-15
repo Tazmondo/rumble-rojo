@@ -148,11 +148,15 @@ function DataService.GetProfile(player: Player)
 	end, player)
 end
 
-function DataService.GetPrivateData(player: Player)
+function DataService.GetPrivateData(player: Player, original: boolean?)
 	return Future.new(function(player)
 		local loaded = DataService.PlayerLoaded(player):Await()
 		if loaded then
-			return proxyPrivateData[player] :: Data.PrivatePlayerData?
+			if original then
+				return PrivateData[player] :: Data.PrivatePlayerData?
+			else
+				return proxyPrivateData[player] :: Data.PrivatePlayerData?
+			end
 		else
 			return nil
 		end
@@ -174,6 +178,10 @@ function DataService.GetGameData()
 	return proxyGameData
 end
 
+function DataService.SchedulePrivateUpdate(player)
+	scheduledUpdates.Private[player] = true
+end
+
 function DataService.UpdatePrivateData(player)
 	local data = assert(PrivateData[player], "Tried to update private data before it existed!")
 
@@ -181,6 +189,10 @@ function DataService.UpdatePrivateData(player)
 	if LoadedService.ClientLoaded(player):Await() then
 		PrivateDataEvent:Fire(player, data)
 	end
+end
+
+function DataService.SchedulePublicUpdate(player)
+	scheduledUpdates.Public[player] = true
 end
 
 function DataService.UpdatePublicData(changedPlayer)

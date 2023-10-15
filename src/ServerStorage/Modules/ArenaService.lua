@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local ServerConfig = require(ReplicatedStorage.Modules.Shared.ServerConfig)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
+local Signal = require(ReplicatedStorage.Packages.Signal)
 local CombatService = require(script.Parent.CombatService)
 local DataService = require(script.Parent.DataService)
 local ItemService = require(script.Parent.ItemService)
@@ -26,7 +27,12 @@ local playerQueueStatus: { [Player]: boolean } = {}
 
 local registeredPlayers: { [Player]: Types.PlayerBattleResults } = {} -- boolean before character select, playerstats afterwards
 
+-- For Quests
+ArenaService.PlayerResultsSignal = Signal()
+
 function ArenaService.HandleResults(player)
+	ArenaService.PlayerResultsSignal:Fire(player, ArenaService.GetRegisteredPlayersLength())
+
 	local battleData = registeredPlayers[player]
 	print("Handling results for", player, battleData)
 	assert(battleData, "HandleResults called on player without battle data!")
@@ -235,12 +241,9 @@ function ArenaService.EndMatch(winner: Player?, storm)
 	-- Allow round ended text to appear for a bit
 	task.wait(2)
 
-	-- if tie, the registeredPlayers for the winner will be nil before this runs
 	if winner then
 		if registeredPlayers[winner] then
 			registeredPlayers[winner].Won = true
-		else
-			-- TODO: HANDLE TIES
 		end
 	end
 	for player, heroName in pairs(registeredPlayers) do

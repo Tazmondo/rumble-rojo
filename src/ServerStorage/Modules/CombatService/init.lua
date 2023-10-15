@@ -45,6 +45,12 @@ local CombatPlayerInitializeEvent = require(ReplicatedStorage.Events.Combat.Comb
 local PlayerKilledEvent = require(ReplicatedStorage.Events.Combat.PlayerKilledEvent):Server()
 local ReplicateAttackEvent = require(ReplicatedStorage.Events.Combat.ReplicateAttackEvent):Server()
 
+-- Quest signals
+CombatService.KillSignal = Signal()
+CombatService.DamageSignal = Signal()
+CombatService.SkillSignal = Signal()
+CombatService.SuperSignal = Signal()
+
 type PlayerCombatDetails = {
 	HeroName: string,
 	SkinName: string,
@@ -267,6 +273,7 @@ local function handleSuper(player: Player, origin: CFrame, localAttackDetails)
 	SoundService:PlayHeroAttack(player, combatPlayer.heroData, true, player.Character)
 
 	combatPlayer:SuperAttack()
+	CombatService.SuperSignal:Fire(player)
 
 	return combatPlayer.attackId
 end
@@ -298,6 +305,8 @@ function handleAttackSkill(player: Player, origin: CFrame, localAttackDetails)
 
 	combatPlayer:UseSkill()
 
+	CombatService.SkillSignal:Fire(player, combatPlayer.skill)
+
 	return combatPlayer.attackId
 end
 
@@ -316,6 +325,7 @@ function handleAbilitySkill(player: Player)
 		return
 	end
 
+	CombatService.SkillSignal:Fire(player, combatPlayer.skill)
 	combatPlayer:UseSkill()
 end
 
@@ -394,6 +404,7 @@ function processHit(
 	end
 
 	combatPlayer:DealDamage(actualDamage, victimCharacter)
+	CombatService.DamageSignal:Fire(player, actualDamage)
 
 	local afterState = victimCombatPlayer:GetState()
 
@@ -880,8 +891,6 @@ function CombatService:Initialize()
 
 	ItemService.Initialize(CombatPlayerData)
 end
-
-CombatService.KillSignal = Signal()
 
 export type CombatService = typeof(CombatService)
 

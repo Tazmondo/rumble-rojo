@@ -2,9 +2,11 @@ local QuestService = {}
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+local ArenaService = require(script.Parent.ArenaService)
+local CombatService = require(script.Parent.CombatService)
 local Table = require(ReplicatedStorage.Modules.Shared.Table)
 local DataService = require(script.Parent.DataService)
+local ItemService = require(script.Parent.ItemService)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Future = require(ReplicatedStorage.Packages.Future)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
@@ -91,7 +93,7 @@ local QuestData = {
 	},
 }
 
-local QuestTypes = TableUtil.Keys(QuestData)
+local QuestTypes = TableUtil.Keys(QuestData) :: { Types.QuestType }
 
 assert(#QuestTypes >= (QuestCounts.Easy + QuestCounts.Medium + QuestCounts.Hard), "Not enough unique quest types!")
 
@@ -114,7 +116,7 @@ function GenerateRandomQuest(difficulty: "Easy" | "Medium" | "Hard"): Types.Ques
 	local questNumber = typeData[difficulty]
 
 	return {
-		Type = randomType,
+		Type = randomType :: Types.QuestType,
 		Difficulty = difficulty,
 		CurrentNumber = 0,
 		RequiredNumber = questNumber,
@@ -149,10 +151,25 @@ function GenerateQuests(player: Player)
 				data.Quests[totalCount] = quest
 			end
 		end
+	end)
+end
 
-		RunService.Stepped:Connect(function()
-			data.Quests[1].CurrentNumber += 1
-		end)
+function GetQuestOfType(player: Player, type: Types.QuestType)
+	return Future.new(function()
+		local foundQuest: Types.Quest?
+
+		-- Here we need to get the original table, as we cannot iterate through the proxy table
+		local data = DataService.GetPrivateData(player, true):Await()
+		if not data then
+			return foundQuest
+		end
+		for i, quest in ipairs(data.Quests) do
+			if quest.Type == type then
+				foundQuest = quest
+				return foundQuest
+			end
+		end
+		return foundQuest
 	end)
 end
 
@@ -164,7 +181,29 @@ function PlayerAdded(player: Player)
 		end
 
 		GenerateQuests(player)
+		ResetStreakQuests(player)
 	end)
+end
+
+function AdvanceQuest(player: Player, type: Types.QuestType, count: number?)
+	return Future.new(function()
+		local quest = GetQuestOfType(player, type):Await()
+		if quest then
+			quest.CurrentNumber = math.clamp(quest.CurrentNumber + (count or 1), 0, quest.RequiredNumber)
+		end
+
+		-- Updating the quests does not trigger the metatable
+		-- So we need to manually declare an update
+		DataService.SchedulePrivateUpdate(player)
+	end)
+end
+
+function ResetStreakQuests(player)
+	local quest = GetQuestOfType(player, "KillOneGame"):Await()
+	if quest then
+		quest.CurrentNumber = 0
+		DataService.SchedulePrivateUpdate(player)
+	end
 end
 
 function QuestService.Initialize()
@@ -172,6 +211,44 @@ function QuestService.Initialize()
 		PlayerAdded(player)
 	end
 	Players.PlayerAdded:Connect(PlayerAdded)
+
+	ItemService.CollectBoost:Connect(function(player)
+		AdvanceQuest(player, "Collect")
+	end)
+
+	ArenaService.PlayerResultsSignal:Connect(function(player, numPlayers)
+		if numPlayers <= 1 then
+			AdvanceQuest(player, "Win")
+		end
+		if numPlayers <= 2 then
+			AdvanceQuest(player, "Finals")
+		end
+		AdvanceQuest(player, "Play")
+
+		ResetStreakQuests(player)
+	end)
+
+	CombatService.KillSignal:Connect(function(killData)
+		local player = killData.Killer
+		if player then
+			AdvanceQuest(player, "Kill")
+			AdvanceQuest(player, "KillOneGame")
+		end
+	end)
+
+	CombatService.DamageSignal:Connect(function(player, damage)
+		if player then
+			AdvanceQuest(player, "Damage", damage)
+		end
+	end)
+
+	CombatService.SkillSignal:Connect(function(player, skill)
+		AdvanceQuest(player, "Skills")
+	end)
+
+	CombatService.SuperSignal:Connect(function(player)
+		AdvanceQuest(player, "Super")
+	end)
 end
 
 QuestService.Initialize()

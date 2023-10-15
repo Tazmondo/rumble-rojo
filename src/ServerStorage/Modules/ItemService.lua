@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LoadedService = require(script.Parent.LoadedService)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local SpawnItemEvent = require(ReplicatedStorage.Events.Item.SpawnItem):Server()
 local RegisterItemEvent = require(ReplicatedStorage.Events.Item.RegisterItem):Server()
@@ -13,6 +14,9 @@ local DestroyItemEvent = require(ReplicatedStorage.Events.Item.DestroyItem):Serv
 local ItemCollectedEvent = require(ReplicatedStorage.Events.Item.ItemCollected):Server()
 local CollectItemEvent = require(ReplicatedStorage.Events.Item.CollectItem):Server()
 local BeginAbsorbEvent = require(ReplicatedStorage.Events.Item.BeginAbsorb):Server()
+
+-- For Quests
+ItemService.CollectBoost = Signal()
 
 local spawnedItems: { [number]: Item } = {}
 
@@ -115,6 +119,7 @@ function HandleItemPickup(combatPlayers: CombatPlayers, player: Player, id: numb
 	end
 
 	combatPlayer:AddBooster(1)
+	ItemService.CollectBoost:Fire(player)
 	-- don't need to tell players to destroy item as that's part of the CollectItem call in the absorb handler
 	spawnedItems[id] = nil
 end

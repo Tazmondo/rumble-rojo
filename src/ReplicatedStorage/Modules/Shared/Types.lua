@@ -286,8 +286,9 @@ export type CombatPlayer = {
 	Destroy: (CombatPlayer) -> (),
 }
 
+export type QuestType = "Kill" | "KillOneGame" | "Win" | "Finals" | "Play" | "Collect" | "Damage" | "Skills" | "Super"
 export type Quest = {
-	Type: string,
+	Type: QuestType,
 	Difficulty: "Easy" | "Medium" | "Hard",
 	RequiredNumber: number,
 	CurrentNumber: number,
