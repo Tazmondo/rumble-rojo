@@ -94,6 +94,7 @@ end
 function SetOpacity(character: Model, opacityModifier: number)
 	if not characterData[character] then
 		warn("Set transparency called on a non-combat player")
+		return
 	end
 	local data = characterData[character]
 
@@ -113,6 +114,7 @@ function UpdateOpacity(character: Model, instant: boolean?)
 	local data = characterData[character]
 	if not data then
 		warn("Update transparency called on a non-combat player")
+		return
 	end
 
 	data.CurrentOpacity = LerpValue(data.CurrentOpacity, data.TargetOpacity, LERPSPEED)

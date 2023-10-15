@@ -351,6 +351,7 @@ function HandleSelectHero(player: Player, hero: string)
 		privateData.SelectedHero = hero
 	else
 		warn("Tried to select hero without owning it.")
+		return
 	end
 end
 
@@ -365,6 +366,7 @@ function HandleSelectSkin(player: Player, hero: string, skin: string)
 		privateData.OwnedHeroes[hero].SelectedSkin = skin
 	else
 		warn("Tried to select skin without owning it.")
+		return
 	end
 end
 
@@ -388,6 +390,7 @@ function HandleSelectModifier(player: Player, hero: string, modifier: string, sl
 		heroData.SelectedModifiers[slot] = modifier
 	else
 		warn("Tried to select modifier without owning it, or the hero, or already selecting it in the other slot.")
+		return
 	end
 end
 
@@ -403,6 +406,7 @@ function HandleSelectTalent(player, hero, talent)
 		privateData.OwnedHeroes[hero].SelectedTalent = talent
 	else
 		warn("Tried to select talent without owning it, or the hero.")
+		return
 	end
 end
 
@@ -418,6 +422,7 @@ function HandleSelectSkill(player, hero, skill)
 		privateData.OwnedHeroes[hero].SelectedSkill = skill
 	else
 		warn("Tried to select skill without owning it, or the hero.")
+		return
 	end
 end
 

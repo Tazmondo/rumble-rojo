@@ -431,6 +431,7 @@ function RenderHeroSelectScreen()
 		local skinData = heroData.Skins[displayedSkin]
 		if not skinData then
 			warn("Could not find skinData", displayedSkin, selectedHero, displayedHero)
+			return
 		end
 		local rarity = skinData.Rarity
 
