@@ -22,7 +22,7 @@ local pivotPoint = assert(lobby:FindFirstChild("MapPivotPoint"), "Lobby did not 
 local MAPTRANSITIONTIME = 4
 
 local activeMapCFrame = pivotPoint.CFrame
-local inactiveMapCFrame = activeMapCFrame * CFrame.new(0, -50, 0)
+local inactiveMapCFrame = activeMapCFrame * CFrame.new(0, -30, 0)
 
 local map: Model? = nil
 local chestFolder = Instance.new("Folder", ReplicatedStorage)

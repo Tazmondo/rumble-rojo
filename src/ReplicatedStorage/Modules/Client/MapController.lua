@@ -34,11 +34,16 @@ function MoveMap(map: Model, descendantCount: number, newCF: CFrame, oldCF: CFra
 		return
 	end
 
+	local moveDelay = 0.1
+	task.wait(moveDelay)
+
+	tweenTime -= moveDelay
+
 	map:PivotTo(oldCF)
 	local mapStart = map:GetPivot()
 
-	local easingStyle = Enum.EasingStyle.Quad
-	local easingDirection = Enum.EasingDirection.InOut
+	local easingStyle = Enum.EasingStyle.Sine
+	local easingDirection = Enum.EasingDirection.Out
 	-- map:PivotTo(newCF)
 
 	local start = os.clock()
