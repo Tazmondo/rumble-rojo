@@ -232,11 +232,11 @@ Modifiers.SuperBlast = {
 	UnlockedImage = "rbxassetid://14996725763",
 	LockedImage = "rbxassetid://14996726794",
 	Modify = function(self)
-		self.baseSuperDamage *= 1.15
 		local super = self.heroData.Super
 		assert(super.Data.AttackType == "Arced")
 
 		super.Data.Radius *= 1.5
+		super.Data.Damage *= 1.15
 	end,
 }
 
@@ -247,7 +247,7 @@ Modifiers.Overslime = {
 	UnlockedImage = "rbxassetid://14996726056",
 	LockedImage = "rbxassetid://14996726996",
 	Modify = function(self)
-		self.baseSuperDamage *= 1.4
+		self.heroData.Super.Data.Damage *= 1.4
 	end,
 }
 

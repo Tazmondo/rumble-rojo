@@ -90,9 +90,6 @@ function InitializeSelf(
 	self.heroData = TableUtil.Copy(heroData, true)
 	self.destroyed = false
 
-	self.baseAttackDamage = self.heroData.Attack.Data.Damage
-	self.baseSuperDamage = self.heroData.Super.Data.Damage
-	self.baseSkillDamage = if skill and skill.AttackData then skill.AttackData.Data.Damage else 0
 	self.baseDamageMultiplier = 1
 	self.baseHealth = self.heroData.Health
 	self.baseSpeed = self.heroData.MovementSpeed
@@ -249,11 +246,8 @@ function CombatPlayer.GetDamageBetween(
 	end
 
 	local givenMultiplier = multiplier or 1
-	local baseDamage = attacker.baseDamageMultiplier
-		* if attack.AbilityType == "Attack"
-			then attacker.baseAttackDamage
-			elseif attack.AbilityType == "Super" then attacker.baseSuperDamage
-			else attacker.baseSkillDamage
+
+	local baseDamage = attacker.baseDamageMultiplier * attack.Data.Damage
 	local boosterDamage = baseDamage * (1 + attacker.boosterCount * Config.BoosterDamage)
 	local finalDamage = boosterDamage
 		* attacker:GetDamageMultiplier(victim)
