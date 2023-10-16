@@ -79,6 +79,11 @@ Data.GameData = {
 	-- Debug/Admin options
 	ForceRound = false,
 	ForceEndRound = false,
+	-- Storm --
+	Storm = {
+		Active = false,
+		Progress = 0,
+	},
 }
 TableUtil.Lock(Data.GameData)
 

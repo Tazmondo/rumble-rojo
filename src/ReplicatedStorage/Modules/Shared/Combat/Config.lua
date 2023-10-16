@@ -58,7 +58,18 @@ local Config = {
 	BoosterDamage = 0.1,
 
 	-- pickup radius for items
-	PickupRadius = 8,
+	PickupRadius = 10,
+
+	-- STORM CONFIG --
+	Storm = {
+		BlockSize = 8,
+		MapLength = 32,
+		MinLayer = 3,
+		DamageAmount = 0.2,
+		DamageDelay = 1,
+		StartDelay = 16,
+		ProgressDelay = 9,
+	},
 }
 
 return Config
