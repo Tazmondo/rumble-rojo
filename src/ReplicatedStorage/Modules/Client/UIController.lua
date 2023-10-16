@@ -17,7 +17,7 @@ local ResultsUI = PlayerGui:WaitForChild("ResultsUI") :: any
 local HeroSelect = PlayerGui:WaitForChild("HeroSelectUI") :: any
 local BuyBucksUI = PlayerGui:WaitForChild("BuyBucksUI") :: any
 
-local TopText = ArenaUI.Interface.TopBar.TopText.Text
+local TopText = ArenaUI.Interface.TopBar.TopText
 
 -- services
 local Lighting = game:GetService("Lighting")
@@ -178,7 +178,7 @@ function NotEnoughPlayersRender(changed)
 
 	ArenaUI.Interface.TopBar.Visible = true
 	TopText.Visible = true
-	TopText.Text = "Ready up!"
+	TopText.Text.Text = "Ready up!"
 
 	RenderStats()
 	UpdateQueueButtons()
@@ -198,7 +198,7 @@ function IntermissionRender(changed)
 	UpdateQueueButtons()
 	RenderHeroIcon()
 	TopText.Visible = true
-	TopText.Text = "Game Starting in: " .. gameData.IntermissionTime
+	TopText.Text.Text = "Game Starting in: " .. gameData.IntermissionTime
 end
 
 function BattleStartingRender(changed)
@@ -235,7 +235,7 @@ function BattleStartingRender(changed)
 	if fighters == nil then
 		fighters = 0
 	end
-	TopText.Text = "Fighters left: " .. fighters
+	TopText.Text.Text = "Fighters left: " .. fighters
 
 	-- ready = false
 end
@@ -272,7 +272,7 @@ function BattleRender(changed)
 	end
 
 	TopText.Visible = true
-	TopText.Text = "Fighters left: " .. gameData.NumAlivePlayers
+	TopText.Text.Text = "Fighters left: " .. gameData.NumAlivePlayers
 end
 
 function BattleEndedRender(changed)
@@ -296,8 +296,10 @@ function BattleEndedRender(changed)
 	RenderHeroIcon()
 	UpdateQueueButtons()
 
-	TopText.Visible = true
-	TopText.Text = "Battle over!"
+	DataController.GetGameData():After(function(data)
+		TopText.Visible = true
+		TopText.Text.Text = data.WinnerName .. " won!"
+	end)
 end
 
 function LabelRenderTrophyCount(label: TextLabel, trophyCount: number)

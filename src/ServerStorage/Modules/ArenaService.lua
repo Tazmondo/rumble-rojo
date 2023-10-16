@@ -237,14 +237,15 @@ function ArenaService.EndMatch(winner: Player?)
 	local gameData = DataService.GetGameData()
 	gameData.Status = "BattleEnded"
 
-	-- Allow round ended text to appear for a bit
-	task.wait(2)
-
 	if winner then
 		if registeredPlayers[winner] then
 			registeredPlayers[winner].Won = true
 		end
+		gameData.WinnerName = winner.DisplayName
 	end
+	-- Allow round ended text to appear for a bit
+	task.wait(2)
+
 	for player, heroName in pairs(registeredPlayers) do
 		if player.Parent == nil then
 			continue

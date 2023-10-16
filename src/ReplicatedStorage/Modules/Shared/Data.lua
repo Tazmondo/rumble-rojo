@@ -75,6 +75,7 @@ Data.GameData = {
 	MaxPlayers = ServerConfig.MaxPlayers,
 	RoundTime = 0,
 	IntermissionTime = 0,
+	WinnerName = "",
 
 	-- Debug/Admin options
 	ForceRound = false,
