@@ -88,8 +88,7 @@ function UpdateQueueButtons()
 		MainUI.Queue.Exit.Visible = false
 	end
 	local playerCount = gameData.NumQueuedPlayers
-	local maxPlayers = gameData.MaxPlayers
-	MainUI.Queue.Frame.Title.Text = "Players Ready: " .. playerCount .. "/" .. maxPlayers
+	MainUI.Queue.Frame.Title.Text = "Players Ready: " .. playerCount
 end
 
 function HideAll()
