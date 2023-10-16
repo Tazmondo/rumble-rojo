@@ -604,7 +604,9 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 
 	self:ScheduleRegen(Config.InitialRegenTime)
 
-	if self.health <= 0 then
+	-- Fix issues where you're brought to 0.1 hp and dont die.
+	if self.health < 1 then
+		self.health = 0
 		if self.humanoid then
 			self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 		end
