@@ -212,7 +212,6 @@ function ArenaService.StartMatch()
 	local RoundTime = 0
 	local winner = nil
 
-	local map = assert(MapService:GetMap())
 	StormService.Start(ArenaService.GetRegisteredPlayersLength() <= 6)
 
 	while

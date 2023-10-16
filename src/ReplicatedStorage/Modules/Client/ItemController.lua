@@ -162,6 +162,7 @@ function CheckItems()
 
 			local HRP = character:FindFirstChild("HumanoidRootPart") :: BasePart
 			if not HRP then
+				task.wait()
 				continue
 			end
 
