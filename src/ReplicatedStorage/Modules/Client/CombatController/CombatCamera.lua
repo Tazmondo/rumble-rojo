@@ -88,6 +88,16 @@ function CombatCamera.SetupCamera(self: CombatCamera)
 			self.camera.CFrame = currentCFrame
 		end
 	end))
+
+	RunService:BindToRenderStep("CamFocus", Enum.RenderPriority.Camera.Value, function()
+		if self.camera.CameraType == Enum.CameraType.Scriptable then
+			self.camera.Focus = self.HRP.CFrame
+		end
+	end)
+
+	self.janitor:Add(function()
+		RunService:UnbindFromRenderStep("CamFocus")
+	end)
 end
 
 function CombatCamera.Transition(self: CombatCamera, enable: boolean)
