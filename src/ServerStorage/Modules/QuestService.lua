@@ -255,7 +255,7 @@ end
 
 function ResetStreakQuests(player)
 	local quest = GetQuestOfType(player, "KillOneGame"):Await()
-	if quest then
+	if quest and quest.RequiredNumber < quest.CurrentNumber then
 		quest.CurrentNumber = 0
 		DataService.SchedulePrivateUpdate(player)
 	end
