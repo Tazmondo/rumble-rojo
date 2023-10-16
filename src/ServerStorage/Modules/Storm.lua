@@ -7,8 +7,8 @@ local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local Storm = {}
 Storm.__index = Storm
 
-local STARTDELAY = 12
-local PROGRESSDELAY = 8
+local STARTDELAY = 16
+local PROGRESSDELAY = 12
 
 -- Damage percent of max hp per second
 local DAMAGEAMOUNT = 0.2
@@ -57,8 +57,8 @@ function _self(map: Model, fastMode: boolean)
 	self.centre = map:GetPivot()
 
 	self.lastDamaged = 0
-	self.startDelay = STARTDELAY * (if fastMode then 0.5 else 1)
-	self.progressDelay = PROGRESSDELAY * (if fastMode then 0.5 else 1)
+	self.startDelay = STARTDELAY * (if fastMode then 0.75 else 1)
+	self.progressDelay = PROGRESSDELAY * (if fastMode then 0.75 else 1)
 
 	self.destroyed = false
 
