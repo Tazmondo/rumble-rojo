@@ -84,7 +84,7 @@ local Taz: Types.HeroData = {
 
 local Frankie: Types.HeroData = {
 	Name = "Frankie",
-	Health = 4100,
+	Health = 4200,
 	MovementSpeed = Enums.MovementSpeed.Normal,
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
@@ -96,7 +96,7 @@ local Frankie: Types.HeroData = {
 
 		Data = {
 			AttackType = "Shot" :: "Shot",
-			Damage = 800,
+			Damage = 850,
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 		},
 	},
@@ -133,10 +133,10 @@ local Gobzie: Types.HeroData = {
 		Data = {
 			AttackType = "Shotgun",
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
-			Damage = 280,
+			Damage = 260,
 			Angle = 7,
 			ShotCount = 6,
-			TimeBetweenShots = 0.08,
+			TimeBetweenShots = 0.1,
 			SpeedVariation = 1.5,
 			AngleVariation = 5,
 		},
@@ -153,8 +153,8 @@ local Gobzie: Types.HeroData = {
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			Chain = {
 				AttackType = "Field",
-				Damage = 1200,
-				Duration = 8,
+				Damage = 900,
+				Duration = 6,
 				Radius = Enums.Radius.Large,
 				Effect = function(combatPlayer)
 					-- Make sure to also update the talent when you update the slow amount

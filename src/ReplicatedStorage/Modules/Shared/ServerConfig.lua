@@ -8,8 +8,8 @@ local CONFIG = {
 	MaxPlayers = 12,
 
 	QueueOnJoin = true,
-	LobbyMovementSpeed = 50,
-	LobbyPlayerScale = 4,
+	LobbyMovementSpeed = 60,
+	LobbyPlayerScale = 3.7,
 	LobbyJumpPower = 75,
 }
 
