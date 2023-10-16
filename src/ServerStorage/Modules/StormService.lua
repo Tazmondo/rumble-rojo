@@ -11,6 +11,7 @@ local Future = require(ReplicatedStorage.Packages.Future)
 local StormConfig = Config.Storm
 
 local Add, Remove = Bin()
+
 local lastDamaged: number
 local lastProgressed: number
 local currentLayer: number
@@ -72,15 +73,13 @@ function StormService.Start(fastMode: boolean)
 		-- Start outside the range of the map so no players on the map are damaged
 		currentLayer = StormConfig.MapLength / 2 + 1
 
-		task.wait(startDelay)
-
 		local data = DataService.GetGameData().Storm
 
 		data.Active = true
 		data.Progress = 0
 
-		lastDamaged = os.clock()
-		lastProgressed = 0
+		lastDamaged = os.clock() + startDelay
+		lastProgressed = os.clock() + startDelay - progressDelay
 		ProgressLoop(progressDelay)
 		DamageLoop()
 	end)
