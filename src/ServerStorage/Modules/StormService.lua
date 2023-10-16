@@ -18,7 +18,10 @@ local centre = assert(workspace.Lobby.MapPivotPoint).Position
 
 function DamageLoop()
 	Add(RunService.Stepped:Connect(function()
-		if os.clock() - lastDamaged < StormConfig.DamageDelay then
+		if
+			os.clock() - lastDamaged < StormConfig.DamageDelay
+			or os.clock() - lastProgressed < StormConfig.DamageDelay
+		then
 			return
 		end
 		lastDamaged = os.clock()
