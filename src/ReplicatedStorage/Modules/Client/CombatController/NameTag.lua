@@ -3,6 +3,7 @@ print("nametag controller init")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local DataController = require(ReplicatedStorage.Modules.Client.DataController)
 local BushController = require(script.Parent.BushController)
 local CombatPlayerController = require(script.Parent.CombatPlayerController)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
@@ -153,7 +154,8 @@ function NameTag.InitEnemy(data: Types.UpdateData)
 	end
 
 	local nameTag = if data.IsObject then gui.ObjectNameTag else gui.EnemyNameTag
-	nameTag.Visible = true
+
+	-- nameTag.Visible = true
 
 	local superHalo
 	local playerHalo
@@ -175,6 +177,13 @@ function NameTag.InitEnemy(data: Types.UpdateData)
 
 	local run: RBXScriptConnection
 	run = RunService.RenderStepped:Connect(function(dt)
+		if data.IsObject and not DataController.GetLocalData():Await().Public.InCombat then
+			nameTag.Visible = false
+			return
+		else
+			nameTag.Visible = true
+		end
+
 		if character.Parent == nil or gui.Parent == nil then
 			run:Disconnect()
 			if not data.IsObject then
