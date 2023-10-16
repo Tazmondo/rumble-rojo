@@ -25,7 +25,6 @@ function DamageLoop()
 			return
 		end
 		lastDamaged = os.clock()
-
 		local combatPlayers = CombatService:GetAllCombatPlayers()
 		for i, combatPlayer in ipairs(combatPlayers) do
 			if combatPlayer.isObject then
@@ -58,6 +57,7 @@ function ProgressLoop(delay: number)
 
 		lastProgressed = os.clock()
 		DataService.GetGameData().Storm.Progress += 1
+		currentLayer -= 1
 	end))
 end
 
@@ -80,6 +80,7 @@ function StormService.Start(fastMode: boolean)
 		data.Progress = 0
 
 		lastDamaged = os.clock()
+		lastProgressed = 0
 		ProgressLoop(progressDelay)
 		DamageLoop()
 	end)
