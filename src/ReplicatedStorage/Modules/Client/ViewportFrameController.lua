@@ -23,9 +23,10 @@ local CAMERACFRAME = CFrame.new(
 	-0.927861512
 )
 
-local CAMERAFOV = 30
+local CAMERAFOV = 35
 
-local MODELCFRAME = CFrame.new(0, 0.8, 0)
+local HEADMODELCFRAME = CFrame.new(0, 0.8, 0)
+local MODELCFRAME = CFrame.new(0, 0, 0)
 
 local viewports: { [ViewportFrame]: ViewportFrameController } = {}
 
@@ -43,7 +44,7 @@ function ViewportFrameController.NewHeadButton(model: Model)
 	end
 
 	newModel.Parent = viewport
-	newModel:PivotTo(MODELCFRAME)
+	newModel:PivotTo(HEADMODELCFRAME)
 
 	return button :: any
 end
