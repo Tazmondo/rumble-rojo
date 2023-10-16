@@ -198,7 +198,7 @@ function IntermissionRender(changed)
 	UpdateQueueButtons()
 	RenderHeroIcon()
 	TopText.Visible = true
-	TopText.Text = gameData.IntermissionTime
+	TopText.Text = "Game Starting in: " .. gameData.IntermissionTime
 end
 
 function BattleStartingRender(changed)
