@@ -142,11 +142,9 @@ Skills["Power Pill"] = {
 	Price = 500,
 	Type = "Ability",
 	Activated = function(self)
-		self.baseAttackDamage *= 1.15
-		self.baseSuperDamage *= 1.15
+		self.baseDamageMultiplier *= 1.15
 		task.delay(5, function()
-			self.baseAttackDamage /= 1.15
-			self.baseSuperDamage /= 1.15
+			self.baseDamageMultiplier /= 1.15
 		end)
 	end,
 }
