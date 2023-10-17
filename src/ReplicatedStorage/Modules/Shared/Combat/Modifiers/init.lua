@@ -262,8 +262,7 @@ Modifiers.Slimed = {
 			return
 		end
 
-		local value = { true }
-		victim:SetStatusEffect("Stun", value, 1.5)
+		victim:SetStatusEffect("Stun", true, 1.5)
 	end,
 }
 
@@ -314,6 +313,45 @@ Modifiers["Slowing Infection"] = {
 		superField.Effect = function(combatPlayer)
 			combatPlayer:SetStatusEffect("Slow", 0.6, 0.2)
 		end
+	end,
+}
+
+-- BOXY --
+Modifiers.Electrocution = {
+	Name = "Electrocution",
+	Description = "Your super electrocutes your enemies, stunning them for 1.5 seconds.",
+	Price = 1000,
+	UnlockedImage = "rbxassetid://15098764354",
+	LockedImage = "rbxassetid://15098764638",
+	OnHit = function(self, victim, attack)
+		if attack.AbilityType ~= "Super" then
+			return
+		end
+
+		victim:SetStatusEffect("Stun", true, 1.5)
+	end,
+}
+
+Modifiers.Microwave = {
+	Name = "Microwave",
+	Description = "Roast your enemies with high-damage waves! Super damage increased by 20%.",
+	Price = 1000,
+	UnlockedImage = "rbxassetid://15098764292",
+	LockedImage = "rbxassetid://15098764530",
+	Modify = function(self)
+		self.heroData.Super.Data.Damage *= 1.2
+	end,
+}
+
+Modifiers["Current Outbreak"] = {
+	Name = "Current Outbreak",
+	Description = "Overload! Your super fires out more shots.",
+	Price = 1000,
+	UnlockedImage = "rbxassetid://15098764451",
+	LockedImage = "rbxassetid://15098764746",
+	Modify = function(self)
+		local super = self.heroData.Super.Data :: Types.ShotgunData
+		super.ShotCount += 3
 	end,
 }
 

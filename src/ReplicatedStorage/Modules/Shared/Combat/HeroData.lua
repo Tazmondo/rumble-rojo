@@ -142,7 +142,7 @@ local Boxy: Types.HeroData = {
 	},
 	Super = {
 		AbilityType = "Super" :: "Super",
-		Name = "Lighting Strike",
+		Name = "Lightning Strike",
 		Charge = 3,
 		Range = Enums.AttackRange.Medium,
 

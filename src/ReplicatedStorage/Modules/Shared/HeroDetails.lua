@@ -269,11 +269,11 @@ local orderedHeroDetails: { OrderedHero } = {
 
 	{
 		Name = "Boxy",
-		Description = "Boxy runs around throwing his own head at people. His super shoots lighting bolts in every direction.",
+		Description = "Boxy runs around throwing his own head at people. His super shoots lightning bolts in every direction.",
 		Price = 400,
 		DefaultSkin = "Boxy",
 		Modifiers = table.clone(DefaultModifiers),
-		Talents = {},
+		Talents = { "Electrocution", "Microwave", "Current Outbreak" },
 		Skills = table.clone(DefaultSkills),
 		Skins = {
 			{
