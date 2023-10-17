@@ -118,6 +118,47 @@ local Frankie: Types.HeroData = {
 	},
 }
 
+local Boxy: Types.HeroData = {
+	Name = "Boxy",
+	Health = 4000,
+	MovementSpeed = Enums.MovementSpeed.VeryFast,
+	Attack = {
+		AbilityType = "Attack" :: "Attack",
+		Name = "Headache",
+		Ammo = 3,
+		AmmoRegen = 1.5,
+		Range = Enums.AttackRange.Medium,
+		ReloadSpeed = 1,
+
+		Data = {
+			AttackType = "Arced" :: "Arced",
+			ProjectileSpeed = Enums.ProjectileSpeed.Slow,
+			Height = Enums.ArcHeight.High,
+			Damage = 900,
+			TimeToDetonate = 0.2,
+			Radius = Enums.Radius.Medium,
+			ExplosionColour = Color3.fromRGB(50, 105, 200),
+		},
+	},
+	Super = {
+		AbilityType = "Super" :: "Super",
+		Name = "Lighting Strike",
+		Charge = 3,
+		Range = Enums.AttackRange.Medium,
+
+		Data = {
+			AttackType = "Shotgun",
+			ProjectileSpeed = Enums.ProjectileSpeed.Medium,
+			Damage = 800,
+			Angle = 360,
+			ShotCount = 9,
+			TimeBetweenShots = 0,
+			SpeedVariation = 0,
+			AngleVariation = 0,
+		},
+	},
+}
+
 local Gobzie: Types.HeroData = {
 	Name = "Gobzie",
 	Health = 4100,
@@ -169,6 +210,7 @@ local HeroData: { [string]: Types.HeroData } = {
 	Taz = Taz,
 	Frankie = Frankie,
 	Gobzie = Gobzie,
+	Boxy = Boxy,
 }
 
 -- Ensures we dont accidentally change any of the data in the table, as this would be a bug.

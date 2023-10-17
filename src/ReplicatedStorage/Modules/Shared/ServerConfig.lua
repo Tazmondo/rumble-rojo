@@ -18,7 +18,7 @@ local studioconfig = {
 	Intermission = 10, -- 30
 	RoundLength = 400, -- 2mimnutes
 
-	MinPlayers = 2,
+	MinPlayers = 1,
 	MaxPlayers = 12,
 
 	QueueOnJoin = false,
