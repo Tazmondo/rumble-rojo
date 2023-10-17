@@ -102,9 +102,9 @@ end
 function AimRenderer.StartRendering(self: AimRenderer)
 	self.janitor:Add(RunService.RenderStepped:Connect(function(dt)
 		if not self.enabled then
-			self.aimPart.CFrame = CFrame.new(0, 0, 0)
+			self.aimPart.CFrame = CFrame.new(0, -100, 0)
 			if self.targetedAimPart then
-				self.targetedAimPart.CFrame = CFrame.new(0, 0, 0)
+				self.targetedAimPart.CFrame = CFrame.new(0, -100, 0)
 			end
 			return
 		end
