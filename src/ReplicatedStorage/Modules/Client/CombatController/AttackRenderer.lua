@@ -160,6 +160,43 @@ function TriggerAllDescendantParticleEmitters(
 	end
 end
 
+function RenderCharacterAnimation(player: Player, hero: string, attackData: Types.AbilityData)
+	local character = player.Character
+	if not character then
+		return
+	end
+
+	if hero == "Boxy" and attackData.AbilityType == "Attack" then
+		local head = character:FindFirstChild("Head") :: BasePart?
+		if not head then
+			return
+		end
+
+		local oldSize = head:GetAttribute("OldSize")
+		if not oldSize then
+			head:SetAttribute("OldSize", head.Size)
+			oldSize = head.Size
+		end
+
+		local startDelay = 0.3
+		local regrowTime = math.max(0, attackData.ReloadSpeed - startDelay)
+		local start = os.clock() + startDelay
+
+		local connection
+		connection = RunService.RenderStepped:Connect(function()
+			local progress = math.clamp((os.clock() - start) / regrowTime, 0, 1)
+			local tweenedProgress = TweenService:GetValue(progress, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)
+
+			local currentSize = oldSize * tweenedProgress
+			head.Size = currentSize
+
+			if progress == 1 then
+				connection:Disconnect()
+			end
+		end)
+	end
+end
+
 function RenderBulletHit(position: Vector3, projectileSize: number)
 	local template = generalVFXFolder.BulletHit.BulletHit :: Attachment
 	local hit = template:Clone()
@@ -480,6 +517,8 @@ function AttackRenderer.RenderAttack(
 	assert(attackDetails, "Called attack renderer without providing attack details")
 
 	return Future.new(function()
+		RenderCharacterAnimation(player, heroName, attackData)
+
 		local endCFrame
 
 		if attackData.Data.AttackType == "Shotgun" then
