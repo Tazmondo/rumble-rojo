@@ -45,6 +45,9 @@ function DamageLoop()
 			if (maxDifference > currentLayer - 1 or tooHigh) and combatPlayer:CanTakeDamage() then
 				-- Storm damage is forced, so it bypasses any shields
 				combatPlayer:TakeDamage(StormConfig.DamageAmount * combatPlayer.maxHealth)
+				if combatPlayer:IsDead() and combatPlayer.player then
+					CombatService:HandlePlayerDeath(combatPlayer.player)
+				end
 			end
 		end
 	end))
@@ -58,7 +61,7 @@ function ProgressLoop(delay: number)
 
 		lastProgressed = os.clock()
 		DataService.GetGameData().Storm.Progress += 1
-		currentLayer -= 1
+		currentLayer = math.max(StormConfig.MinLayer, currentLayer - 1)
 	end))
 end
 
