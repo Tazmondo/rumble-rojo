@@ -101,7 +101,7 @@ assert(#QuestTypes >= (QuestCounts.Easy + QuestCounts.Medium + QuestCounts.Hard)
 
 local random = Random.new()
 
-local DAYTIME = 86400 -- 60 * 60 * 24
+local DAYTIME = 43200 -- 60 * 60 * 12
 
 function GetQuestText(questType: string, value: number)
 	local questData = QuestData[questType]
