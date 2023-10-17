@@ -130,6 +130,7 @@ function InitializeSelf(
 		self.humanoid.Health = self.health
 		self.humanoid.WalkSpeed = self.movementSpeed
 		self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+		self.humanoid.JumpPower = 0
 		self.humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	end
 
