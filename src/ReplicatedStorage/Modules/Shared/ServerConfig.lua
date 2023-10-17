@@ -1,7 +1,7 @@
 local RunService = game:GetService("RunService")
 
 local CONFIG = {
-	Intermission = 20, -- 30
+	Intermission = 10, -- 30
 	RoundLength = 400,
 
 	MinPlayers = 2,
