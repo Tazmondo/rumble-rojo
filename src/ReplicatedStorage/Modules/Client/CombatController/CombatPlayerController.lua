@@ -63,15 +63,6 @@ function CombatPlayerController.GetCurrentdata()
 	return combatPlayers
 end
 
-function CombatPlayerController.GetFutureData(character: Model)
-	return Future.new(function()
-		while not combatPlayers[character] and character.Parent ~= nil do
-			task.wait()
-		end
-		return combatPlayers[character] :: Types.UpdateData?
-	end)
-end
-
 function CombatPlayerController.Initialize()
 	print("Initializing combatplayercontroller")
 
