@@ -272,10 +272,18 @@ function UpdateAiming(self: InputController, cancel: boolean?)
 		return
 	end
 
+	if self.activeButton and DragButton.GetDistanceAlpha(self.activeButton) == 0 then
+		return
+	end
+
 	if self.superToggle or self.activeButton == self.superButton then
 		self.superAimRenderer:Enable()
 		self.combatPlayer:SetAiming("Super")
-		self.combatUI:UpdateSuperActive(true)
+
+		-- Don't render the active button on mobile
+		if not self.activeButton then
+			self.combatUI:UpdateSuperActive(true)
+		end
 	else
 		self.aimRenderer:Enable()
 		self.combatPlayer:SetAiming("Attack")
@@ -369,10 +377,8 @@ function InputChanged(self: InputController, input: InputObject, processed: bool
 		local targetDistance = offsetPercentage * range
 		self.targetRelative = (self.currentLookDirection * targetDistance)
 			- Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
-		UpdateAiming(self)
-	else
-		UpdateAiming(self, true)
 	end
+	UpdateAiming(self)
 end
 
 function InputEnded(self: InputController, input: InputObject, processed: boolean)

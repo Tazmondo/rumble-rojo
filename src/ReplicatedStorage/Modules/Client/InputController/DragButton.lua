@@ -14,7 +14,11 @@ function DragButton.new(button: Frame)
 	local self = {}
 
 	self.foreground = assert(button:FindFirstChild("Foreground"), "Drag button had no foreground") :: Frame
-	self.background = assert(button:FindFirstChild("Background"), "Drag button had no background") :: Frame
+	self.background = assert(button:FindFirstChild("Background"), "Drag button had no background") :: ImageLabel
+	self.backgroundMiddle =
+		assert(button:FindFirstChild("BackgroundMiddle"), "Drag button had no background middle") :: ImageLabel
+
+	local basicImage = self.foreground:FindFirstChild("Ready") :: ImageLabel?
 
 	self.backgroundOffset = Vector3.new()
 	self.offset = Vector3.new()
@@ -25,14 +29,24 @@ function DragButton.new(button: Frame)
 
 	Add(RunService.RenderStepped:Connect(function()
 		self.background.Position = UDim2.new(0.5, self.backgroundOffset.X, 0.5, self.backgroundOffset.Y)
+		self.backgroundMiddle.Position = self.background.Position
 
 		if self.offset.Magnitude > 0 then
 			local limitedOffset = self.offset.Unit * math.min(self.radius, self.offset.Magnitude)
 			local completeOffset = self.backgroundOffset + limitedOffset
 
 			self.foreground.Position = UDim2.new(0.5, completeOffset.X, 0.5, completeOffset.Y)
+
+			self.backgroundMiddle.Visible = true
+			if basicImage then
+				basicImage.ImageTransparency = 0
+			end
 		else
 			self.foreground.Position = UDim2.new(0.5, self.backgroundOffset.X, 0.5, self.backgroundOffset.Y)
+			self.backgroundMiddle.Visible = false
+			if basicImage then
+				basicImage.ImageTransparency = 0.6
+			end
 		end
 	end))
 
