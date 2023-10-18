@@ -25,15 +25,21 @@ local SkillAbilityEvent = require(ReplicatedStorage.Events.Combat.SkillAbilityEv
 local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
 local AttackRenderer = require(ReplicatedStorage.Modules.Client.CombatController.AttackRenderer)
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
+local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
+local Future = require(ReplicatedStorage.Packages.Future)
+local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local PlayerGui = Players.LocalPlayer.PlayerGui
 
+local lastInputMode: "KBM" | "Mobile" = "Mobile"
+local inputModeChanged = Signal()
+
 local combatGui
-local attack
-local super
+local attack: Frame
+local super: Frame
 local superBackground
-local skill
+local skill: Frame
 
 InputController.Instance = nil :: InputController?
 
@@ -140,6 +146,11 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 		InputEnded(self, ...)
 	end))
 
+	self.Add(inputModeChanged:Connect(function()
+		InputModeChanged(self)
+	end))
+	InputModeChanged(self)
+
 	self.Add(RunService.RenderStepped:Connect(function()
 		debug.profilebegin("InputController_RenderStep")
 		if self.activeButton then
@@ -168,10 +179,18 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 		if state ~= Enum.UserInputState.Begin then
 			return
 		end
-		print(name, object.UserInputType)
 		self.superToggle = self.combatPlayer:CanSuperAttack() and not self.superToggle
 		UpdateAiming(self)
-	end, false, Enum.KeyCode.E)
+	end, false, Config.SuperKey)
+
+	ContextActionService:BindAction("Use_Skill", function(name, state, object)
+		if state ~= Enum.UserInputState.Begin then
+			return
+		end
+		if self.combatPlayer:CanUseSkill() then
+			self.combatPlayer:UseSkill()
+		end
+	end, false, Config.SkillKey)
 
 	self.Add(function()
 		ContextActionService:UnbindAction("Toggle_Super")
@@ -232,6 +251,36 @@ end
 function GetRealTarget(self: InputController): Vector3
 	local worldTarget = CFrame.new(self.HRP.Position):PointToWorldSpace(self.targetRelative)
 	return worldTarget
+end
+
+function InputTypeChanged()
+	local inputType = UserInputService:GetLastInputType()
+	local oldMode = lastInputMode
+	if inputType == Enum.UserInputType.Keyboard or string.find(inputType.Name, "Mouse") then
+		lastInputMode = "KBM"
+	elseif inputType == Enum.UserInputType.Touch then
+		lastInputMode = "Mobile"
+	end
+
+	if oldMode ~= lastInputMode then
+		inputModeChanged:Fire()
+	end
+	return
+end
+
+function InputModeChanged(self: InputController)
+	self.combatUI:UpdateInputMode(lastInputMode)
+	if lastInputMode == "KBM" then
+		attack.Visible = false
+
+		skill.AnchorPoint = Vector2.new(0.5, 1)
+		skill.Position = UDim2.fromScale(1, 0)
+	elseif lastInputMode == "Mobile" then
+		attack.Visible = true
+
+		skill.AnchorPoint = Vector2.new(0.5, 0)
+		skill.Position = UDim2.fromScale(0.5, 0.55)
+	end
 end
 
 function SetupCharacterRotation(self: InputController)
@@ -311,6 +360,18 @@ function InputBegan(self: InputController, input: InputObject, processed: boolea
 	if processed or self.activeInput then
 		return
 	end
+
+	if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
+	local clickPos = Vector2.new(input.Position.X, input.Position.Y)
+	local clickedGUI = PlayerGui:GetGuiObjectsAtPosition(clickPos.X, clickPos.Y)
+	if table.find(clickedGUI, skill) and self.combatPlayer:CanUseSkill() then
+		UseSkill(self)
+		return
+	end
+
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		self.activeInput = input
 		UpdateAiming(self)
@@ -320,13 +381,6 @@ function InputBegan(self: InputController, input: InputObject, processed: boolea
 		end
 		return
 	elseif input.UserInputType == Enum.UserInputType.Touch then
-		local clickPos = Vector2.new(input.Position.X, input.Position.Y)
-		local clickedGUI = PlayerGui:GetGuiObjectsAtPosition(clickPos.X, clickPos.Y)
-		if table.find(clickedGUI, skill) and self.combatPlayer:CanUseSkill() then
-			UseSkill(self)
-			return
-		end
-
 		local superOrigin = super.AbsolutePosition + super.AbsoluteSize / 2
 
 		local superRadius = superBackground.AbsoluteSize.X / 2
@@ -410,66 +464,67 @@ function InputEnded(self: InputController, input: InputObject, processed: boolea
 
 	self.superToggle = false
 	self.activeButton = nil
-	UpdateAiming(self)
+	UpdateAiming(self, true)
 end
 
 function Attack(self: InputController, type: "Attack" | "Super" | "Skill")
-	local trajectory = Ray.new(self.HRP.Position, self.currentLookDirection or Vector3.new(0, 0, 1))
-	local target = GetRealTarget(self)
+	return Future.new(function()
+		local trajectory = Ray.new(self.HRP.Position, self.currentLookDirection or Vector3.new(0, 0, 1))
+		local target = GetRealTarget(self)
 
-	local attackData: Types.AbilityData
+		local attackData: Types.AbilityData
 
-	if type == "Attack" then
-		if not self.combatPlayer:CanAttack() then
-			return
+		if type == "Attack" then
+			if not self.combatPlayer:CanAttack() then
+				return
+			end
+			self.combatCamera:Shake()
+			self.combatPlayer:Attack()
+			SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, false, self.HRP.Position)
+			attackData = self.combatPlayer.heroData.Attack
+		elseif type == "Super" then
+			if not self.combatPlayer:CanSuperAttack() then
+				return
+			end
+			self.combatCamera:Shake()
+			self.combatPlayer:SuperAttack()
+			SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, true, self.HRP.Position)
+			attackData = self.combatPlayer.heroData.Super
+		elseif type == "Skill" then
+			attackData = assert(self.combatPlayer.skill.AttackData)
 		end
-		self.combatCamera:Shake()
-		self.combatPlayer:Attack()
-		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, false, self.HRP.Position)
-		attackData = self.combatPlayer.heroData.Attack
-	elseif type == "Super" then
-		if not self.combatPlayer:CanSuperAttack() then
-			print("Tried to super attack but can't.", self.combatPlayer.superCharge)
-			return
+
+		-- Constrain target to range of attack
+		if attackData.Data.AttackType == "Arced" or attackData.Data.AttackType == "Field" then
+			local HRPToTarget = target - self.HRP.Position
+			local yDiff = HRPToTarget.Y
+
+			HRPToTarget *= Vector3.new(1, 0, 1)
+
+			target = self.HRP.Position
+				+ Vector3.new(0, yDiff, 0)
+				+ HRPToTarget.Unit
+					-- Get smallest of max range or target, but cant be any smaller than 0.
+					* math.max(0, math.min(attackData.Range - attackData.Data.Radius, HRPToTarget.Magnitude))
 		end
-		self.combatCamera:Shake()
-		self.combatPlayer:SuperAttack()
-		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, true, self.HRP.Position)
-		attackData = self.combatPlayer.heroData.Super
-	elseif type == "Skill" then
-		attackData = assert(self.combatPlayer.skill.AttackData)
-	end
 
-	-- Constrain target to range of attack
-	if attackData.Data.AttackType == "Arced" or attackData.Data.AttackType == "Field" then
-		local HRPToTarget = target - self.HRP.Position
-		local yDiff = HRPToTarget.Y
+		trajectory = trajectory.Unit
+		local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
 
-		HRPToTarget *= Vector3.new(1, 0, 1)
+		local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, attackData, target)
 
-		target = self.HRP.Position
-			+ Vector3.new(0, yDiff, 0)
-			+ HRPToTarget.Unit
-				-- Get smallest of max range or target, but cant be any smaller than 0.
-				* math.max(0, math.min(attackData.Range - attackData.Data.Radius, HRPToTarget.Magnitude))
-	end
+		-- AnimationController.AttemptPlay(self.animationController, "Attack")
 
-	trajectory = trajectory.Unit
-	local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
-
-	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, attackData, target)
-
-	-- AnimationController.AttemptPlay(self.animationController, "Attack")
-
-	AttackRenderer.RenderAttack(
-		self.player,
-		self.combatPlayer.heroData.Name,
-		attackData,
-		origin,
-		attackDetails,
-		self.HRP
-	)
-	self.combatPlayer.attackId = AttackFunction:Call(type, origin, attackDetails):Await()
+		AttackRenderer.RenderAttack(
+			self.player,
+			self.combatPlayer.heroData.Name,
+			attackData,
+			origin,
+			attackDetails,
+			self.HRP
+		)
+		self.combatPlayer.attackId = AttackFunction:Call(type, origin, attackDetails):Await()
+	end)
 end
 
 function InputController.Initialize()
@@ -478,6 +533,9 @@ function InputController.Initialize()
 	super = combatGui.Attacks.Super
 	superBackground = assert(super:FindFirstChild("Background")) :: ImageLabel
 	skill = combatGui.Attacks.Skill
+
+	InputTypeChanged()
+	UserInputService.LastInputTypeChanged:Connect(InputTypeChanged)
 end
 
 InputController.Initialize()

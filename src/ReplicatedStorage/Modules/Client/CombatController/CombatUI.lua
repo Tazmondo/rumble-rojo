@@ -35,6 +35,8 @@ function _initSelf(combatPlayer: CombatPlayer.CombatPlayer, character: Model)
 	self.mainUI.Enabled = true
 	self.attackFrame.Visible = true
 
+	self.inputMode = "KBM"
+
 	return self
 end
 
@@ -45,6 +47,11 @@ function CombatUI.new(combatPlayer: CombatPlayer.CombatPlayer, character: Model)
 	self:SubscribeToCombatPlayerEvents()
 
 	return self
+end
+
+function CombatUI:UpdateInputMode(mode)
+	self = self :: CombatUI
+	self.inputMode = mode
 end
 
 function CombatUI:SubscribeToCombatPlayerEvents()
@@ -95,7 +102,7 @@ function CombatUI:RenderLoop()
 			self.superAttackCharge.RightFill.Size = UDim2.fromScale(0.5, rightFill)
 		else
 			self.superAttackCharge.Visible = false
-			self.superBackground.Visible = true
+			self.superBackground.Visible = self.inputMode ~= "KBM"
 
 			if self.superActive then
 				self.activeSuperButton.Visible = true
