@@ -890,6 +890,10 @@ function CombatService:Initialize()
 			local combatPlayer =
 				CombatPlayer.new("Frankie", v, ModifierCollection.new({ Modifiers.Default })) :: CombatPlayer.CombatPlayer
 			CombatPlayerData[v] = combatPlayer
+			combatPlayer.DiedSignal:Connect(function()
+				task.wait(3)
+				v:Destroy()
+			end)
 		elseif v.Name == "Chest" then
 			CombatService.RegisterChest(v)
 		end
