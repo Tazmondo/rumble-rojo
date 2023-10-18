@@ -77,6 +77,7 @@ function CombatCamera.SetupCamera(self: CombatCamera)
 	-- Necessary to use step since it's based off the position of a part (the HRP)
 	self.janitor:Add(RunService.Stepped:Connect(function(t: number, dt)
 		if self.enabled and not self.transitioning then
+			self.camera.FieldOfView = self.cameraFOV
 			local targetCFrame = self:GetCFrame()
 			local currentCFrame = self.camera.CFrame
 
