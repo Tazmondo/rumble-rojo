@@ -452,7 +452,7 @@ function Attack(self: InputController, type: "Attack" | "Super" | "Skill")
 end
 
 function InputController.Initialize()
-	combatGui = PlayerGui:WaitForChild("TestCombatUI")
+	combatGui = PlayerGui:WaitForChild("CombatUI")
 	attack = combatGui.Attacks.Attack
 	super = combatGui.Attacks.Super
 	skill = combatGui.Attacks.Skill

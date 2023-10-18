@@ -23,15 +23,16 @@ function _initSelf(combatPlayer: CombatPlayer.CombatPlayer, character: Model)
 
 	self.mainUI = PlayerGui.CombatUI
 	self.attackFrame = self.mainUI.Attacks
-	self.superAttackCharge = self.attackFrame.Super.Charge.CanvasGroup
-	self.readySuperButton = self.attackFrame.Super.Ready
-	self.activeSuperButton = self.attackFrame.Super:FindFirstChild("Active")
+	self.superAttackCharge = self.attackFrame.Super.Foreground.Charge.CanvasGroup
+	self.readySuperButton = self.attackFrame.Super.Foreground:FindFirstChild("Ready")
+	self.activeSuperButton = self.attackFrame.Super.Foreground:FindFirstChild("Active")
+	self.superBackground = self.attackFrame.Super.Background
 
 	self.skillFrame = self.attackFrame.Skill
 
 	self.skillFrame.Ready.Image = combatPlayer.skill.UnlockedImage
 
-	self.mainUI.Enabled = false
+	self.mainUI.Enabled = true
 	self.attackFrame.Visible = true
 
 	return self
@@ -85,6 +86,7 @@ function CombatUI:RenderLoop()
 		if superChargeFill < 1 then
 			self.readySuperButton.Visible = false
 			self.activeSuperButton.Visible = false
+			self.superBackground.Visible = false
 
 			self.superAttackCharge.Visible = true
 			local leftFill = math.clamp(superChargeFill / 0.5, 0, 1)
@@ -93,6 +95,7 @@ function CombatUI:RenderLoop()
 			self.superAttackCharge.RightFill.Size = UDim2.fromScale(0.5, rightFill)
 		else
 			self.superAttackCharge.Visible = false
+			self.superBackground.Visible = true
 
 			if self.superActive then
 				self.activeSuperButton.Visible = true
