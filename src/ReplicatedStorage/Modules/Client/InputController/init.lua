@@ -383,7 +383,18 @@ function InputEnded(self: InputController, input: InputObject, processed: boolea
 	end
 
 	if self.activeButton then
+		local alpha = DragButton.GetDistanceAlpha(self.activeButton)
+
 		DragButton.Reset(self.activeButton)
+
+		-- If user releases in the deadzone then don't do anything.
+		if alpha == 0 then
+			self.superToggle = false
+			self.activeButton = nil
+			self.activeInput = nil
+			UpdateAiming(self)
+			return
+		end
 	end
 
 	while not self.preRotateAttack do

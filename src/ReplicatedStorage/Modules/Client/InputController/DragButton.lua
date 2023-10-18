@@ -24,6 +24,8 @@ function DragButton.new(button: Frame)
 	self.offset = Vector3.new()
 	self.radius = self.background.AbsoluteSize.X / 2
 
+	self.dragging = false
+
 	local Add, Remove = Bin()
 	self.Remove = Remove
 
@@ -31,22 +33,23 @@ function DragButton.new(button: Frame)
 		self.background.Position = UDim2.new(0.5, self.backgroundOffset.X, 0.5, self.backgroundOffset.Y)
 		self.backgroundMiddle.Position = self.background.Position
 
+		if basicImage then
+			if self.dragging then
+				basicImage.ImageTransparency = 0
+				self.backgroundMiddle.Visible = true
+			else
+				basicImage.ImageTransparency = 0.4
+				self.backgroundMiddle.Visible = false
+			end
+		end
+
 		if self.offset.Magnitude > 0 then
 			local limitedOffset = self.offset.Unit * math.min(self.radius, self.offset.Magnitude)
 			local completeOffset = self.backgroundOffset + limitedOffset
 
 			self.foreground.Position = UDim2.new(0.5, completeOffset.X, 0.5, completeOffset.Y)
-
-			self.backgroundMiddle.Visible = true
-			if basicImage then
-				basicImage.ImageTransparency = 0
-			end
 		else
 			self.foreground.Position = UDim2.new(0.5, self.backgroundOffset.X, 0.5, self.backgroundOffset.Y)
-			self.backgroundMiddle.Visible = false
-			if basicImage then
-				basicImage.ImageTransparency = 0.6
-			end
 		end
 	end))
 
@@ -62,6 +65,7 @@ function DragButton.Snap(self: DragButton, position: Vector2)
 	local offset = position - centre
 
 	self.backgroundOffset = Vector3.new(offset.X, offset.Y, 0)
+	self.dragging = true
 end
 
 function DragButton.GetDistanceAlpha(self: DragButton)
@@ -73,6 +77,7 @@ end
 function DragButton.Reset(self: DragButton)
 	self.offset = Vector3.new()
 	self.backgroundOffset = Vector3.new()
+	self.dragging = false
 end
 
 export type DragButton = typeof(DragButton.new(...))
