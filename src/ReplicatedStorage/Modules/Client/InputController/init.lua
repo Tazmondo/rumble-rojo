@@ -27,14 +27,12 @@ local AttackRenderer = require(ReplicatedStorage.Modules.Client.CombatController
 local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 
--- Distance that attack and super controls can snap to where the user places their finger
-local SNAPDISTANCE = 120
-
 local PlayerGui = Players.LocalPlayer.PlayerGui
 
 local combatGui
 local attack
 local super
+local superBackground
 local skill
 
 InputController.Instance = nil :: InputController?
@@ -311,21 +309,19 @@ function InputBegan(self: InputController, input: InputObject, processed: boolea
 		end
 
 		local superOrigin = super.AbsolutePosition + super.AbsoluteSize / 2
-		local attackOrigin = attack.AbsolutePosition + attack.AbsoluteSize / 2
 
-		local superDistance = (superOrigin - clickPos).Magnitude
-		local attackDistance = (attackOrigin - clickPos).Magnitude
+		local superRadius = superBackground.AbsoluteSize.X / 2
 
-		if not self.combatPlayer:CanSuperAttack() or attackDistance < superDistance then
-			if attackDistance > SNAPDISTANCE then
-				return
-			end
-			self.activeButton = self.attackButton
-		elseif self.combatPlayer:CanSuperAttack() then
-			if superDistance > SNAPDISTANCE then
-				return
-			end
+		-- Must click on super circle
+		local clickedSuper = (clickPos - superOrigin).Magnitude <= superRadius
+
+		-- Can click anywhere on the right side of the screen
+		local clickedAttack = clickPos.X > workspace.CurrentCamera.ViewportSize.X / 2
+
+		if self.combatPlayer:CanSuperAttack() and clickedSuper then
 			self.activeButton = self.superButton
+		elseif clickedAttack then
+			self.activeButton = self.attackButton
 		end
 
 		if self.activeButton then
@@ -465,6 +461,7 @@ function InputController.Initialize()
 	combatGui = PlayerGui:WaitForChild("CombatUI")
 	attack = combatGui.Attacks.Attack
 	super = combatGui.Attacks.Super
+	superBackground = assert(super:FindFirstChild("Background")) :: ImageLabel
 	skill = combatGui.Attacks.Skill
 end
 
