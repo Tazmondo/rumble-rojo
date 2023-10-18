@@ -23,10 +23,14 @@ function DragButton.new(button: Frame)
 	Add(RunService.RenderStepped:Connect(function()
 		self.background.Position = UDim2.new(0.5, self.backgroundOffset.X, 0.5, self.backgroundOffset.Y)
 
-		local limitedOffset = self.offset.Unit * math.min(self.radius, self.offset.Magnitude)
-		local completeOffset = self.backgroundOffset + limitedOffset
+		if self.offset.Magnitude > 0 then
+			local limitedOffset = self.offset.Unit * math.min(self.radius, self.offset.Magnitude)
+			local completeOffset = self.backgroundOffset + limitedOffset
 
-		self.foreground.Position = UDim2.new(0.5, completeOffset.X, 0.5, completeOffset.Y)
+			self.foreground.Position = UDim2.new(0.5, completeOffset.X, 0.5, completeOffset.Y)
+		else
+			self.foreground.Position = UDim2.new(0.5, self.backgroundOffset.X, 0.5, self.backgroundOffset.Y)
+		end
 	end))
 
 	return self
