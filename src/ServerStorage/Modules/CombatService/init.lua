@@ -893,6 +893,7 @@ function CombatService:Initialize()
 			combatPlayer.DiedSignal:Connect(function()
 				task.wait(3)
 				v:Destroy()
+				CombatPlayerData[v] = nil
 			end)
 		elseif v.Name == "Chest" then
 			CombatService.RegisterChest(v)

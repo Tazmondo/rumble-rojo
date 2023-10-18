@@ -31,7 +31,11 @@ function DamageLoop()
 			if combatPlayer.isObject then
 				continue
 			end
-			local HRP = assert(combatPlayer.character:FindFirstChild("HumanoidRootPart")) :: BasePart
+			local HRP = combatPlayer.character:FindFirstChild("HumanoidRootPart") :: BasePart
+			if not HRP then
+				continue
+			end
+
 			local position = HRP.Position
 			local difference = (position - centre)
 				* Vector3.new(1 / StormConfig.BlockSize, 1, 1 / StormConfig.BlockSize)
