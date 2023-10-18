@@ -20,6 +20,8 @@ assert(GeneralVFX.AimConeSquare)
 assert(GeneralVFX.AimRectangle)
 assert(GeneralVFX.AimCircle)
 
+local a0CFrame = CFrame.Angles(math.rad(-30), 0, math.rad(90))
+
 function AimRenderer.new(
 	attackData: Types.AbilityData,
 	character: Model,
@@ -66,6 +68,26 @@ function AimRenderer.new(
 		part.Parent = workspace
 	end
 
+	self.beam = self.janitor:Add(Instance.new("Beam", workspace.Terrain))
+	self.a0 = self.janitor:Add(Instance.new("Attachment", workspace.Terrain))
+	self.a1 = self.janitor:Add(Instance.new("Attachment", workspace.Terrain))
+
+	if attackData.Data.AttackType == "Arced" then
+		self.a0.CFrame = CFrame.Angles(math.rad(-30), 0, math.rad(90))
+		self.a1.CFrame = CFrame.Angles(math.rad(-30), math.rad(180), math.rad(-90))
+
+		self.beam.Attachment0 = self.a0
+		self.beam.Attachment1 = self.a1
+		self.beam.Color = ColorSequence.new(
+			if attackData.AbilityType == "Super" then Color3.fromRGB(255, 235, 20) else Color3.new(1, 1, 1)
+		)
+		self.beam.Transparency = NumberSequence.new(0.25)
+		self.beam.CurveSize0 = attackData.Data.Height
+		self.beam.CurveSize1 = attackData.Data.Height
+		self.beam.FaceCamera = true
+		self.beam.Segments = 25
+	end
+
 	self.validFunction = validFunction
 
 	self:StartRendering()
@@ -106,6 +128,7 @@ function AimRenderer.StartRendering(self: AimRenderer)
 			if self.targetedAimPart then
 				self.targetedAimPart.CFrame = CFrame.new(0, -100, 0)
 			end
+			self.beam.Enabled = false
 			return
 		end
 
@@ -166,6 +189,17 @@ function AimRenderer.StartRendering(self: AimRenderer)
 
 			self.aimPart.CFrame = CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.direction)
 				* transformHRPToFeet
+
+			local _, rotY, _ = self.HRP.CFrame:ToEulerAnglesYXZ()
+			local rotYCFrame = CFrame.Angles(0, rotY, 0)
+			self.a0.CFrame = CFrame.new(self.HRP.Position) * rotYCFrame * a0CFrame
+			self.a1.CFrame = CFrame.new(self.targetedAimPart.Position)
+				* self.a0.CFrame.Rotation
+				* CFrame.Angles(0, math.rad(120), 0)
+
+			self.beam.CurveSize0 = math.min(data.Data.Height, XYDistance)
+			self.beam.CurveSize1 = self.beam.CurveSize0
+			self.beam.Enabled = true
 		else
 			self.aimPart.CFrame = CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.direction)
 				* CFrame.Angles(0, math.rad(180), 0)
