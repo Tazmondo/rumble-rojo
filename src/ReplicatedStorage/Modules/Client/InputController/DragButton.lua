@@ -10,7 +10,7 @@ local Bin = require(ReplicatedStorage.Packages.Bin)
 -- Radius around offset that doesnt do any aiming
 local DEADZONE = 20
 
-function DragButton.new(button: Frame)
+function _new(button: Frame)
 	local self = {}
 
 	self.foreground = assert(button:FindFirstChild("Foreground"), "Drag button had no foreground") :: Frame
@@ -18,27 +18,48 @@ function DragButton.new(button: Frame)
 	self.backgroundMiddle =
 		assert(button:FindFirstChild("BackgroundMiddle"), "Drag button had no background middle") :: ImageLabel
 
-	local basicImage = self.foreground:FindFirstChild("Ready") :: ImageLabel?
+	self.readyIcon = self.foreground:FindFirstChild("Ready") :: ImageLabel?
 
 	self.backgroundOffset = Vector3.new()
 	self.offset = Vector3.new()
+	self.targetOffset = Vector3.new()
+	self.lerpValue = 10
+
 	self.radius = self.background.AbsoluteSize.X / 2
 
 	self.dragging = false
 
 	local Add, Remove = Bin()
+	self.Add = Add
 	self.Remove = Remove
 
-	Add(RunService.RenderStepped:Connect(function()
+	return self
+end
+
+function DragButton.new(button: Frame)
+	local self = _new(button)
+
+	self.Add(RunService.RenderStepped:Connect(function(dt)
 		self.background.Position = UDim2.new(0.5, self.backgroundOffset.X, 0.5, self.backgroundOffset.Y)
 		self.backgroundMiddle.Position = self.background.Position
 
-		if basicImage then
+		if not self.dragging then
+			self.foreground.Position = self.background.Position
+			return
+		end
+
+		if DragButton.GetDistanceAlpha(self) == 1 then
+			self.offset = self.targetOffset
+		else
+			self.offset = self.offset + (self.targetOffset - self.offset) * dt * self.lerpValue
+		end
+
+		if self.readyIcon then
 			if self.dragging then
-				basicImage.ImageTransparency = 0
+				self.readyIcon.ImageTransparency = 0
 				self.backgroundMiddle.Visible = true
 			else
-				basicImage.ImageTransparency = 0.4
+				self.readyIcon.ImageTransparency = 0.4
 				self.backgroundMiddle.Visible = false
 			end
 		end
@@ -57,7 +78,7 @@ function DragButton.new(button: Frame)
 end
 
 function DragButton.HandleDelta(self: DragButton, delta: Vector3)
-	self.offset += delta
+	self.targetOffset += delta
 end
 
 function DragButton.Snap(self: DragButton, position: Vector2)
@@ -76,10 +97,11 @@ end
 
 function DragButton.Reset(self: DragButton)
 	self.offset = Vector3.new()
+	self.targetOffset = Vector3.new()
 	self.backgroundOffset = Vector3.new()
 	self.dragging = false
 end
 
-export type DragButton = typeof(DragButton.new(...))
+export type DragButton = typeof(_new(...))
 
 return DragButton

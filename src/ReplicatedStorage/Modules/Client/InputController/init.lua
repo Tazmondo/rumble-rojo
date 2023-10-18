@@ -141,8 +141,27 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 	end))
 
 	self.Add(RunService.RenderStepped:Connect(function()
+		debug.profilebegin("InputController_RenderStep")
+		if self.activeButton then
+			self.currentLookDirection = GetWorldDirection(self.activeButton.offset)
+
+			-- Set target relative as a percentage of the attack range, represented by the distance from the offset to the max radius
+			local range = if self.activeButton == self.superButton
+				then self.combatPlayer.heroData.Super.Range
+				else self.combatPlayer.heroData.Attack.Range
+
+			local offsetPercentage = DragButton.GetDistanceAlpha(self.activeButton)
+			if offsetPercentage > 0 then
+				local targetDistance = offsetPercentage * range
+				self.targetRelative = (self.currentLookDirection * targetDistance)
+					- Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
+			end
+			UpdateAiming(self)
+		end
+
 		self.aimRenderer:Update(self.currentLookDirection :: any, GetRealTarget(self))
 		self.superAimRenderer:Update(self.currentLookDirection :: any, GetRealTarget(self))
+		debug.profileend()
 	end))
 
 	ContextActionService:BindAction("Toggle_Super", function(name, state, object)
@@ -361,26 +380,13 @@ function InputChanged(self: InputController, input: InputObject, processed: bool
 	end
 
 	DragButton.HandleDelta(self.activeButton, input.Delta)
-	self.currentLookDirection = GetWorldDirection(self.activeButton.offset)
-
-	-- Set target relative as a percentage of the attack range, represented by the distance from the offset to the max radius
-	local range = if self.activeButton == self.superButton
-		then self.combatPlayer.heroData.Super.Range
-		else self.combatPlayer.heroData.Attack.Range
-
-	local offsetPercentage = DragButton.GetDistanceAlpha(self.activeButton)
-	if offsetPercentage > 0 then
-		local targetDistance = offsetPercentage * range
-		self.targetRelative = (self.currentLookDirection * targetDistance)
-			- Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
-	end
-	UpdateAiming(self)
 end
 
 function InputEnded(self: InputController, input: InputObject, processed: boolean)
 	if input ~= self.activeInput then
 		return
 	end
+	self.activeInput = nil
 
 	if self.activeButton then
 		local alpha = DragButton.GetDistanceAlpha(self.activeButton)
@@ -391,7 +397,6 @@ function InputEnded(self: InputController, input: InputObject, processed: boolea
 		if alpha == 0 then
 			self.superToggle = false
 			self.activeButton = nil
-			self.activeInput = nil
 			UpdateAiming(self)
 			return
 		end
@@ -405,7 +410,6 @@ function InputEnded(self: InputController, input: InputObject, processed: boolea
 
 	self.superToggle = false
 	self.activeButton = nil
-	self.activeInput = nil
 	UpdateAiming(self)
 end
 
