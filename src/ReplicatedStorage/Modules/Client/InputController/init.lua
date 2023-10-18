@@ -1,14 +1,31 @@
 -- Handles inputs for PC, mobile, and console, and translates them into in-game player actions using the Combat Client
 local InputController = {}
 
+local ContextActionService = game:GetService("ContextActionService")
+local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local AimRenderer = require(ReplicatedStorage.Modules.Client.CombatController.AimRenderer)
-local CombatClient = require(ReplicatedStorage.Modules.Client.CombatController.CombatClient)
+local CombatCamera = require(ReplicatedStorage.Modules.Client.CombatController.CombatCamera)
+local CombatUI = require(ReplicatedStorage.Modules.Client.CombatController.CombatUI)
+local NameTag = require(ReplicatedStorage.Modules.Client.CombatController.NameTag)
+local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
+local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
+local ModifierCollection = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.ModifierCollection)
+local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local Bin = require(ReplicatedStorage.Packages.Bin)
+local Spawn = require(ReplicatedStorage.Packages.Spawn)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local DragButton = require(script.DragButton)
+local SoundController = require(script.Parent.SoundController)
+
+local SkillAbilityEvent = require(ReplicatedStorage.Events.Combat.SkillAbilityEvent):Client()
+local AttackFunction = require(ReplicatedStorage.Events.Combat.AttackFunction)
+local AttackRenderer = require(ReplicatedStorage.Modules.Client.CombatController.AttackRenderer)
+local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 
 -- Distance that attack and super controls can snap to where the user places their finger
 local SNAPDISTANCE = 120
@@ -20,9 +37,31 @@ local attack
 local super
 local skill
 
-function new(combatClient: CombatClient.CombatClient)
+InputController.Instance = nil :: InputController?
+
+local function _VisualiseRay(ray: Ray)
+	local part = Instance.new("Part")
+	part.Anchored = true
+	part.CanCollide = false
+	part.Transparency = 0.5
+	part.Color = Color3.new(0.411765, 0.913725, 0.494118)
+	part.CFrame = CFrame.lookAt((ray.Origin + (ray.Direction * 0.5)), ray.Origin + ray.Direction)
+	part.Size = Vector3.new(0.2, 0.2, ray.Direction.Magnitude)
+
+	part.Parent = workspace
+
+	Debris:AddItem(part, 15)
+end
+
+function new(heroName: string, modifierNames: { string }, skill: string)
 	local self = {}
-	self.combatClient = combatClient
+
+	self.player = Players.LocalPlayer
+	self.character = self.player.Character
+	assert(self.character, "Combat Client intialized without character")
+	assert(self.character.Parent, "Combat client character parent is nil")
+	self.humanoid = self.character.Humanoid :: Humanoid
+	self.HRP = self.humanoid.RootPart :: BasePart
 
 	self.Add, self.Remove = Bin()
 
@@ -33,28 +72,37 @@ function new(combatClient: CombatClient.CombatClient)
 	self.Add(self.attackButton.Remove)
 
 	self.activeButton = nil :: DragButton.DragButton?
+	self.activeInput = nil :: InputObject?
+	self.superToggle = false
 
-	self.mouseDown = false
-
-	self.lastMousePosition = Vector3.new()
 	self.targetRelative = Vector3.new()
 	self.currentLookDirection = Vector3.new()
 
-	self.aimRenderer = AimRenderer.new(
-		self.combatClient.combatPlayer.heroData.Attack,
-		self.combatClient.character,
-		self.combatClient.combatPlayer,
-		function()
-			return self.combatClient.combatPlayer:CanAttack()
-		end
-	) :: AimRenderer.AimRenderer
+	self.preRotateAttack = true
+	self.completedRotation = true
+
+	local modifiers = TableUtil.Map(modifierNames, function(v)
+		return Modifiers[v]
+	end)
+
+	self.combatPlayer = CombatPlayer.new(
+		heroName,
+		self.character,
+		ModifierCollection.new(modifiers),
+		self.player,
+		Skills[skill] or Skills[""]
+	) :: CombatPlayer.CombatPlayer
+
+	self.aimRenderer = AimRenderer.new(self.combatPlayer.heroData.Attack, self.character, self.combatPlayer, function()
+		return self.combatPlayer:CanAttack()
+	end) :: AimRenderer.AimRenderer
 
 	self.superAimRenderer = AimRenderer.new(
-		self.combatClient.combatPlayer.heroData.Super,
-		self.combatClient.character,
-		self.combatClient.combatPlayer,
+		self.combatPlayer.heroData.Super,
+		self.character,
+		self.combatPlayer,
 		function()
-			return self.combatClient.combatPlayer:CanSuperAttack()
+			return self.combatPlayer:CanSuperAttack()
 		end
 	) :: AimRenderer.AimRenderer
 
@@ -63,11 +111,24 @@ function new(combatClient: CombatClient.CombatClient)
 		self.superAimRenderer:Destroy()
 	end)
 
+	self.combatUI = CombatUI.new(self.combatPlayer, self.character)
+	self.Add(function()
+		self.combatUI:Destroy()
+	end)
+
+	NameTag.InitFriendly(self.combatPlayer)
+
+	self.combatCamera = CombatCamera.new()
+	self.combatCamera:Enable()
+	self.Add(function()
+		self.combatCamera:Destroy()
+	end)
+
 	return self
 end
 
-function InputController.new(combatClient: CombatClient.CombatClient)
-	local self = new(combatClient) :: any
+function InputController.new(heroName: string, modifierNames: { string }, skill: string)
+	local self = new(heroName, modifierNames, skill)
 
 	self.Add(UserInputService.InputBegan:Connect(function(...)
 		InputBegan(self, ...)
@@ -85,6 +146,28 @@ function InputController.new(combatClient: CombatClient.CombatClient)
 		self.aimRenderer:Update(self.currentLookDirection :: any, GetRealTarget(self))
 		self.superAimRenderer:Update(self.currentLookDirection :: any, GetRealTarget(self))
 	end))
+
+	ContextActionService:BindAction("Toggle_Super", function(name, state, object)
+		if state ~= Enum.UserInputState.Begin then
+			return
+		end
+		print(name, object.UserInputType)
+		self.superToggle = self.combatPlayer:CanSuperAttack() and not self.superToggle
+		UpdateAiming(self)
+	end, false, Enum.KeyCode.E)
+
+	self.Add(function()
+		ContextActionService:UnbindAction("Toggle_Super")
+	end)
+
+	SetupCharacterRotation(self)
+
+	Spawn(function()
+		self.combatPlayer.DiedSignal:Wait()
+		self.Remove()
+	end)
+
+	InputController.Instance = self
 
 	return self :: InputController
 end
@@ -123,25 +206,96 @@ end
 function NormaliseClickTarget(self: InputController, screenPosition: Vector3): Ray
 	local ray = workspace.CurrentCamera:ScreenPointToRay(screenPosition.X, screenPosition.Y)
 	local rayPlaneIntersection =
-		RayPlaneIntersection(self.combatClient.HRP.Position, Vector3.new(0, 1, 0), ray.Origin, ray.Direction)
+		RayPlaneIntersection(self.HRP.Position, Vector3.new(0, 1, 0), ray.Origin, ray.Direction)
 	assert(rayPlaneIntersection, "Click direction was parallel to HRP plane!")
-	return Ray.new(self.combatClient.HRP.Position, rayPlaneIntersection - self.combatClient.HRP.Position)
+	return Ray.new(self.HRP.Position, rayPlaneIntersection - self.HRP.Position)
 end
 
 -- Turns a target position relative to HRP into a world position
 function GetRealTarget(self: InputController): Vector3
-	local worldTarget = CFrame.new(self.combatClient.HRP.Position):PointToWorldSpace(self.targetRelative)
+	local worldTarget = CFrame.new(self.HRP.Position):PointToWorldSpace(self.targetRelative)
 	return worldTarget
 end
 
+function SetupCharacterRotation(self: InputController)
+	self.Add(RunService.RenderStepped:Connect(function(dt: number)
+		-- Always want to finish rotating to the aim direction, so even if they release mouse, keep rotating until angle reached
+		-- Need to check that the look direction will not cause a NaN, by > 0 magnitude
+		if (self.activeInput or not self.completedRotation) and self.currentLookDirection.Magnitude > 0 then
+			self.humanoid.AutoRotate = false
+			self.HRP.CFrame = self.HRP.CFrame:Lerp(
+				CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.currentLookDirection),
+				dt * 8
+			)
+
+			local angleDifference = self.HRP.CFrame.LookVector:Angle(self.currentLookDirection)
+			if angleDifference < math.rad(5) then
+				self.preRotateAttack = true
+				self.completedRotation = true
+			elseif angleDifference < math.rad(60) then
+				self.preRotateAttack = true
+				self.completedRotation = false
+			else
+				self.completedRotation = false
+				self.preRotateAttack = false
+			end
+		else
+			self.humanoid.AutoRotate = true
+		end
+	end))
+	self.Add(function()
+		self.humanoid.AutoRotate = true
+	end)
+end
+
 function UseSkill(self: InputController)
-	warn("Use Skill!")
+	if not self.combatPlayer:CanUseSkill() then
+		return
+	end
+
+	local skill = self.combatPlayer.skill
+	self.combatPlayer:UseSkill()
+	if skill.Type == "Attack" then
+		-- self:Attack("Skill")
+	elseif skill.Type == "Ability" then
+		SkillAbilityEvent:Fire()
+	end
+end
+
+function UpdateAiming(self: InputController)
+	self.aimRenderer:Disable()
+	self.superAimRenderer:Disable()
+	self.combatUI:UpdateSuperActive(false)
+
+	if not self.activeInput and not self.superToggle then
+		self.combatPlayer:SetAiming(nil)
+		return
+	end
+
+	if self.superToggle or self.activeButton == self.superButton then
+		self.superAimRenderer:Enable()
+		self.combatPlayer:SetAiming("Super")
+		self.combatUI:UpdateSuperActive(true)
+	else
+		self.aimRenderer:Enable()
+		self.combatPlayer:SetAiming("Attack")
+	end
 end
 
 function InputBegan(self: InputController, input: InputObject, processed: boolean)
-	if processed or self.activeButton then
+	if processed or self.activeInput then
 		return
 	end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		self.activeInput = input
+		UpdateAiming(self)
+
+		if self.superToggle then
+			InputEnded(self, input, false)
+		end
+		return
+	end
+
 	local clickPos = Vector2.new(input.Position.X, input.Position.Y)
 	local clickedGUI = PlayerGui:GetGuiObjectsAtPosition(clickPos.X, clickPos.Y)
 	if table.find(clickedGUI, skill) then
@@ -155,43 +309,51 @@ function InputBegan(self: InputController, input: InputObject, processed: boolea
 	local superDistance = (superOrigin - clickPos).Magnitude
 	local attackDistance = (attackOrigin - clickPos).Magnitude
 
-	if not self.combatClient.combatPlayer:CanSuperAttack() or attackDistance < superDistance then
+	if not self.combatPlayer:CanSuperAttack() or attackDistance < superDistance then
 		if attackDistance > SNAPDISTANCE then
 			return
 		end
 		self.activeButton = self.attackButton
-
-		self.aimRenderer:Enable()
-	elseif self.combatClient.combatPlayer:CanSuperAttack() then
+	elseif self.combatPlayer:CanSuperAttack() then
 		if superDistance > SNAPDISTANCE then
 			return
 		end
-
 		self.activeButton = self.superButton
 	end
 
 	if self.activeButton then
 		DragButton.Snap(self.activeButton, clickPos)
+		self.activeInput = input
 	end
+
+	UpdateAiming(self)
 end
 
 function InputChanged(self: InputController, input: InputObject, processed: boolean)
-	if input.UserInputType == Enum.UserInputType.MouseMovement then
-		self.lastMousePosition = input.Position
-
+	if
+		input.UserInputType == Enum.UserInputType.MouseMovement
+		and (
+			(self.activeInput and self.activeInput.UserInputType == Enum.UserInputType.MouseButton1)
+			or (self.superToggle and not self.activeInput)
+		)
+	then
 		local clickRay = NormaliseClickTarget(self, input.Position)
 		self.currentLookDirection = clickRay.Unit.Direction
 
-		self.targetRelative = CFrame.new(self.combatClient.HRP.Position):PointToObjectSpace(
-			clickRay.Origin
-				+ clickRay.Direction
-				- Vector3.new(0, self.combatClient.humanoid.HipHeight + self.combatClient.HRP.Size.Y / 2)
+		self.targetRelative = CFrame.new(self.HRP.Position):PointToObjectSpace(
+			clickRay.Origin + clickRay.Direction - Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
 		)
 
 		return
 	end
 
+	-- Handle mobile movement
+	if input ~= self.activeInput then
+		return
+	end
+
 	if not self.activeButton then
+		self.activeInput = nil
 		return
 	end
 
@@ -200,25 +362,93 @@ function InputChanged(self: InputController, input: InputObject, processed: bool
 
 	-- Set target relative as a percentage of the attack range, represented by the distance from the offset to the max radius
 	local range = if self.activeButton == self.superButton
-		then self.combatClient.combatPlayer.heroData.Super.Range
-		else self.combatClient.combatPlayer.heroData.Attack.Range
+		then self.combatPlayer.heroData.Super.Range
+		else self.combatPlayer.heroData.Attack.Range
 
 	local offsetPercentage = math.min(1, self.activeButton.offset.Magnitude / self.activeButton.radius)
 	local targetDistance = offsetPercentage * range
 	self.targetRelative = (self.currentLookDirection * targetDistance)
-		- Vector3.new(0, self.combatClient.humanoid.HipHeight + self.combatClient.HRP.Size.Y / 2)
+		- Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
 end
 
 function InputEnded(self: InputController, input: InputObject, processed: boolean)
-	if not self.activeButton then
+	if input ~= self.activeInput then
 		return
 	end
 
-	DragButton.Reset(self.activeButton)
+	if self.activeButton then
+		DragButton.Reset(self.activeButton)
+	end
 
+	while not self.preRotateAttack do
+		task.wait()
+	end
+
+	Attack(self, if self.superToggle or self.activeButton == self.superButton then "Super" else "Attack")
+
+	self.superToggle = false
 	self.activeButton = nil
-	self.aimRenderer:Disable()
-	self.superAimRenderer:Disable()
+	self.activeInput = nil
+	UpdateAiming(self)
+end
+
+function Attack(self: InputController, type: "Attack" | "Super" | "Skill")
+	local trajectory = Ray.new(self.HRP.Position, self.currentLookDirection or Vector3.new(0, 0, 1))
+	local target = GetRealTarget(self)
+
+	local attackData: Types.AbilityData
+
+	if type == "Attack" then
+		if not self.combatPlayer:CanAttack() then
+			return
+		end
+		self.combatCamera:Shake()
+		self.combatPlayer:Attack()
+		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, false, self.HRP.Position)
+		attackData = self.combatPlayer.heroData.Attack
+	elseif type == "Super" then
+		if not self.combatPlayer:CanSuperAttack() then
+			print("Tried to super attack but can't.", self.combatPlayer.superCharge)
+			return
+		end
+		self.combatCamera:Shake()
+		self.combatPlayer:SuperAttack()
+		SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, true, self.HRP.Position)
+		attackData = self.combatPlayer.heroData.Super
+	elseif type == "Skill" then
+		attackData = assert(self.combatPlayer.skill.AttackData)
+	end
+
+	-- Constrain target to range of attack
+	if attackData.Data.AttackType == "Arced" or attackData.Data.AttackType == "Field" then
+		local HRPToTarget = target - self.HRP.Position
+		local yDiff = HRPToTarget.Y
+
+		HRPToTarget *= Vector3.new(1, 0, 1)
+
+		target = self.HRP.Position
+			+ Vector3.new(0, yDiff, 0)
+			+ HRPToTarget.Unit
+				-- Get smallest of max range or target, but cant be any smaller than 0.
+				* math.max(0, math.min(attackData.Range - attackData.Data.Radius, HRPToTarget.Magnitude))
+	end
+
+	trajectory = trajectory.Unit
+	local origin = CFrame.lookAt(trajectory.Origin, trajectory.Origin + trajectory.Direction)
+
+	local attackDetails = AttackLogic.MakeAttack(self.combatPlayer, origin, attackData, target)
+
+	-- AnimationController.AttemptPlay(self.animationController, "Attack")
+
+	AttackRenderer.RenderAttack(
+		self.player,
+		self.combatPlayer.heroData.Name,
+		attackData,
+		origin,
+		attackDetails,
+		self.HRP
+	)
+	self.combatPlayer.attackId = AttackFunction:Call(type, origin, attackDetails):Await()
 end
 
 function InputController.Initialize()
