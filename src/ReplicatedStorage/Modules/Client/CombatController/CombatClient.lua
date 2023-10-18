@@ -8,15 +8,12 @@ CombatClient.__index = CombatClient
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 local combatFolder = ReplicatedStorage.Modules.Shared.Combat
 
 local SoundController = require(ReplicatedStorage.Modules.Client.SoundController)
-local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Enums = require(ReplicatedStorage.Modules.Shared.Combat.Enums)
-local AimRenderer = require(script.Parent.AimRenderer)
 local AnimationController = require(script.Parent.AnimationController)
 local AttackRenderer = require(script.Parent.AttackRenderer)
 local CombatCamera = require(script.Parent.CombatCamera)
@@ -60,8 +57,7 @@ function CombatClient.new(heroName: string, modifierNames: { string }, skill: st
 	self.humanoid = self.character.Humanoid :: Humanoid
 	self.HRP = self.humanoid.RootPart :: BasePart
 	self.lastMousePosition = Vector3.new()
-	self.targetRelative = nil :: Vector3?
-	self.currentMouseDirection = nil :: Vector3?
+	self.currentLookDirection = nil :: Vector3?
 	self.lastAimDirection = nil :: Vector3?
 	self.attackButtonDown = false
 	self.superButtonDown = false
@@ -86,22 +82,6 @@ function CombatClient.new(heroName: string, modifierNames: { string }, skill: st
 	self.combatCamera = self.janitor:Add(CombatCamera.new())
 	self.combatCamera:Enable()
 
-	self.aimRenderer = self.janitor:Add(
-		AimRenderer.new(self.combatPlayer.heroData.Attack, self.character, self.combatPlayer, function()
-			return self.combatPlayer:CanAttack()
-		end) :: AimRenderer.AimRenderer
-	)
-
-	self.superAimRenderer =
-		self.janitor:Add(AimRenderer.new(self.combatPlayer.heroData.Super, self.character, self.combatPlayer, function()
-			return self.combatPlayer:CanSuperAttack()
-		end)) :: AimRenderer.AimRenderer
-
-	self.janitor:Add(RunService.RenderStepped:Connect(function()
-		self.aimRenderer:Update(self.currentMouseDirection :: any, self:GetRealTarget())
-		self.superAimRenderer:Update(self.currentMouseDirection :: any, self:GetRealTarget())
-	end))
-
 	NameTag.InitFriendly(self.combatPlayer)
 
 	self.combatUI = self.janitor:Add(CombatUI.new(self.combatPlayer, self.character))
@@ -112,7 +92,6 @@ function CombatClient.new(heroName: string, modifierNames: { string }, skill: st
 	-- 	-- TODO: Render leaderboard, maybe dont do this here
 	-- end)
 
-	self:GetInputs()
 	self:SetupCharacterRotation()
 
 	task.spawn(function()
@@ -136,71 +115,12 @@ function CombatClient.Destroy(self: CombatClient)
 	self.destroyed = true
 end
 
--- Returns point of intersection between a ray and a plane
-local function RayPlaneIntersection(
-	origin: Vector3,
-	normal: Vector3,
-	rayOrigin: Vector3,
-	unitRayDirection: Vector3
-): Vector3?
-	local rpoint = rayOrigin - origin
-	local dot = unitRayDirection:Dot(normal)
-	if dot == 0 then
-		-- Parallel
-		return nil
-	end
-
-	local t = -rpoint:Dot(normal) / dot
-	return rayOrigin + t * unitRayDirection, t
-end
-
-function CombatClient.NormaliseClickTarget(self: CombatClient): Ray
-	local ray = workspace.CurrentCamera:ScreenPointToRay(self.lastMousePosition.X, self.lastMousePosition.Y)
-	local rayPlaneIntersection =
-		RayPlaneIntersection(self.HRP.Position, Vector3.new(0, 1, 0), ray.Origin, ray.Direction)
-	assert(rayPlaneIntersection, "Click direction was parallel to HRP plane!")
-	return Ray.new(self.HRP.Position, rayPlaneIntersection - self.HRP.Position)
-
-	-- We do not need this code anymore as maps are flat
-
-	-- local lastPosition, lastInstance, lastNormal =
-	-- 	table.unpack(ScreenPointCast(self.lastMousePosition.X, self.lastMousePosition.Y, { self.character }))
-
-	-- if lastInstance and lastInstance.Parent:FindFirstChild("Humanoid") then
-	-- 	-- If they clicked on a player, we do not need to correct the aim height
-	-- 	targetHeight = lastInstance.Parent.HumanoidRootPart.Position.Y
-	-- else
-	-- 	-- Here we are making sure they clicked on a sloped surface, so a player could actually be standing on it.
-	-- 	-- If the angle is greater than 80, then the surface is pretty much a wall, and it would not make sense to target it.
-	-- 	if lastNormal then
-	-- 		local angleToVertical = math.deg(Vector3.new(0, 1, 0):Angle(lastNormal))
-	-- 		if angleToVertical <= 80 then
-	-- 			targetHeight = lastPosition.Y + 3
-	-- 		end
-	-- 	end
-	-- end
-
-	-- local ray =
-	-- 	Ray.new(self.HRP.Position, Vector3.new(lastPosition.X, targetHeight, lastPosition.Z) - self.HRP.Position)
-
-	-- return ray
-end
-
-function CombatClient.GetRealTarget(self: CombatClient): Vector3
-	if self.targetRelative then
-		local worldTarget = CFrame.new(self.HRP.Position):PointToWorldSpace(self.targetRelative)
-		return worldTarget
-	else
-		return self.HRP.Position
-	end
-end
-
 function CombatClient.HandleMove(self: CombatClient, input: InputObject)
 	local screenPosition = input.Position
 	self.lastMousePosition = screenPosition
 
 	local clickRay: Ray = self:NormaliseClickTarget()
-	self.currentMouseDirection = clickRay.Unit.Direction
+	self.currentLookDirection = clickRay.Unit.Direction
 
 	-- Set target to ground level
 
@@ -213,7 +133,7 @@ function CombatClient.SetupCharacterRotation(self: CombatClient)
 	self.janitor:Add(RunService.RenderStepped:Connect(function(dt: number)
 		-- Only update the aim direction while holding mouse
 		if self.attackButtonDown or self.usingSuper then
-			local worldDirection = self.currentMouseDirection
+			local worldDirection = self.currentLookDirection
 			if worldDirection then
 				self.lastAimDirection = Vector3.new(worldDirection.X, 0, worldDirection.Z).Unit
 			end
@@ -329,61 +249,60 @@ function CombatClient.HandleSkillDown(self: CombatClient)
 	local skill = self.combatPlayer.skill
 	self.combatPlayer:UseSkill()
 	if skill.Type == "Attack" then
-		self:Attack("Skill")
+		-- self:Attack("Skill")
 	elseif skill.Type == "Ability" then
 		SkillAbilityEvent:Fire()
 	end
 end
 
-function CombatClient.GetInputs(self: CombatClient)
-	self.janitor:Add(UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
-		if processed then
-			return
-		end
+-- function CombatClient.GetInputs(self: CombatClient)
+-- 	self.janitor:Add(UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
+-- 		if processed then
+-- 			return
+-- 		end
 
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
-			self:HandleMove(input)
-		end
-	end))
+-- 		if input.UserInputType == Enum.UserInputType.MouseMovement then
+-- 			self:HandleMove(input)
+-- 		end
+-- 	end))
 
-	self.janitor:Add(UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
-		if processed then
-			return
-		end
+-- 	self.janitor:Add(UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+-- 		if processed then
+-- 			return
+-- 		end
 
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			self:HandleMouseDown()
-		elseif input.KeyCode == Config.SuperKey then
-			self:HandleSuperDown()
-		elseif input.KeyCode == Config.SkillKey then
-			self:HandleSkillDown()
-		end
-	end))
+-- 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+-- 			self:HandleMouseDown()
+-- 		elseif input.KeyCode == Config.SuperKey then
+-- 			self:HandleSuperDown()
+-- 		elseif input.KeyCode == Config.SkillKey then
+-- 			self:HandleSkillDown()
+-- 		end
+-- 	end))
 
-	self.janitor:Add(UserInputService.InputEnded:Connect(function(input: InputObject, processed: boolean)
-		if processed then
-			return
-		end
+-- 	self.janitor:Add(UserInputService.InputEnded:Connect(function(input: InputObject, processed: boolean)
+-- 		if processed then
+-- 			return
+-- 		end
 
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			self:HandleMouseUp()
-		elseif input.KeyCode == Config.SuperKey then
-			self:HandleSuperUp()
-		end
-	end))
+-- 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+-- 			self:HandleMouseUp()
+-- 		elseif input.KeyCode == Config.SuperKey then
+-- 			self:HandleSuperUp()
+-- 		end
+-- 	end))
 
-	-- RunService.RenderStepped:Connect(function()
-	-- 	if self.attackButtonDown then
-	-- 		self:HandleClick()
-	-- 	end
-	-- end)
-end
+-- 	-- RunService.RenderStepped:Connect(function()
+-- 	-- 	if self.attackButtonDown then
+-- 	-- 		self:HandleClick()
+-- 	-- 	end
+-- 	-- end)
+-- end
 
-function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Skill")
+function CombatClient.Attack(self: CombatClient, type: "Attack" | "Super" | "Skill", target: Vector3)
 	local trajectory = Ray.new(self.HRP.Position, self.lastAimDirection or Vector3.new(0, 0, 1))
 
 	local attackData: Types.AbilityData
-	local target = self:GetRealTarget()
 
 	if type == "Attack" then
 		if not self.combatPlayer:CanAttack() then
