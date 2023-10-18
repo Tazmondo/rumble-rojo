@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local AutoAim = require(script.AutoAim)
 local AimRenderer = require(ReplicatedStorage.Modules.Client.CombatController.AimRenderer)
 local CombatCamera = require(ReplicatedStorage.Modules.Client.CombatController.CombatCamera)
 local CombatUI = require(ReplicatedStorage.Modules.Client.CombatController.CombatUI)
@@ -78,6 +79,8 @@ function new(heroName: string, modifierNames: { string }, skill: string)
 	self.activeButton = nil :: DragButton.DragButton?
 	self.activeInput = nil :: InputObject?
 	self.superToggle = false
+	self.hasMoved = false
+	self.attacking = false
 
 	self.targetRelative = Vector3.new()
 	self.currentLookDirection = Vector3.new()
@@ -170,6 +173,20 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 			UpdateAiming(self)
 		end
 
+		if not self.hasMoved and (self.activeInput or self.superToggle) then
+			local super = self.activeButton == self.superButton
+			local range = if super
+				then self.combatPlayer.heroData.Super.Range
+				else self.combatPlayer.heroData.Attack.Range
+
+			local newDirection, newTarget = AutoAim.GetData(range)
+
+			if newDirection and newTarget then
+				self.currentLookDirection = newDirection
+				self.targetRelative = CFrame.new(self.HRP.Position):PointToObjectSpace(newTarget)
+			end
+		end
+
 		self.aimRenderer:Update(self.currentLookDirection :: any, GetRealTarget(self))
 		self.superAimRenderer:Update(self.currentLookDirection :: any, GetRealTarget(self))
 		debug.profileend()
@@ -180,6 +197,7 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 			return
 		end
 		self.superToggle = self.combatPlayer:CanSuperAttack() and not self.superToggle
+		self.hasMoved = false
 		UpdateAiming(self)
 	end, false, Config.SuperKey)
 
@@ -295,7 +313,7 @@ function SetupCharacterRotation(self: InputController)
 			)
 
 			local angleDifference = self.HRP.CFrame.LookVector:Angle(self.currentLookDirection)
-			if angleDifference < math.rad(5) then
+			if angleDifference < math.rad(10) then
 				self.preRotateAttack = true
 				self.completedRotation = true
 			elseif angleDifference < math.rad(60) then
@@ -333,7 +351,7 @@ function UpdateAiming(self: InputController, cancel: boolean?)
 	self.superAimRenderer:Disable()
 	self.combatUI:UpdateSuperActive(false)
 
-	if cancel or (not self.activeInput and not self.superToggle) then
+	if cancel or (not self.activeInput and not self.superToggle) or (not self.hasMoved and not self.superToggle) then
 		self.combatPlayer:SetAiming(nil)
 		return
 	end
@@ -343,7 +361,10 @@ function UpdateAiming(self: InputController, cancel: boolean?)
 	end
 
 	if self.superToggle or self.activeButton == self.superButton then
-		self.superAimRenderer:Enable()
+		if self.hasMoved then
+			self.superAimRenderer:Enable()
+		end
+
 		self.combatPlayer:SetAiming("Super")
 
 		-- Don't render the active button on mobile
@@ -372,14 +393,15 @@ function InputBegan(self: InputController, input: InputObject, processed: boolea
 		return
 	end
 
+	self.hasMoved = false
+
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		self.activeInput = input
-		UpdateAiming(self)
 
 		if self.superToggle then
 			InputEnded(self, input, false)
+			return
 		end
-		return
 	elseif input.UserInputType == Enum.UserInputType.Touch then
 		local superOrigin = super.AbsolutePosition + super.AbsoluteSize / 2
 
@@ -401,11 +423,16 @@ function InputBegan(self: InputController, input: InputObject, processed: boolea
 			DragButton.Snap(self.activeButton, clickPos)
 			self.activeInput = input
 		end
-		UpdateAiming(self)
 	end
+	UpdateAiming(self)
 end
 
 function InputChanged(self: InputController, input: InputObject, processed: boolean)
+	-- So we don't update the direction and target while rotating if it was auto-aimed
+	if self.attacking then
+		return
+	end
+
 	if
 		input.UserInputType == Enum.UserInputType.MouseMovement
 		and (
@@ -419,6 +446,11 @@ function InputChanged(self: InputController, input: InputObject, processed: bool
 		self.targetRelative = CFrame.new(self.HRP.Position):PointToObjectSpace(
 			clickRay.Origin + clickRay.Direction - Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
 		)
+
+		if not self.hasMoved then
+			self.hasMoved = true
+			UpdateAiming(self)
+		end
 
 		return
 	end
@@ -434,6 +466,10 @@ function InputChanged(self: InputController, input: InputObject, processed: bool
 	end
 
 	DragButton.HandleDelta(self.activeButton, input.Delta)
+	if not self.hasMoved then
+		self.hasMoved = true
+		UpdateAiming(self)
+	end
 end
 
 function InputEnded(self: InputController, input: InputObject, processed: boolean)
@@ -449,19 +485,23 @@ function InputEnded(self: InputController, input: InputObject, processed: boolea
 
 		-- If user releases in the deadzone then don't do anything.
 		if alpha == 0 then
-			self.superToggle = false
-			self.activeButton = nil
-			UpdateAiming(self)
-			return
+			if self.hasMoved then
+				self.superToggle = false
+				self.activeButton = nil
+				UpdateAiming(self)
+				return
+			end
 		end
 	end
 
+	self.attacking = true
 	while not self.preRotateAttack do
 		task.wait()
 	end
 
 	Attack(self, if self.superToggle or self.activeButton == self.superButton then "Super" else "Attack")
 
+	self.attacking = false
 	self.superToggle = false
 	self.activeButton = nil
 	UpdateAiming(self, true)
