@@ -18,7 +18,7 @@ function _new(button: Frame)
 	self.backgroundMiddle =
 		assert(button:FindFirstChild("BackgroundMiddle"), "Drag button had no background middle") :: ImageLabel
 
-	self.readyIcon = self.foreground:FindFirstChild("Ready") :: ImageLabel?
+	self.readyIcon = assert(self.foreground:FindFirstChild("Ready")) :: ImageLabel
 
 	self.backgroundOffset = Vector3.new()
 	self.offset = Vector3.new()
@@ -45,23 +45,17 @@ function DragButton.new(button: Frame)
 
 		if not self.dragging then
 			self.foreground.Position = self.background.Position
+			self.readyIcon.ImageTransparency = 0.4
+			self.backgroundMiddle.Visible = false
 			return
 		end
+		self.readyIcon.ImageTransparency = 0
+		self.backgroundMiddle.Visible = true
 
 		if DragButton.GetDistanceAlpha(self) == 1 then
 			self.offset = self.targetOffset
 		else
 			self.offset = self.offset + (self.targetOffset - self.offset) * dt * self.lerpValue
-		end
-
-		if self.readyIcon then
-			if self.dragging then
-				self.readyIcon.ImageTransparency = 0
-				self.backgroundMiddle.Visible = true
-			else
-				self.readyIcon.ImageTransparency = 0.4
-				self.backgroundMiddle.Visible = false
-			end
 		end
 
 		if self.offset.Magnitude > 0 then
