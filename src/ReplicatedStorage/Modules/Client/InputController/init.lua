@@ -262,12 +262,12 @@ function UseSkill(self: InputController)
 	end
 end
 
-function UpdateAiming(self: InputController)
+function UpdateAiming(self: InputController, cancel: boolean?)
 	self.aimRenderer:Disable()
 	self.superAimRenderer:Disable()
 	self.combatUI:UpdateSuperActive(false)
 
-	if not self.activeInput and not self.superToggle then
+	if cancel or (not self.activeInput and not self.superToggle) then
 		self.combatPlayer:SetAiming(nil)
 		return
 	end
@@ -294,39 +294,38 @@ function InputBegan(self: InputController, input: InputObject, processed: boolea
 			InputEnded(self, input, false)
 		end
 		return
-	end
-
-	local clickPos = Vector2.new(input.Position.X, input.Position.Y)
-	local clickedGUI = PlayerGui:GetGuiObjectsAtPosition(clickPos.X, clickPos.Y)
-	if table.find(clickedGUI, skill) then
-		UseSkill(self)
-		return
-	end
-
-	local superOrigin = super.AbsolutePosition + super.AbsoluteSize / 2
-	local attackOrigin = attack.AbsolutePosition + attack.AbsoluteSize / 2
-
-	local superDistance = (superOrigin - clickPos).Magnitude
-	local attackDistance = (attackOrigin - clickPos).Magnitude
-
-	if not self.combatPlayer:CanSuperAttack() or attackDistance < superDistance then
-		if attackDistance > SNAPDISTANCE then
+	elseif input.UserInputType == Enum.UserInputType.Touch then
+		local clickPos = Vector2.new(input.Position.X, input.Position.Y)
+		local clickedGUI = PlayerGui:GetGuiObjectsAtPosition(clickPos.X, clickPos.Y)
+		if table.find(clickedGUI, skill) and self.combatPlayer:CanUseSkill() then
+			UseSkill(self)
 			return
 		end
-		self.activeButton = self.attackButton
-	elseif self.combatPlayer:CanSuperAttack() then
-		if superDistance > SNAPDISTANCE then
-			return
+
+		local superOrigin = super.AbsolutePosition + super.AbsoluteSize / 2
+		local attackOrigin = attack.AbsolutePosition + attack.AbsoluteSize / 2
+
+		local superDistance = (superOrigin - clickPos).Magnitude
+		local attackDistance = (attackOrigin - clickPos).Magnitude
+
+		if not self.combatPlayer:CanSuperAttack() or attackDistance < superDistance then
+			if attackDistance > SNAPDISTANCE then
+				return
+			end
+			self.activeButton = self.attackButton
+		elseif self.combatPlayer:CanSuperAttack() then
+			if superDistance > SNAPDISTANCE then
+				return
+			end
+			self.activeButton = self.superButton
 		end
-		self.activeButton = self.superButton
-	end
 
-	if self.activeButton then
-		DragButton.Snap(self.activeButton, clickPos)
-		self.activeInput = input
+		if self.activeButton then
+			DragButton.Snap(self.activeButton, clickPos)
+			self.activeInput = input
+		end
+		UpdateAiming(self)
 	end
-
-	UpdateAiming(self)
 end
 
 function InputChanged(self: InputController, input: InputObject, processed: boolean)
@@ -365,10 +364,15 @@ function InputChanged(self: InputController, input: InputObject, processed: bool
 		then self.combatPlayer.heroData.Super.Range
 		else self.combatPlayer.heroData.Attack.Range
 
-	local offsetPercentage = math.min(1, self.activeButton.offset.Magnitude / self.activeButton.radius)
-	local targetDistance = offsetPercentage * range
-	self.targetRelative = (self.currentLookDirection * targetDistance)
-		- Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
+	local offsetPercentage = DragButton.GetDistanceAlpha(self.activeButton)
+	if offsetPercentage > 0 then
+		local targetDistance = offsetPercentage * range
+		self.targetRelative = (self.currentLookDirection * targetDistance)
+			- Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
+		UpdateAiming(self)
+	else
+		UpdateAiming(self, true)
+	end
 end
 
 function InputEnded(self: InputController, input: InputObject, processed: boolean)

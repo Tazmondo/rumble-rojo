@@ -7,6 +7,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Bin = require(ReplicatedStorage.Packages.Bin)
 
+-- Radius around offset that doesnt do any aiming
+local DEADZONE = 20
+
 function DragButton.new(button: Frame)
 	local self = {}
 
@@ -45,6 +48,12 @@ function DragButton.Snap(self: DragButton, position: Vector2)
 	local offset = position - centre
 
 	self.backgroundOffset = Vector3.new(offset.X, offset.Y, 0)
+end
+
+function DragButton.GetDistanceAlpha(self: DragButton)
+	local offsetMagnitude = self.offset.Magnitude - DEADZONE
+
+	return math.clamp(offsetMagnitude / self.radius, 0, 1)
 end
 
 function DragButton.Reset(self: DragButton)
