@@ -23,7 +23,7 @@ function _new(button: Frame)
 	self.backgroundOffset = Vector3.new()
 	self.offset = Vector3.new()
 	self.targetOffset = Vector3.new()
-	self.lerpValue = 10
+	self.lerpValue = 20
 
 	self.radius = self.background.AbsoluteSize.X / 2
 
@@ -39,13 +39,15 @@ end
 function DragButton.new(button: Frame)
 	local self = _new(button)
 
-	self.Add(RunService.RenderStepped:Connect(function(dt)
+	self.Add(RunService.RenderStepped:Connect(function(dt: number)
 		self.background.Position = UDim2.new(0.5, self.backgroundOffset.X, 0.5, self.backgroundOffset.Y)
 		self.backgroundMiddle.Position = self.background.Position
 
 		if not self.dragging then
 			self.foreground.Position = self.background.Position
-			self.readyIcon.ImageTransparency = 0.4
+			if button.Name == "Attack" then
+				self.readyIcon.ImageTransparency = 0.4
+			end
 			self.backgroundMiddle.Visible = false
 			return
 		end
@@ -55,7 +57,7 @@ function DragButton.new(button: Frame)
 		if DragButton.GetDistanceAlpha(self) == 1 then
 			self.offset = self.targetOffset
 		else
-			self.offset = self.offset + (self.targetOffset - self.offset) * dt * self.lerpValue
+			self.offset = self.offset:Lerp(self.targetOffset, dt * self.lerpValue)
 		end
 
 		if self.offset.Magnitude > 0 then
