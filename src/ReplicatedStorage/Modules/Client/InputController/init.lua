@@ -202,7 +202,7 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 			local newDirection, newTarget = AutoAim.GetData(range)
 
 			if newDirection and newTarget then
-				self.currentLookDirection = newDirection
+				self.currentLookDirection = (newDirection * Vector3.new(1, 0, 1)).Unit
 				self.targetRelative = CFrame.new(self.HRP.Position):PointToObjectSpace(newTarget)
 			end
 		end
@@ -483,7 +483,7 @@ function InputChanged(self: InputController, input: InputObject, processed: bool
 		)
 	then
 		local clickRay = NormaliseClickTarget(self, input.Position)
-		self.currentLookDirection = clickRay.Unit.Direction
+		self.currentLookDirection = (clickRay.Unit.Direction * Vector3.new(1, 0, 1)).Unit
 
 		self.targetRelative = CFrame.new(self.HRP.Position):PointToObjectSpace(
 			clickRay.Origin + clickRay.Direction - Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
