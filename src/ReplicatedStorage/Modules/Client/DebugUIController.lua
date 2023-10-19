@@ -38,6 +38,9 @@ function DebugUIController.Initialize()
         -- Iris:Connect(Iris.ShowDemoWindow)
         
         Iris:Connect(function()
+            if true then return end
+            debug.profilebegin("DebugUI_Render")
+
             local unCollapsed = Iris.State(false)
             Iris.Window({ "Debug" }, {isUncollapsed = unCollapsed})
                 RenderTable(DataController.GetGameData():UnwrapOr(nil :: any), "Game Data")
@@ -57,6 +60,8 @@ function DebugUIController.Initialize()
                 end
             
             Iris.End()
+
+            debug.profileend()
         end)
     end)
 

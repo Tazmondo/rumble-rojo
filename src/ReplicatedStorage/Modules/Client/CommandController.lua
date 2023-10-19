@@ -4,6 +4,7 @@ local CommandController = {}
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 
 function CommandController.Initialize()
@@ -15,6 +16,12 @@ function CommandController.Initialize()
 			task.wait()
 		end
 		Cmdr:SetEnabled(Players.LocalPlayer:GetAttribute("Cmdr_Admin"))
+	end)
+
+	TextChatService.SendingMessage:Connect(function(message)
+		if message.Text:lower() == "cmdr" then
+			Cmdr:Toggle()
+		end
 	end)
 end
 
