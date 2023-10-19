@@ -193,7 +193,8 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 			superBackground.Visible = false
 		end
 
-		if (self.activeInput or self.superToggle) and not ShouldManualAttack(self) then
+		print(ShouldManualAttack(self))
+		if self.activeInput and not ShouldManualAttack(self) then
 			local super = self.activeButton == self.superButton
 			local range = if super
 				then self.combatPlayer.heroData.Super.Range
