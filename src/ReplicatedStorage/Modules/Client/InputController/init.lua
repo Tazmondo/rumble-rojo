@@ -169,8 +169,6 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 	self.Add(RunService.RenderStepped:Connect(function()
 		debug.profilebegin("InputController_RenderStep")
 		if self.activeButton then
-			self.currentLookDirection = GetWorldDirection(self.activeButton.offset)
-
 			-- Set target relative as a percentage of the attack range, represented by the distance from the offset to the max radius
 			local range = if self.activeButton == self.superButton
 				then self.combatPlayer.heroData.Super.Range
@@ -181,6 +179,8 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 				local targetDistance = offsetPercentage * range
 				self.targetRelative = (self.currentLookDirection * targetDistance)
 					- Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
+
+				self.currentLookDirection = GetWorldDirection(self.activeButton.offset)
 			end
 		end
 
