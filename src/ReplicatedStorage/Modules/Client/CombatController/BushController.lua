@@ -42,7 +42,7 @@ local LERPSPEED = 0.1
 local player = Players.LocalPlayer
 
 type CharacterData = {
-	BaseTransparency: { [BasePart]: number },
+	BaseTransparency: { [BasePart | Decal]: number },
 	Emitters: { [ParticleEmitter]: boolean },
 	CurrentOpacity: number,
 	TargetOpacity: number,
@@ -119,7 +119,7 @@ function UpdateOpacity(character: Model, instant: boolean?)
 
 	data.CurrentOpacity = LerpValue(data.CurrentOpacity, data.TargetOpacity, LERPSPEED)
 
-	for part, transparency in pairs(data.BaseTransparency) do
+	for part: any, transparency in pairs(data.BaseTransparency) do
 		local opacity = (1 - transparency) * data.CurrentOpacity
 
 		part.Transparency = 1 - opacity
@@ -232,7 +232,7 @@ function CharacterAdded(data: Types.UpdateData)
 	local emitters = {}
 
 	local function addDescendant(descendant: any)
-		if descendant:IsA("BasePart") then
+		if descendant:IsA("BasePart") or descendant:IsA("Decal") then
 			baseTransparencies[descendant] = descendant.Transparency
 		elseif descendant:IsA("ParticleEmitter") or descendant:IsA("Trail") then
 			emitters[descendant] = descendant.Enabled
@@ -274,7 +274,7 @@ function CombatCharacterRemoved(character: Model)
 		return
 	end
 
-	for part, transparency in pairs(characterData[character].BaseTransparency) do
+	for part: any, transparency in pairs(characterData[character].BaseTransparency) do
 		part.Transparency = transparency
 	end
 
