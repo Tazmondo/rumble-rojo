@@ -48,6 +48,12 @@ local skill: Frame
 -- Time before a click becomes a manual attack on PC
 local MANUALAIMDELAY = 0.1
 
+-- Time taken to rotate 180 degrees
+local FULLROTATIONSPEED = 0.15
+
+-- Number of radians away from target where attacking will begin
+local ROTATIONTHRESHOLD = math.rad(60)
+
 InputController.Instance = nil :: InputController?
 
 local function _VisualiseRay(ray: Ray)
@@ -92,8 +98,7 @@ function new(heroName: string, modifierNames: { string }, skill: string)
 	self.targetRelative = Vector3.new()
 	self.currentLookDirection = Vector3.new()
 
-	self.preRotateAttack = true
-	self.completedRotation = true
+	self.rotating = false
 
 	local modifiers = TableUtil.Map(modifierNames, function(v)
 		return Modifiers[v]
@@ -229,8 +234,6 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 		ContextActionService:UnbindAction("Toggle_Super")
 	end)
 
-	SetupCharacterRotation(self)
-
 	Spawn(function()
 		self.combatPlayer.DiedSignal:Wait()
 		self.Remove()
@@ -316,34 +319,54 @@ function InputModeChanged(self: InputController)
 	end
 end
 
-function SetupCharacterRotation(self: InputController)
-	self.Add(RunService.RenderStepped:Connect(function(dt: number)
-		-- Always want to finish rotating to the aim direction, so even if they release mouse, keep rotating until angle reached
-		-- Need to check that the look direction will not cause a NaN, by > 0 magnitude
-		if (self.activeInput or not self.completedRotation) and self.currentLookDirection.Magnitude > 0 then
-			self.humanoid.AutoRotate = false
-			self.HRP.CFrame = self.HRP.CFrame:Lerp(
-				CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.currentLookDirection),
-				dt * 8
-			)
-
-			local angleDifference = self.HRP.CFrame.LookVector:Angle(self.currentLookDirection)
-			if angleDifference < math.rad(10) then
-				self.preRotateAttack = true
-				self.completedRotation = true
-			elseif angleDifference < math.rad(60) then
-				self.preRotateAttack = true
-				self.completedRotation = false
-			else
-				self.completedRotation = false
-				self.preRotateAttack = false
-			end
-		else
-			self.humanoid.AutoRotate = true
+function RotateToAttack(self: InputController)
+	return Future.new(function()
+		-- Wait for any previous rotations to finish, so we don't have multiple threads
+		-- Trying to rotate the character at once
+		while self.rotating do
+			task.wait()
 		end
-	end))
-	self.Add(function()
-		self.humanoid.AutoRotate = true
+
+		self.rotating = true
+		self.humanoid.AutoRotate = false
+
+		local startRotation = self.character:GetPivot().Rotation
+		local targetRotation = CFrame.lookAt(Vector3.zero, self.currentLookDirection).Rotation
+
+		local currentAngle = self.character:GetPivot().LookVector:Angle(targetRotation.LookVector)
+
+		local partialRotationTime =
+			math.max(0, ((currentAngle - ROTATIONTHRESHOLD) / math.rad(180)) * FULLROTATIONSPEED)
+
+		local fullRotationTime = (currentAngle / math.rad(180)) * FULLROTATIONSPEED
+
+		local start = os.clock()
+
+		local conn = RunService.RenderStepped:Connect(function()
+			local progress = math.clamp((os.clock() - start) / fullRotationTime, 0, 1)
+
+			local currentRotation = startRotation:Lerp(targetRotation, progress).Rotation
+			local targetCFrame = CFrame.new(self.character:GetPivot().Position) * currentRotation
+
+			self.character:PivotTo(targetCFrame)
+		end)
+
+		Spawn(function()
+			task.wait(fullRotationTime)
+			print("fully rotated")
+			self.rotating = false
+			conn:Disconnect()
+			self.humanoid.AutoRotate = true
+		end)
+
+		-- We wait for the partial rotation before returning
+		if partialRotationTime > 0 then
+			task.wait(partialRotationTime)
+		end
+
+		print("partially rotated")
+
+		return
 	end)
 end
 
@@ -514,9 +537,8 @@ function InputEnded(self: InputController, input: InputObject, processed: boolea
 	end
 
 	self.attacking = true
-	while not self.preRotateAttack do
-		task.wait()
-	end
+
+	RotateToAttack(self):Await()
 
 	Attack(self, if self.superToggle or self.activeButton == self.superButton then "Super" else "Attack")
 
