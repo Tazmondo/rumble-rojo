@@ -20,8 +20,6 @@ assert(GeneralVFX.AimConeSquare)
 assert(GeneralVFX.AimRectangle)
 assert(GeneralVFX.AimCircle)
 
-local a0CFrame = CFrame.Angles(math.rad(-30), 0, math.rad(90))
-
 function AimRenderer.new(
 	attackData: Types.AbilityData,
 	character: Model,
@@ -190,12 +188,13 @@ function AimRenderer.StartRendering(self: AimRenderer)
 			self.aimPart.CFrame = CFrame.lookAt(self.HRP.Position, self.HRP.Position + self.direction)
 				* transformHRPToFeet
 
-			local _, rotY, _ = self.HRP.CFrame:ToEulerAnglesYXZ()
-			local rotYCFrame = CFrame.Angles(0, rotY, 0)
-			self.a0.CFrame = CFrame.new(self.HRP.Position) * rotYCFrame * a0CFrame
+			-- TRAJECTORY BEAM --
+			local beamBase = CFrame.lookAt(self.HRP.Position, self.HRP.Position + XYVector)
+
+			self.a0.CFrame = beamBase * CFrame.Angles(math.rad(60), math.rad(90), 0)
 			self.a1.CFrame = CFrame.new(self.targetedAimPart.Position)
-				* self.a0.CFrame.Rotation
-				* CFrame.Angles(0, math.rad(120), 0)
+				* beamBase.Rotation
+				* CFrame.Angles(math.rad(-60), math.rad(90), 0)
 
 			self.beam.CurveSize0 = math.min(data.Data.Height, XYDistance)
 			self.beam.CurveSize1 = self.beam.CurveSize0
