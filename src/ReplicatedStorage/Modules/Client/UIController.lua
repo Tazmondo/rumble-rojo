@@ -723,6 +723,12 @@ function UIController:RenderAllUI()
 		HideAll()
 	end
 
+	if playerData.Public.InCombat and RunService:IsStudio() then
+		UIState = state
+		debug.profileend()
+		return
+	end
+
 	if
 		heroSelectOpen and not (playerData.Public.InCombat and state ~= "NotEnoughPlayers" and state ~= "Intermission")
 	then
