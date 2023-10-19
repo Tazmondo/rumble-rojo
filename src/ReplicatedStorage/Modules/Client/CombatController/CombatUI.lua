@@ -93,7 +93,6 @@ function CombatUI:RenderLoop()
 		if superChargeFill < 1 then
 			self.readySuperButton.Visible = false
 			self.activeSuperButton.Visible = false
-			self.superBackground.Visible = false
 
 			self.superAttackCharge.Visible = true
 			local leftFill = math.clamp(superChargeFill / 0.5, 0, 1)
@@ -102,7 +101,6 @@ function CombatUI:RenderLoop()
 			self.superAttackCharge.RightFill.Size = UDim2.fromScale(0.5, rightFill)
 		else
 			self.superAttackCharge.Visible = false
-			self.superBackground.Visible = self.inputMode ~= "KBM"
 
 			if self.superActive then
 				self.activeSuperButton.Visible = true

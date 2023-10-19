@@ -176,6 +176,15 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 			UpdateAiming(self)
 		end
 
+		if
+			self.activeButton == self.superButton
+			and self.combatPlayer.superCharge >= self.combatPlayer.requiredSuperCharge
+		then
+			superBackground.Visible = true
+		else
+			superBackground.Visible = false
+		end
+
 		if not self.hasMoved and (self.activeInput or self.superToggle) then
 			local super = self.activeButton == self.superButton
 			local range = if super
