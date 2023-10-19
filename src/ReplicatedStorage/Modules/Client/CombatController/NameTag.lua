@@ -21,6 +21,16 @@ HaloFolder.Name = "Halo Folder"
 
 local SPINSPEED = 1.5 -- Seconds for full rotation
 
+local AMMOSCALE = {
+	1,
+	0.49,
+	0.318,
+	0.232,
+	0.179,
+	0.145,
+	0.12,
+}
+
 local localPlayer = Players.LocalPlayer
 
 function NameTag.InitFriendly(combatPlayer: CombatPlayer.CombatPlayer)
@@ -60,6 +70,18 @@ function NameTag.InitFriendly(combatPlayer: CombatPlayer.CombatPlayer)
 	-- roblox are stupid and made studsoffsetworldspace relative to the object and not the world
 	gui.StudsOffsetWorldSpace = gui.Parent.CFrame.Rotation:VectorToObjectSpace(gui.StudsOffsetWorldSpace)
 
+	local maxAmmo = combatPlayer.heroData.Attack.Ammo
+	local ammoFrame = nameTag.stats.ammo
+	local ammoScale = assert(AMMOSCALE[maxAmmo])
+
+	for i = 1, maxAmmo do
+		local newAmmo = ammoFrame.ammoTemplate:Clone()
+		newAmmo.Name = "Ammo" .. i
+		newAmmo.Visible = true
+		newAmmo.Size = UDim2.fromScale(ammoScale, 1)
+		newAmmo.Parent = ammoFrame
+	end
+
 	local run: RBXScriptConnection
 	run = RunService.RenderStepped:Connect(function(dt)
 		if character.Parent == nil or gui.Parent == nil then
@@ -69,7 +91,7 @@ function NameTag.InitFriendly(combatPlayer: CombatPlayer.CombatPlayer)
 			return
 		end
 
-		for i = 1, 3 do
+		for i = 1, maxAmmo do
 			local individualAmmoBar = nameTag.stats.ammo:FindFirstChild("Ammo" .. i)
 
 			if individualAmmoBar then
