@@ -38,7 +38,6 @@ function DebugUIController.Initialize()
         -- Iris:Connect(Iris.ShowDemoWindow)
         
         Iris:Connect(function()
-            if true then return end
             debug.profilebegin("DebugUI_Render")
 
             local unCollapsed = Iris.State(false)
