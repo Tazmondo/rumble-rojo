@@ -52,7 +52,7 @@ local Taz: Types.HeroData = {
 		Ammo = 3,
 		AmmoRegen = 2,
 		Range = Enums.AttackRange.VeryShort,
-		ReloadSpeed = 0.5,
+		ReloadSpeed = 0.4,
 
 		Data = {
 			AttackType = "Shotgun" :: "Shotgun",
@@ -92,7 +92,7 @@ local Frankie: Types.HeroData = {
 		Ammo = 3,
 		AmmoRegen = 1.5,
 		Range = Enums.AttackRange.Short, -- to account for size of projectile
-		ReloadSpeed = 0.5,
+		ReloadSpeed = 0.4,
 
 		Data = {
 			AttackType = "Shot" :: "Shot",
@@ -128,7 +128,7 @@ local Boxy: Types.HeroData = {
 		Ammo = 3,
 		AmmoRegen = 1.5,
 		Range = Enums.AttackRange.Medium,
-		ReloadSpeed = 1,
+		ReloadSpeed = 0.4,
 
 		Data = {
 			AttackType = "Arced" :: "Arced",
