@@ -45,6 +45,9 @@ local super: Frame
 local superBackground
 local skill: Frame
 
+-- Time before a click becomes a manual attack on PC
+local MANUALAIMDELAY = 0.1
+
 InputController.Instance = nil :: InputController?
 
 local function _VisualiseRay(ray: Ray)
@@ -81,6 +84,7 @@ function new(heroName: string, modifierNames: { string }, skill: string)
 
 	self.activeButton = nil :: DragButton.DragButton?
 	self.activeInput = nil :: InputObject?
+	self.inputTime = 0
 	self.superToggle = false
 	self.hasMoved = false
 	self.attacking = false
@@ -173,7 +177,6 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 				self.targetRelative = (self.currentLookDirection * targetDistance)
 					- Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
 			end
-			UpdateAiming(self)
 		end
 
 		if
@@ -185,7 +188,7 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 			superBackground.Visible = false
 		end
 
-		if not self.hasMoved and (self.activeInput or self.superToggle) then
+		if (self.activeInput or self.superToggle) and not ShouldManualAttack(self) then
 			local super = self.activeButton == self.superButton
 			local range = if super
 				then self.combatPlayer.heroData.Super.Range
@@ -199,6 +202,7 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 			end
 		end
 
+		UpdateAiming(self)
 		self.aimRenderer:Update(self.currentLookDirection :: any, GetRealTarget(self))
 		self.superAimRenderer:Update(self.currentLookDirection :: any, GetRealTarget(self))
 		debug.profileend()
@@ -210,7 +214,6 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 		end
 		self.superToggle = self.combatPlayer:CanSuperAttack() and not self.superToggle
 		self.hasMoved = false
-		UpdateAiming(self)
 	end, false, Config.SuperKey)
 
 	ContextActionService:BindAction("Use_Skill", function(name, state, object)
@@ -358,22 +361,33 @@ function UseSkill(self: InputController)
 	end
 end
 
+function ShouldManualAttack(self: InputController)
+	if self.activeInput then
+		if self.activeButton then
+			return self.hasMoved
+		else
+			return (os.clock() - self.inputTime) >= MANUALAIMDELAY
+		end
+	end
+	return false
+end
+
 function UpdateAiming(self: InputController, cancel: boolean?)
 	self.aimRenderer:Disable()
 	self.superAimRenderer:Disable()
-	self.combatUI:UpdateSuperActive(false)
+	self.combatUI:UpdateSuperActive(self.superToggle)
 
-	if cancel or (not self.activeInput and not self.superToggle) or (not self.hasMoved and not self.superToggle) then
-		self.combatPlayer:SetAiming(nil)
-		return
-	end
-
-	if self.activeButton and DragButton.GetDistanceAlpha(self.activeButton) == 0 then
+	if cancel or not ShouldManualAttack(self) then
+		if self.superToggle then
+			self.combatPlayer:SetAiming("Super")
+		else
+			self.combatPlayer:SetAiming(nil)
+		end
 		return
 	end
 
 	if self.superToggle or self.activeButton == self.superButton then
-		if self.hasMoved then
+		if ShouldManualAttack(self) then
 			self.superAimRenderer:Enable()
 		end
 
@@ -409,11 +423,7 @@ function InputBegan(self: InputController, input: InputObject, processed: boolea
 
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		self.activeInput = input
-
-		if self.superToggle then
-			InputEnded(self, input, false)
-			return
-		end
+		self.inputTime = os.clock()
 	elseif input.UserInputType == Enum.UserInputType.Touch then
 		local superOrigin = super.AbsolutePosition + super.AbsoluteSize / 2
 
@@ -434,9 +444,9 @@ function InputBegan(self: InputController, input: InputObject, processed: boolea
 		if self.activeButton then
 			DragButton.Snap(self.activeButton, clickPos)
 			self.activeInput = input
+			self.inputTime = os.clock()
 		end
 	end
-	UpdateAiming(self)
 end
 
 function InputChanged(self: InputController, input: InputObject, processed: boolean)
@@ -461,7 +471,6 @@ function InputChanged(self: InputController, input: InputObject, processed: bool
 
 		if not self.hasMoved then
 			self.hasMoved = true
-			UpdateAiming(self)
 		end
 
 		return
@@ -480,7 +489,6 @@ function InputChanged(self: InputController, input: InputObject, processed: bool
 	DragButton.HandleDelta(self.activeButton, input.Delta)
 	if not self.hasMoved and DragButton.GetDistanceAlpha(self.activeButton) > 0 then
 		self.hasMoved = true
-		UpdateAiming(self)
 	end
 end
 
@@ -500,7 +508,6 @@ function InputEnded(self: InputController, input: InputObject, processed: boolea
 			if self.hasMoved then
 				self.superToggle = false
 				self.activeButton = nil
-				UpdateAiming(self)
 				return
 			end
 		end
@@ -516,7 +523,6 @@ function InputEnded(self: InputController, input: InputObject, processed: boolea
 	self.attacking = false
 	self.superToggle = false
 	self.activeButton = nil
-	UpdateAiming(self, true)
 end
 
 function Attack(self: InputController, type: "Attack" | "Super" | "Skill")
