@@ -531,7 +531,7 @@ function AttackRenderer.RenderAttack(
 
 				CreateAttackProjectile(player, heroName, attackData, newCF, pellet.speed, pellet.id, OnBulletHit)
 
-				if attackData.Data.TimeBetweenShots then
+				if attackData.Data.TimeBetweenShots and attackData.Data.TimeBetweenShots > 0 then
 					if player == localPlayer and index > 1 then
 						assert(originPart, "Tried to fire a delayed attack without an origin part.")
 						FirePelletEvent:Fire(pellet.id, originPart.Position)
