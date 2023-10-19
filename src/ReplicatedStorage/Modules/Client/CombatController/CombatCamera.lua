@@ -33,6 +33,9 @@ function _initSelf()
 	self.cameraOffset = CFrame.Angles(0, math.rad(-90), 0) * (Vector3.new(0, 150, 80))
 	self.cameraFOV = 25
 
+	self.alternateCameraOffset = CFrame.Angles(0, math.rad(-90), 0) * (Vector3.new(0, 120, 70))
+	self.alternateCameraFOV = 30
+
 	self.shakeSpring = Spring.new(1, 60, 5560)
 	self.shakeVelocity = 47.4
 
@@ -64,11 +67,16 @@ function CombatCamera.new(): CombatCamera
 	return self :: CombatCamera
 end
 
+function CombatCamera.ShouldUseAlternate(self: CombatCamera)
+	return self.camera.ViewportSize.Y < 500
+end
+
 function CombatCamera.GetCFrame(self: CombatCamera)
 	if not self.HRP then
 		return CFrame.new()
 	end
-	return CFrame.lookAt(self.HRP.Position + self.cameraOffset, self.HRP.Position)
+	local offset = if self:ShouldUseAlternate() then self.alternateCameraOffset else self.cameraOffset
+	return CFrame.lookAt(self.HRP.Position + offset, self.HRP.Position)
 end
 
 function CombatCamera.SetupCamera(self: CombatCamera)
@@ -77,7 +85,7 @@ function CombatCamera.SetupCamera(self: CombatCamera)
 	-- Necessary to use step since it's based off the position of a part (the HRP)
 	self.janitor:Add(RunService.Stepped:Connect(function(t: number, dt)
 		if self.enabled and not self.transitioning then
-			self.camera.FieldOfView = self.cameraFOV
+			self.camera.FieldOfView = if self:ShouldUseAlternate() then self.alternateCameraFOV else self.cameraFOV
 			local targetCFrame = self:GetCFrame()
 			local currentCFrame = self.camera.CFrame
 
