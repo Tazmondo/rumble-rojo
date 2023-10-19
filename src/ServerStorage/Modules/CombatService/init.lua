@@ -820,7 +820,10 @@ function CombatService:PlayerAdded(player: Player)
 	self:LoadPlayerGuis(player)
 
 	if DataService.PlayerLoaded(player):Await() then
-		if RunService:IsStudio() and ServerScriptService:GetAttribute("combat") then
+		if
+			(RunService:IsStudio() and ServerScriptService:GetAttribute("combat"))
+			or ServerScriptService:GetAttribute("livecombat")
+		then
 			local hero = ServerScriptService:GetAttribute("hero") or "Taz"
 			local skin = ServerScriptService:GetAttribute("skin")
 			local modifiers = {
