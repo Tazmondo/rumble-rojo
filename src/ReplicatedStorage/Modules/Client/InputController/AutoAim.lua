@@ -34,7 +34,7 @@ function AutoAim.GetData(range: number)
 	local closestCFrame = closest:GetPivot()
 	local lookDirection = (closestCFrame.Position - HRP.Position).Unit
 
-	local target = closestCFrame.Position - Vector3.new(0, humanoid.HipHeight + HRP.Size.Y / 2)
+	local target = closestCFrame.Position - Vector3.new(0, humanoid.HipHeight + HRP.Size.Y / 2) + Vector3.new(0, 0.1, 0)
 
 	return lookDirection, target
 end
