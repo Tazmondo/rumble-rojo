@@ -364,7 +364,7 @@ end
 function ShouldManualAttack(self: InputController)
 	if self.activeInput then
 		if self.activeButton then
-			return self.hasMoved
+			return self.hasMoved and DragButton.GetDistanceAlpha(self.activeButton) > 0
 		else
 			return (os.clock() - self.inputTime) >= MANUALAIMDELAY
 		end
@@ -404,7 +404,7 @@ function UpdateAiming(self: InputController, cancel: boolean?)
 end
 
 function InputBegan(self: InputController, input: InputObject, processed: boolean)
-	if processed or self.activeInput then
+	if processed or self.activeInput or self.attacking then
 		return
 	end
 
