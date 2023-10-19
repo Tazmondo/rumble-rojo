@@ -723,7 +723,7 @@ function UIController:RenderAllUI()
 		HideAll()
 	end
 
-	if playerData.Public.InCombat and RunService:IsStudio() then
+	if playerData.Public.InCombat and state == "NotEnoughPlayers" then
 		UIState = state
 		debug.profileend()
 		return
