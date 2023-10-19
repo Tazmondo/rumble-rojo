@@ -232,6 +232,7 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 
 	self.Add(function()
 		ContextActionService:UnbindAction("Toggle_Super")
+		ContextActionService:UnbindAction("Use_Skill")
 	end)
 
 	Spawn(function()
