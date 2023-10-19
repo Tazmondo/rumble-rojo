@@ -193,7 +193,6 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 			superBackground.Visible = false
 		end
 
-		print(ShouldManualAttack(self))
 		if self.activeInput and not ShouldManualAttack(self) then
 			local super = self.activeButton == self.superButton
 			local range = if super
@@ -354,7 +353,6 @@ function RotateToAttack(self: InputController)
 
 		Spawn(function()
 			task.wait(fullRotationTime)
-			print("fully rotated")
 			self.rotating = false
 			conn:Disconnect()
 			self.humanoid.AutoRotate = true
@@ -364,8 +362,6 @@ function RotateToAttack(self: InputController)
 		if partialRotationTime > 0 then
 			task.wait(partialRotationTime)
 		end
-
-		print("partially rotated")
 
 		return
 	end)
