@@ -478,7 +478,7 @@ function InputChanged(self: InputController, input: InputObject, processed: bool
 	end
 
 	DragButton.HandleDelta(self.activeButton, input.Delta)
-	if not self.hasMoved then
+	if not self.hasMoved and DragButton.GetDistanceAlpha(self.activeButton) > 0 then
 		self.hasMoved = true
 		UpdateAiming(self)
 	end
