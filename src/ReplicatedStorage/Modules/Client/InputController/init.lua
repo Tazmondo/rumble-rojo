@@ -1,4 +1,7 @@
--- Handles inputs for PC, mobile, and console, and translates them into in-game player actions using the Combat Client
+-- Handles inputs for PC, mobile, and console (in future)
+-- I repent under the eyes of god for the abomination that is this file.
+-- I am sincerely sorry.
+
 local InputController = {}
 
 local ContextActionService = game:GetService("ContextActionService")
