@@ -337,18 +337,18 @@ local orderedHeroDetails: { OrderedHero } = {
 		},
 	},
 	{
-		Name = "Test",
-		Description = "Boxy runs around throwing his own head at people. His super shoots lightning bolts in every direction.",
+		Name = "Buzzer",
+		Description = "Buzzer is a slow but lethal killing machine. He spits out deadly sawblades to shred his enemies to pieces.",
 		Price = 400,
-		DefaultSkin = "Test",
+		DefaultSkin = "Buzzer",
 		Modifiers = table.clone(DefaultModifiers),
 		Talents = { "Electrocution", "Microwave", "Current Outbreak" },
 		Skills = table.clone(DefaultSkills),
 		Skins = {
 			{
-				Name = "Test",
+				Name = "Buzzer",
 				Price = 0,
-				Description = "Beep Beep",
+				Description = "BZZZZZ",
 				Rarity = "Common",
 			},
 		},

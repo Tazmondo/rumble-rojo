@@ -492,8 +492,16 @@ function CreateFieldAttack(origin: CFrame, radius: number, name: string, duratio
 	VFX.Parent = partFolder
 	TriggerAllDescendantParticleEmitters(VFX, true, nil, true)
 
-	local start = os.clock()
+	local spin
+	if VFX:GetAttribute("ShouldSpin") then
+		local rotSpeed = math.rad(720)
+		spin = RunService.PreRender:Connect(function(dt: number)
+			local rotation = dt * rotSpeed
+			VFX:PivotTo(VFX:GetPivot() * CFrame.Angles(0, rotation, 0))
+		end)
+	end
 
+	local start = os.clock()
 	local expand
 	expand = RunService.PreRender:Connect(function()
 		local progress = math.clamp((os.clock() - start) / fieldExpansionTime, 0, 1)
@@ -509,7 +517,12 @@ function CreateFieldAttack(origin: CFrame, radius: number, name: string, duratio
 		end
 	end)
 
-	task.delay(duration + fieldExpansionTime, function()
+	Spawn(function()
+		task.wait(duration + fieldExpansionTime)
+
+		if spin then
+			spin:Disconnect()
+		end
 		VFX:Destroy()
 	end)
 end

@@ -343,7 +343,10 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 		self.statusEffects[effect] = nil
 	end
 
-	if (effect == "Slow" or effect == "Ratty" or effect == "Stun" or effect == "Dash") and oldValue ~= value then
+	if
+		(effect == "Slow" or effect == "Ratty" or effect == "Stun" or effect == "Dash" or effect == "Buzzkill")
+		and oldValue ~= value
+	then
 		self:UpdateSpeed()
 	elseif effect == "Haste" then
 		self.ammoRegen = self.baseAmmoRegen - LATENCYALLOWANCE
@@ -382,8 +385,9 @@ function CombatPlayer.UpdateSpeed(self: CombatPlayer)
 	local ratModifier = self:GetStatusEffect("Rat") or 1
 	local stunModifier = if self.statusEffects["Stun"] then 0 else 1
 	local dashModifier = if self.statusEffects["Dash"] then 0 else 1
+	local buzzkillModifier = if (self:GetStatusEffect("Buzzkill") or 0) >= 4 then 0.8 else 1
 
-	local modifier = slowModifier * ratModifier * stunModifier * dashModifier
+	local modifier = slowModifier * ratModifier * stunModifier * dashModifier * buzzkillModifier
 
 	self.movementSpeed = self.baseSpeed * modifier
 	if self.humanoid then

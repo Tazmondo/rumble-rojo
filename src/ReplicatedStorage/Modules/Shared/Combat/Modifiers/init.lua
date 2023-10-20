@@ -355,6 +355,49 @@ Modifiers["Current Outbreak"] = {
 	end,
 }
 
+-- BUZZER --
+Modifiers["Spare Saw"] = {
+	Name = "Spare Saw",
+	Description = "Fire out an extra sawblade",
+	Price = 1000,
+	UnlockedImage = "",
+	LockedImage = "",
+	Modify = function(self)
+		local data = self.heroData.Attack.Data :: Types.ShotgunData
+		data.ShotCount += 1
+		data.Damage *= 0.9
+	end,
+}
+
+Modifiers.Shred = {
+	Name = "Shred",
+	Description = "Reduce the size of your super, but it does more damage.",
+	Price = 1000,
+	UnlockedImage = "",
+	LockedImage = "",
+	Modify = function(self)
+		local data = self.heroData.Super.Data.Chain :: Types.FieldData
+		data.Radius *= 0.8
+		data.Damage /= 0.8
+	end,
+}
+
+Modifiers.Buzzkill = {
+	Name = "Buzzkill",
+	Description = "After you hit an enemy 4 times in 3 seconds, they are slowed down by 20%.",
+	Price = 1000,
+	UnlockedImage = "",
+	LockedImage = "",
+	OnHit = function(self, victim, attack)
+		if attack.AbilityType ~= "Attack" then
+			return
+		end
+
+		local stacks = victim:GetStatusEffect("Buzzkill") or 0
+		victim:SetStatusEffect("Buzzkill", stacks + 1, 3)
+	end,
+}
+
 -- Validate modifiers
 for modifier, data in pairs(Modifiers :: any) do
 	if modifier == "" then

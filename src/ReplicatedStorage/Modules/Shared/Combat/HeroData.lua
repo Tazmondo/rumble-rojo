@@ -206,8 +206,8 @@ local Gobzie: Types.HeroData = {
 	},
 }
 
-local Test: Types.HeroData = {
-	Name = "Test",
+local Buzzer: Types.HeroData = {
+	Name = "Buzzer",
 	Health = 4400,
 	MovementSpeed = Enums.MovementSpeed.Slow,
 	Attack = {
@@ -258,7 +258,7 @@ local HeroData: { [string]: Types.HeroData } = {
 	Frankie = Frankie,
 	Gobzie = Gobzie,
 	Boxy = Boxy,
-	Test = Test,
+	Buzzer = Buzzer,
 }
 
 -- Ensures we dont accidentally change any of the data in the table, as this would be a bug.
