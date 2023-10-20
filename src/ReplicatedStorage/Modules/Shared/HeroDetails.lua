@@ -351,6 +351,36 @@ local orderedHeroDetails: { OrderedHero } = {
 				Description = "BZZZZZ",
 				Rarity = "Common",
 			},
+			{
+				Name = "Blister",
+				Price = 670,
+				Description = "Sexy, but dangerous...",
+				Rarity = "Uncommon",
+			},
+			{
+				Name = "Forest",
+				Price = 1300,
+				Description = "I kill for a living!",
+				Rarity = "Rare",
+			},
+			{
+				Name = "Ocean",
+				Price = 2100,
+				Description = "High tides today!",
+				Rarity = "Rare",
+			},
+			{
+				Name = "Darkness",
+				Price = 3400,
+				Description = "Come to the dark side",
+				Rarity = "Epic",
+			},
+			{
+				Name = "Golden",
+				Price = 7000,
+				Description = "Exclusively for the best",
+				Rarity = "Legendary",
+			},
 		},
 	},
 }
