@@ -52,12 +52,12 @@ local Taz: Types.HeroData = {
 		Ammo = 3,
 		AmmoRegen = 2,
 		Range = Enums.AttackRange.VeryShort,
-		ReloadSpeed = 0.4,
+		ReloadSpeed = 0.5,
 
 		Data = {
 			AttackType = "Shotgun" :: "Shotgun",
-			Damage = 230,
-			ShotCount = 10,
+			Damage = 350,
+			ShotCount = 5,
 			Angle = 35,
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			AngleVariation = 2,
@@ -72,8 +72,8 @@ local Taz: Types.HeroData = {
 
 		Data = {
 			AttackType = "Shotgun" :: "Shotgun",
-			Damage = 240,
-			ShotCount = 8,
+			Damage = 250,
+			ShotCount = 6,
 			Angle = 20,
 			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
 			AngleVariation = 2,
@@ -92,7 +92,7 @@ local Frankie: Types.HeroData = {
 		Ammo = 3,
 		AmmoRegen = 1.5,
 		Range = Enums.AttackRange.Short, -- to account for size of projectile
-		ReloadSpeed = 0.4,
+		ReloadSpeed = 0.5,
 
 		Data = {
 			AttackType = "Shot" :: "Shot",
@@ -114,6 +114,47 @@ local Frankie: Types.HeroData = {
 			TimeToDetonate = 0.5,
 			Radius = Enums.Radius.Medium,
 			ExplosionColour = Color3.fromRGB(122, 255, 85),
+		},
+	},
+}
+
+local Boxy: Types.HeroData = {
+	Name = "Boxy",
+	Health = 3700,
+	MovementSpeed = Enums.MovementSpeed.VeryFast,
+	Attack = {
+		AbilityType = "Attack" :: "Attack",
+		Name = "Headache",
+		Ammo = 3,
+		AmmoRegen = 1.5,
+		Range = Enums.AttackRange.Medium,
+		ReloadSpeed = 0.5,
+
+		Data = {
+			AttackType = "Arced" :: "Arced",
+			ProjectileSpeed = Enums.ProjectileSpeed.Slow,
+			Height = Enums.ArcHeight.High,
+			Damage = 750,
+			TimeToDetonate = 0.2,
+			Radius = Enums.Radius.Medium,
+			ExplosionColour = Color3.fromRGB(50, 105, 200),
+		},
+	},
+	Super = {
+		AbilityType = "Super" :: "Super",
+		Name = "Lightning Strike",
+		Charge = 3,
+		Range = Enums.AttackRange.Medium,
+
+		Data = {
+			AttackType = "Shotgun",
+			ProjectileSpeed = Enums.ProjectileSpeed.Medium,
+			Damage = 800,
+			Angle = 360,
+			ShotCount = 9,
+			TimeBetweenShots = 0,
+			SpeedVariation = 0,
+			AngleVariation = 0,
 		},
 	},
 }
@@ -165,43 +206,49 @@ local Gobzie: Types.HeroData = {
 	},
 }
 
-local Boxy: Types.HeroData = {
-	Name = "Boxy",
-	Health = 4000,
-	MovementSpeed = Enums.MovementSpeed.VeryFast,
+local Test: Types.HeroData = {
+	Name = "Test",
+	Health = 4400,
+	MovementSpeed = Enums.MovementSpeed.Slow,
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
-		Name = "Headache",
+		Name = "Saw Blade",
 		Ammo = 3,
 		AmmoRegen = 1.5,
-		Range = Enums.AttackRange.Medium,
-		ReloadSpeed = 0.4,
+		Range = Enums.AttackRange.Medium, -- to account for size of projectile
+		ReloadSpeed = 0.7,
 
 		Data = {
-			AttackType = "Arced" :: "Arced",
-			ProjectileSpeed = Enums.ProjectileSpeed.Slow,
-			Height = Enums.ArcHeight.High,
-			Damage = 900,
-			TimeToDetonate = 0.2,
-			Radius = Enums.Radius.Medium,
-			ExplosionColour = Color3.fromRGB(50, 105, 200),
+			AttackType = "Shotgun" :: "Shotgun",
+			Damage = 500,
+			ShotCount = 2,
+			Angle = 7,
+			ProjectileSpeed = Enums.ProjectileSpeed.VerySlow,
+			AngleVariation = 2,
+			TimeBetweenShots = 0.3,
+			SpeedVariation = 1,
 		},
 	},
 	Super = {
 		AbilityType = "Super" :: "Super",
-		Name = "Lightning Strike",
-		Charge = 3,
-		Range = Enums.AttackRange.Medium,
+		Name = "Super Blade",
+		Charge = 7,
+		Range = Enums.AttackRange.Large,
 
 		Data = {
-			AttackType = "Shotgun",
-			ProjectileSpeed = Enums.ProjectileSpeed.Medium,
-			Damage = 800,
-			Angle = 360,
-			ShotCount = 9,
-			TimeBetweenShots = 0,
-			SpeedVariation = 0,
-			AngleVariation = 0,
+			AttackType = "Shot" :: "Shot",
+			Damage = 2300,
+			ProjectileSpeed = Enums.ProjectileSpeed.VerySlow,
+			Chain = {
+				AttackType = "Field",
+				Damage = 50,
+				Duration = 2,
+				Radius = Enums.Radius.Small,
+				Effect = function(combatPlayer)
+					-- Make sure to also update the talent when you update the slow amount
+					combatPlayer:SetStatusEffect("Slow", 0.75, 0.2)
+				end,
+			},
 		},
 	},
 }
@@ -211,6 +258,7 @@ local HeroData: { [string]: Types.HeroData } = {
 	Frankie = Frankie,
 	Gobzie = Gobzie,
 	Boxy = Boxy,
+	Test = Test,
 }
 
 -- Ensures we dont accidentally change any of the data in the table, as this would be a bug.

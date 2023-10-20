@@ -4,7 +4,7 @@ local Enums = {}
 
 Enums.MovementSpeed = {
 	VerySlow = 9,
-	Slow = 12,
+	Slow = 11,
 	Normal = 13,
 	Fast = 14,
 	VeryFast = 16,
@@ -20,6 +20,7 @@ Enums.AttackRange = {
 }
 
 Enums.ProjectileSpeed = {
+	VerySlow = 20,
 	Slow = 25,
 	Medium = 40,
 	MediumFast = 50,
@@ -36,6 +37,7 @@ Enums.Radius = {
 	VerySmall = 2,
 	Small = 5,
 	Medium = 8,
+	MediumLarge = 10,
 	Large = 14,
 }
 
