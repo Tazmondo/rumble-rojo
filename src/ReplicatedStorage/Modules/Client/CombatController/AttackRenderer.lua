@@ -197,6 +197,40 @@ function RenderCharacterAnimation(player: Player, hero: string, attackData: Type
 	end
 end
 
+function RenderCustomAttackVFX(attackPart: PVInstance)
+	if attackPart.Name == "Super Blade_Chain" then
+		return Future.new(function()
+			local sawOffsets = {}
+			for i, saw in ipairs(attackPart:GetChildren()) do
+				assert(saw:IsA("BasePart"))
+				sawOffsets[saw] = attackPart:GetPivot():ToObjectSpace(saw.CFrame)
+				assert(saw:FindFirstChild("WeldConstraint")):Destroy()
+			end
+
+			local innerRotSpeed = math.rad(270)
+			local outerRotSpeed = math.rad(720)
+			local conn
+			conn = RunService.RenderStepped:Connect(function(dt: number)
+				if attackPart.Parent == nil then
+					conn:Disconnect()
+					return
+				end
+
+				attackPart:PivotTo(attackPart:GetPivot() * CFrame.Angles(0, dt * innerRotSpeed, 0))
+
+				for i, saw in ipairs(attackPart:GetChildren()) do
+					assert(saw:IsA("BasePart"))
+					local rotation = saw.CFrame.Rotation
+					local newPosition = (attackPart:GetPivot() * sawOffsets[saw]).Position
+
+					saw.CFrame = CFrame.new(newPosition) * rotation * CFrame.Angles(0, 0, -dt * outerRotSpeed)
+				end
+			end)
+		end)
+	end
+	return nil :: any
+end
+
 function RenderBulletHit(position: Vector3, projectileSize: number)
 	local template = generalVFXFolder.BulletHit.BulletHit :: Attachment
 	local hit = template:Clone()
@@ -490,39 +524,44 @@ function CreateFieldAttack(origin: CFrame, radius: number, name: string, duratio
 
 	VFX.Name = name
 	VFX.Parent = partFolder
-	TriggerAllDescendantParticleEmitters(VFX, true, nil, true)
 
-	local spin
-	if VFX:GetAttribute("ShouldSpin") then
-		local rotSpeed = math.rad(720)
-		spin = RunService.PreRender:Connect(function(dt: number)
-			local rotation = dt * rotSpeed
-			VFX:PivotTo(VFX:GetPivot() * CFrame.Angles(0, rotation, 0))
+	local customVFX = RenderCustomAttackVFX(VFX)
+	if not customVFX then
+		TriggerAllDescendantParticleEmitters(VFX, true, nil, true)
+
+		local spin
+		if VFX:GetAttribute("ShouldSpin") then
+			local rotSpeed = math.rad(720)
+			spin = RunService.PreRender:Connect(function(dt: number)
+				if VFX.Parent == nil then
+					spin:Disconnect()
+					return
+				end
+
+				local rotation = dt * rotSpeed
+				VFX:PivotTo(VFX:GetPivot() * CFrame.Angles(0, rotation, 0))
+			end)
+		end
+
+		local start = os.clock()
+		local expand
+		expand = RunService.PreRender:Connect(function()
+			local progress = math.clamp((os.clock() - start) / fieldExpansionTime, 0, 1)
+
+			local tweenedProgress = TweenService:GetValue(progress, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+			local currentRadius = tweenedProgress * radius
+
+			ScaleWithAttachments(VFX, Vector3.new(currentRadius * 2, VFX.Size.Y, currentRadius * 2))
+
+			if progress == 1 then
+				expand:Disconnect()
+			end
 		end)
 	end
 
-	local start = os.clock()
-	local expand
-	expand = RunService.PreRender:Connect(function()
-		local progress = math.clamp((os.clock() - start) / fieldExpansionTime, 0, 1)
-
-		local tweenedProgress = TweenService:GetValue(progress, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-
-		local currentRadius = tweenedProgress * radius
-
-		ScaleWithAttachments(VFX, Vector3.new(currentRadius * 2, VFX.Size.Y, currentRadius * 2))
-
-		if progress == 1 then
-			expand:Disconnect()
-		end
-	end)
-
 	Spawn(function()
 		task.wait(duration + fieldExpansionTime)
-
-		if spin then
-			spin:Disconnect()
-		end
 		VFX:Destroy()
 	end)
 end
