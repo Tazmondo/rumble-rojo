@@ -342,7 +342,7 @@ local orderedHeroDetails: { OrderedHero } = {
 		Price = 400,
 		DefaultSkin = "Buzzer",
 		Modifiers = table.clone(DefaultModifiers),
-		Talents = { "Electrocution", "Microwave", "Current Outbreak" },
+		Talents = { "Spare Saw", "Shred", "Buzzkill" },
 		Skills = table.clone(DefaultSkills),
 		Skins = {
 			{
