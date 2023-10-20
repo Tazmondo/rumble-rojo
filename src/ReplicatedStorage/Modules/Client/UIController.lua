@@ -23,7 +23,6 @@ local TopText = ArenaUI.Interface.TopBar.TopText
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local HeroData = require(ReplicatedStorage.Modules.Shared.Combat.HeroData)
@@ -1029,58 +1028,62 @@ function UIController:Initialize()
 		skinSelect[selectedSkin].ViewportFrame.Equipped.Visible = true
 	end)
 
-	local TRANSITIONTIME = 0
-	local STYLE = Enum.EasingStyle.Quad
-	local transitioning = false
-	local inScale = 0.9
-	local outScale = 1 / inScale
+	-- local TRANSITIONTIME = 0
+	-- local STYLE = Enum.EasingStyle.Quad
+	-- local transitioning = false
+	-- local inScale = 0.9
+	-- local outScale = 1 / inScale
 
-	local tweenInfo = TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out)
+	-- local tweenInfo = TweenInfo.new(TRANSITIONTIME, STYLE, Enum.EasingDirection.Out)
 
 	HeroSelect.Frame.Select.Information["2-Details"].ChangeOutfit.Activated:Connect(function()
 		SoundController:ButtonClick()
-		if transitioning then
-			return
-		end
-
-		transitioning = true
-
 		HeroSelect.Frame.Skin.Visible = true
+		HeroSelect.Frame.Select.Visible = false
+		-- if transitioning then
+		-- 	return
+		-- end
 
-		HeroSelect.Frame.Select.UIScale.Scale = 1
-		TweenService:Create(HeroSelect.Frame.Select.UIScale, tweenInfo, { Scale = outScale }):Play()
+		-- transitioning = true
 
-		HeroSelect.Frame.Skin.UIScale.Scale = inScale
-		TweenService:Create(HeroSelect.Frame.Skin.UIScale, tweenInfo, { Scale = 1 }):Play()
+		-- HeroSelect.Frame.Skin.Visible = true
 
-		task.delay(TRANSITIONTIME, function()
-			transitioning = false
-			HeroSelect.Frame.Select.Visible = false
-		end)
+		-- HeroSelect.Frame.Select.UIScale.Scale = 1
+		-- TweenService:Create(HeroSelect.Frame.Select.UIScale, tweenInfo, { Scale = outScale }):Play()
+
+		-- HeroSelect.Frame.Skin.UIScale.Scale = inScale
+		-- TweenService:Create(HeroSelect.Frame.Skin.UIScale, tweenInfo, { Scale = 1 }):Play()
+
+		-- task.delay(TRANSITIONTIME, function()
+		-- 	transitioning = false
+		-- 	HeroSelect.Frame.Select.Visible = false
+		-- end)
 	end)
 
 	HeroSelect.Frame.Skin.Back.Exit.Activated:Connect(function()
 		SoundController:ButtonClick()
-		if transitioning then
-			return
-		end
-
-		displayedSkin = selectedSkin
-
-		transitioning = true
-
 		HeroSelect.Frame.Select.Visible = true
+		HeroSelect.Frame.Skin.Visible = false
+		-- if transitioning then
+		-- 	return
+		-- end
 
-		HeroSelect.Frame.Select.UIScale.Scale = outScale
-		TweenService:Create(HeroSelect.Frame.Select.UIScale, tweenInfo, { Scale = 1 }):Play()
+		-- displayedSkin = selectedSkin
 
-		HeroSelect.Frame.Skin.UIScale.Scale = 1
-		TweenService:Create(HeroSelect.Frame.Skin.UIScale, tweenInfo, { Scale = inScale }):Play()
+		-- transitioning = true
 
-		task.delay(TRANSITIONTIME, function()
-			transitioning = false
-			HeroSelect.Frame.Skin.Visible = false
-		end)
+		-- HeroSelect.Frame.Select.Visible = true
+
+		-- HeroSelect.Frame.Select.UIScale.Scale = outScale
+		-- TweenService:Create(HeroSelect.Frame.Select.UIScale, tweenInfo, { Scale = 1 }):Play()
+
+		-- HeroSelect.Frame.Skin.UIScale.Scale = 1
+		-- TweenService:Create(HeroSelect.Frame.Skin.UIScale, tweenInfo, { Scale = inScale }):Play()
+
+		-- task.delay(TRANSITIONTIME, function()
+		-- 	transitioning = false
+		-- HeroSelect.Frame.Skin.Visible = false
+		-- end)
 	end)
 
 	HeroSelect.Frame.Select.Information["2-Details"].Unlock.Activated:Connect(function()
@@ -1098,6 +1101,11 @@ function UIController:Initialize()
 		selectedHero = displayedHero
 
 		characterSelect[selectedHero].ViewportFrame.Equipped.Visible = true
+	end)
+
+	HeroSelect.Frame.Select.Information["2-Details"].BoostShop.Activated:Connect(function()
+		SoundController:ButtonClick()
+		HeroSelect.BoostShop.Visible = true
 	end)
 
 	HeroSelect.Frame.Skin.Info.Unlock.Activated:Connect(function()
