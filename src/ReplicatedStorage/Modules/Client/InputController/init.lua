@@ -46,7 +46,7 @@ local superBackground
 local skill: Frame
 
 -- Time before a click becomes a manual attack on PC
-local MANUALAIMDELAY = 0.1
+local MANUALAIMDELAY = 0.12
 
 -- Time taken to rotate 180 degrees
 local FULLROTATIONSPEED = 0.15
@@ -205,6 +205,10 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 				self.currentLookDirection = (newDirection * Vector3.new(1, 0, 1)).Unit
 				self.targetRelative = CFrame.new(self.HRP.Position):PointToObjectSpace(newTarget)
 			end
+		elseif not self.hasMoved and lastInputMode == "KBM" then
+			self.hasMoved = true
+			local mouse = Players.LocalPlayer:GetMouse()
+			UpdateWithMousePosition(self, Vector3.new(mouse.X, mouse.Y, 0))
 		end
 
 		UpdateAiming(self)
@@ -470,6 +474,15 @@ function InputBegan(self: InputController, input: InputObject, processed: boolea
 	end
 end
 
+function UpdateWithMousePosition(self: InputController, pos: Vector3)
+	local clickRay = NormaliseClickTarget(self, pos)
+	self.currentLookDirection = (clickRay.Unit.Direction * Vector3.new(1, 0, 1)).Unit
+
+	self.targetRelative = CFrame.new(self.HRP.Position):PointToObjectSpace(
+		clickRay.Origin + clickRay.Direction - Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
+	)
+end
+
 function InputChanged(self: InputController, input: InputObject, processed: boolean)
 	-- So we don't update the direction and target while rotating if it was auto-aimed
 	if self.attacking then
@@ -483,12 +496,7 @@ function InputChanged(self: InputController, input: InputObject, processed: bool
 			or (self.superToggle and not self.activeInput)
 		)
 	then
-		local clickRay = NormaliseClickTarget(self, input.Position)
-		self.currentLookDirection = (clickRay.Unit.Direction * Vector3.new(1, 0, 1)).Unit
-
-		self.targetRelative = CFrame.new(self.HRP.Position):PointToObjectSpace(
-			clickRay.Origin + clickRay.Direction - Vector3.new(0, self.humanoid.HipHeight + self.HRP.Size.Y / 2)
-		)
+		UpdateWithMousePosition(self, input.Position)
 
 		if not self.hasMoved then
 			self.hasMoved = true
@@ -534,9 +542,11 @@ function InputEnded(self: InputController, input: InputObject, processed: boolea
 		end
 	end
 
-	self.attacking = true
+	if not self.combatPlayer:CanAttack() then
+		return
+	end
 
-	RotateToAttack(self):Await()
+	self.attacking = true
 
 	Attack(self, if self.superToggle or self.activeButton == self.superButton then "Super" else "Attack")
 
@@ -556,6 +566,8 @@ function Attack(self: InputController, type: "Attack" | "Super" | "Skill")
 			if not self.combatPlayer:CanAttack() then
 				return
 			end
+			RotateToAttack(self):Await()
+
 			self.combatCamera:Shake()
 			self.combatPlayer:Attack()
 			SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, false, self.HRP.Position)
@@ -564,6 +576,8 @@ function Attack(self: InputController, type: "Attack" | "Super" | "Skill")
 			if not self.combatPlayer:CanSuperAttack() then
 				return
 			end
+			RotateToAttack(self):Await()
+
 			self.combatCamera:Shake()
 			self.combatPlayer:SuperAttack()
 			SoundController:PlayHeroAttack(self.combatPlayer.heroData.Name, true, self.HRP.Position)
