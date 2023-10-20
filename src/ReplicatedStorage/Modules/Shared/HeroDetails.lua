@@ -10,6 +10,7 @@ export type Rarity = "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary"
 
 type OrderedSkin = {
 	Name: string,
+	DisplayName: string?,
 	Description: string,
 	Price: number,
 	Rarity: Rarity,
@@ -17,6 +18,7 @@ type OrderedSkin = {
 }
 export type Skin = {
 	Name: string,
+	DisplayName: string?,
 	Description: string,
 	Price: number,
 	Rarity: Rarity,
@@ -213,6 +215,7 @@ local orderedHeroDetails: { OrderedHero } = {
 			},
 			{
 				Name = "Champion",
+				DisplayName = "Golden",
 				Description = "Exclusively for the best",
 				Price = 7000,
 				Rarity = "Legendary",

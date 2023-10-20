@@ -453,7 +453,7 @@ function RenderHeroSelectScreen()
 		skinInfo.Epic.Visible = rarity == "Epic"
 		skinInfo.Legendary.Visible = rarity == "Legendary"
 
-		skinInfo["2-Details"]["2-Name"].Text = skinData.Name
+		skinInfo["2-Details"]["2-Name"].Text = skinData.DisplayName or skinData.Name
 		skinInfo["2-Details"]["3-Description"].Text = skinData.Description
 
 		local owned = heroStats.Skins[displayedSkin] ~= nil
