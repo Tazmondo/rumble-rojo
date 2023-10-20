@@ -237,6 +237,7 @@ function CreateAttackProjectile(
 			else Vector3.zero
 		local projectileSize = (sizeVector.X + sizeVector.Y) / 2
 		local projectileTime = (attackData.Range - 1 - sizeVector.Z / 2) / speed
+		local baseRotation = origin.Rotation
 
 		local destroyed = false
 		local hitPos = nil
@@ -246,7 +247,7 @@ function CreateAttackProjectile(
 				destroyed = true
 				RenderBulletHit(pelletPart:GetPivot().Position, projectileSize)
 				if not hitPos then
-					hitPos = pelletPart:GetPivot()
+					hitPos = CFrame.new(pelletPart:GetPivot().Position) * baseRotation
 					if onHit then
 						onHit(player, nil, hitPos.Position, id)
 					end
@@ -258,16 +259,23 @@ function CreateAttackProjectile(
 
 		local rotationAngle = random:NextNumber(1000, 1200)
 		local exitAngle = random:NextNumber(0, 360)
+		local axisString = pelletPart:GetAttribute("RotationAxis") or "Z"
+		local axis = if axisString == "Z"
+			then Vector3.new(0, 0, 1)
+			elseif axisString == "Y" then Vector3.new(0, 1, 0)
+			else Vector3.new(1, 0, 0)
 
-		pelletPart:PivotTo(pelletPart:GetPivot() * CFrame.Angles(0, 0, math.rad(exitAngle)))
+		pelletPart:PivotTo(pelletPart:GetPivot() * CFrame.fromAxisAngle(axis, math.rad(exitAngle)))
 
 		local start = os.clock()
 		local stepped
 		stepped = RunService.PreSimulation:Connect(function(dt)
+			-- Can't just move it forwards as some projectiles rotate on Y axis.
+			local movementDistance = speed * dt
+			local movementOffset = baseRotation.LookVector * movementDistance
+
 			pelletPart:PivotTo(
-				pelletPart:GetPivot()
-					* CFrame.new(0, 0, -speed * dt)
-					* CFrame.Angles(0, 0, dt * math.rad(rotationAngle))
+				pelletPart:GetPivot() * CFrame.fromAxisAngle(axis, dt * math.rad(rotationAngle)) + movementOffset
 			)
 			if os.clock() - start > projectileTime then
 				stepped:Disconnect()
@@ -286,7 +294,7 @@ function CreateAttackProjectile(
 
 			local character = AttackRenderer.GetCombatPlayerFromValidPart(hitPart)
 			if onHit and character and not hitPos then
-				hitPos = CFrame.new(result.Position) * pelletPart:GetPivot().Rotation
+				hitPos = CFrame.new(result.Position) * baseRotation
 				onHit(player, hitPart, result.Position, id)
 			end
 
