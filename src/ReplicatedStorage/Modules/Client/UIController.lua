@@ -1246,7 +1246,10 @@ function UIController:Initialize()
 		then
 			local position = input.Position
 			local objects = PlayerGui:GetGuiObjectsAtPosition(position.X, position.Y)
-			if objects[1] == HeroSelect.BoostShop then
+			if
+				objects[1] == HeroSelect.BoostShop
+				or objects[1].Name == "Cursor" and objects[2] == HeroSelect.BoostShop
+			then
 				HeroSelect.BoostShop.Visible = false
 			end
 		end

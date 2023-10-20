@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local AutoAim = require(script.AutoAim)
+local CursorController = require(script.CursorController)
 local AimRenderer = require(ReplicatedStorage.Modules.Client.CombatController.AimRenderer)
 local CombatCamera = require(ReplicatedStorage.Modules.Client.CombatController.CombatCamera)
 local CombatUI = require(ReplicatedStorage.Modules.Client.CombatController.CombatUI)
@@ -23,6 +24,7 @@ local Bin = require(ReplicatedStorage.Packages.Bin)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local DragButton = require(script.DragButton)
+local InputType = require(script.InputType)
 local SoundController = require(script.Parent.SoundController)
 
 local SkillAbilityEvent = require(ReplicatedStorage.Events.Combat.SkillAbilityEvent):Client()
@@ -32,12 +34,8 @@ local AttackLogic = require(ReplicatedStorage.Modules.Shared.Combat.AttackLogic)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Future = require(ReplicatedStorage.Packages.Future)
-local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local PlayerGui = Players.LocalPlayer.PlayerGui
-
-local lastInputMode: "KBM" | "Mobile" = "Mobile"
-local inputModeChanged = Signal()
 
 local combatGui
 local attack: Frame
@@ -143,6 +141,11 @@ function new(heroName: string, modifierNames: { string }, skill: string)
 		self.combatCamera:Destroy()
 	end)
 
+	CursorController.UpdateIcon(CursorController.Icons.attack)
+	self.Add(function()
+		CursorController.UpdateIcon(nil)
+	end)
+
 	return self
 end
 
@@ -161,7 +164,7 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 		InputEnded(self, ...)
 	end))
 
-	self.Add(inputModeChanged:Connect(function()
+	self.Add(InputType.InputModeChanged:Connect(function()
 		InputModeChanged(self)
 	end))
 	InputModeChanged(self)
@@ -205,7 +208,7 @@ function InputController.new(heroName: string, modifierNames: { string }, skill:
 				self.currentLookDirection = (newDirection * Vector3.new(1, 0, 1)).Unit
 				self.targetRelative = CFrame.new(self.HRP.Position):PointToObjectSpace(newTarget)
 			end
-		elseif not self.hasMoved and lastInputMode == "KBM" then
+		elseif not self.hasMoved and InputType.GetType() == "KBM" then
 			self.hasMoved = true
 			local mouse = Players.LocalPlayer:GetMouse()
 			UpdateWithMousePosition(self, Vector3.new(mouse.X, mouse.Y, 0))
@@ -294,22 +297,9 @@ function GetRealTarget(self: InputController): Vector3
 	return worldTarget
 end
 
-function InputTypeChanged()
-	local inputType = UserInputService:GetLastInputType()
-	local oldMode = lastInputMode
-	if inputType == Enum.UserInputType.Keyboard or string.find(inputType.Name, "Mouse") then
-		lastInputMode = "KBM"
-	elseif inputType == Enum.UserInputType.Touch then
-		lastInputMode = "Mobile"
-	end
-
-	if oldMode ~= lastInputMode then
-		inputModeChanged:Fire()
-	end
-	return
-end
-
 function InputModeChanged(self: InputController)
+	local lastInputMode = InputType.GetType()
+
 	self.combatUI:UpdateInputMode(lastInputMode)
 	if lastInputMode == "KBM" then
 		attack.Visible = false
@@ -401,9 +391,11 @@ function UpdateAiming(self: InputController, cancel: boolean?)
 	self.aimRenderer:Disable()
 	self.superAimRenderer:Disable()
 	self.combatUI:UpdateSuperActive(self.superToggle)
+	CursorController.UpdateIcon(CursorController.Icons.attack)
 
 	if cancel or not ShouldManualAttack(self) then
 		if self.superToggle then
+			CursorController.UpdateIcon(CursorController.Icons.super)
 			self.combatPlayer:SetAiming("Super")
 		else
 			self.combatPlayer:SetAiming(nil)
@@ -413,6 +405,11 @@ function UpdateAiming(self: InputController, cancel: boolean?)
 
 	if self.superToggle or self.activeButton == self.superButton then
 		if ShouldManualAttack(self) then
+			if self.combatPlayer:CanSuperAttack() then
+				CursorController.UpdateIcon(CursorController.Icons.superActive)
+			else
+				CursorController.UpdateIcon(CursorController.Icons.superDisabled)
+			end
 			self.superAimRenderer:Enable()
 		end
 
@@ -423,6 +420,11 @@ function UpdateAiming(self: InputController, cancel: boolean?)
 			self.combatUI:UpdateSuperActive(true)
 		end
 	else
+		if self.combatPlayer:CanAttack() then
+			CursorController.UpdateIcon(CursorController.Icons.attackActive)
+		else
+			CursorController.UpdateIcon(CursorController.Icons.attackDisabled)
+		end
 		self.aimRenderer:Enable()
 		self.combatPlayer:SetAiming("Attack")
 	end
@@ -625,9 +627,6 @@ function InputController.Initialize()
 	super = combatGui.Attacks.Super
 	superBackground = assert(super:FindFirstChild("Background")) :: ImageLabel
 	skill = combatGui.Attacks.Skill
-
-	InputTypeChanged()
-	UserInputService.LastInputTypeChanged:Connect(InputTypeChanged)
 end
 
 InputController.Initialize()
