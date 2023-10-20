@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BushController = require(ReplicatedStorage.Modules.Client.CombatController.BushController)
 local CombatPlayerController = require(ReplicatedStorage.Modules.Client.CombatController.CombatPlayerController)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
@@ -46,7 +47,7 @@ function AutoAim.GetClosest(range: number, origin: Vector3): Model?
 
 	for i, model in ipairs(targets) do
 		local data = CombatPlayerController.GetData(model):UnwrapOr(nil :: any)
-		if not data or data.State == "Dead" then
+		if not data or data.State == "Dead" or BushController.IsCharacterHidden(model) then
 			continue
 		end
 
