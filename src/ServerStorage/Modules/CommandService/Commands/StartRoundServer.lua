@@ -7,12 +7,12 @@ local running = false
 
 return function(context)
 	if
-		DataService.GetGameData().Status ~= "NotEnoughPlayers"
-		and DataService.GetGameData().Status ~= "Intermission"
+		DataService.ReadGameData().Status ~= "NotEnoughPlayers"
+		and DataService.ReadGameData().Status ~= "Intermission"
 	then
 		return "You can only call this during the intermission when there aren't enough players"
 	end
-	if DataService.GetGameData().NumQueuedPlayers == 0 then
+	if DataService.ReadGameData().NumQueuedPlayers == 0 then
 		return "Must have at least one queued player."
 	end
 	if running then
@@ -22,8 +22,8 @@ return function(context)
 	local old = ServerConfig.MinPlayers
 
 	ServerConfig.MinPlayers = 1
-	DataService.GetGameData().IntermissionTime = 10
-	DataService.GetGameData().ForceRound = true
+	DataService.WriteGameData().IntermissionTime = 10
+	DataService.WriteGameData().ForceRound = true
 
 	task.wait(11)
 

@@ -64,7 +64,7 @@ function ProgressLoop(delay: number)
 		end
 
 		lastProgressed = os.clock()
-		DataService.GetGameData().Storm.Progress += 1
+		DataService.WriteGameData().Storm.Progress += 1
 		currentLayer = math.max(StormConfig.MinLayer, currentLayer - 1)
 	end))
 end
@@ -80,7 +80,7 @@ function StormService.Start(fastMode: boolean)
 		-- Start outside the range of the map so no players on the map are damaged
 		currentLayer = StormConfig.MapLength / 2 + 1
 
-		local data = DataService.GetGameData().Storm
+		local data = DataService.WriteGameData().Storm
 
 		data.Active = true
 		data.Progress = 0
@@ -95,7 +95,7 @@ end
 function StormService.Destroy()
 	return Future.new(function()
 		Remove()
-		local data = DataService.GetGameData().Storm
+		local data = DataService.WriteGameData().Storm
 
 		data.Active = false
 		data.Progress = 0

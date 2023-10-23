@@ -70,7 +70,7 @@ end
 
 function GetGameState()
 	if RunService:IsServer() then
-		return DataService.GetGameData().Status
+		return DataService.ReadGameData().Status
 	else
 		return DataController.GetGameData():Await().Status
 	end

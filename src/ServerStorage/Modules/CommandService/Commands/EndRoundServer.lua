@@ -12,12 +12,13 @@ return function(context)
 	running = true
 
 	ServerConfig.MinPlayers = 1
-	DataService.GetGameData().ForceRound = false
-	DataService.GetGameData().ForceEndRound = true
+	local data = DataService.WriteGameData()
+	data.ForceRound = false
+	data.ForceEndRound = true
 
 	task.wait(2)
 
-	DataService.GetGameData().ForceEndRound = false
+	DataService.WriteGameData().ForceEndRound = false
 	running = false
 
 	return "Success"

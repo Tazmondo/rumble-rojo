@@ -56,7 +56,6 @@ TableUtil.Lock(Data.ProfileTemplate)
 Data.TempPlayerData = {
 	Queued = false,
 	InCombat = false,
-	CharacterLoaded = false,
 	SelectedHero = "",
 
 	SelectedSkin = "",

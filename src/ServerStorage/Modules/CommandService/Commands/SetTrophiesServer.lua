@@ -6,7 +6,7 @@ local DataService = require(ServerStorage.Modules.DataService)
 return function(context, recipientPlayers, trophies)
 	local output = ""
 	for i, player in ipairs(recipientPlayers) do
-		local data = DataService.GetPrivateData(player):UnwrapOr(nil) :: Data.PrivatePlayerData?
+		local data = DataService.WritePrivateData(player):UnwrapOr(nil) :: Data.PrivatePlayerData?
 		if data then
 			local oldAmount = data.Trophies
 			data.Trophies = math.max(0, trophies)

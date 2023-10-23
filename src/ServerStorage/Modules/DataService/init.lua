@@ -11,7 +11,6 @@ local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local Migration = require(script.Migration)
 local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
-local Table = require(ReplicatedStorage.Modules.Shared.Table)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local LoadedService = require(script.Parent.LoadedService)
@@ -43,10 +42,6 @@ local Profiles = {} :: { [Player]: Profile }
 local PublicData: Data.PlayersData
 local PrivateData: { [Player]: Data.PrivatePlayerData }
 local GameData: Data.GameData
-
-local proxyPublicData: typeof(PublicData)
-local proxyPrivateData: typeof(PrivateData)
-local proxyGameData: typeof(GameData)
 
 local scheduledUpdates = {
 	Game = false,
@@ -148,34 +143,59 @@ function DataService.GetProfile(player: Player)
 	end, player)
 end
 
-function DataService.GetPrivateData(player: Player, original: boolean?)
+function DataService.ReadPrivateData(player: Player)
 	return Future.new(function(player)
 		local loaded = DataService.PlayerLoaded(player):Await()
 		if loaded then
-			if original then
-				return PrivateData[player] :: Data.PrivatePlayerData?
-			else
-				return proxyPrivateData[player] :: Data.PrivatePlayerData?
-			end
+			return PrivateData[player] :: Data.PrivatePlayerData?
 		else
 			return nil
 		end
 	end, player)
 end
 
-function DataService.GetPublicData(player: Player)
+function DataService.WritePrivateData(player: Player)
+	return Future.new(function()
+		local data = DataService.ReadPrivateData(player):Await()
+
+		if data then
+			scheduledUpdates.Private[player] = true
+		end
+
+		return data
+	end)
+end
+
+function DataService.ReadPublicData(player: Player)
 	return Future.new(function(player)
 		local loaded = DataService.PlayerLoaded(player):Await()
 		if loaded then
-			return proxyPublicData[player] :: Data.PublicPlayerData?
+			return PublicData[player] :: Data.PublicPlayerData?
 		else
 			return nil
 		end
 	end, player)
 end
 
-function DataService.GetGameData()
-	return proxyGameData
+function DataService.WritePublicData(player: Player)
+	return Future.new(function()
+		local data = DataService.ReadPublicData(player):Await()
+
+		if data then
+			scheduledUpdates.Public[player] = true
+		end
+
+		return data
+	end)
+end
+
+function DataService.ReadGameData()
+	return GameData
+end
+
+function DataService.WriteGameData()
+	scheduledUpdates.Game = true
+	return GameData
 end
 
 function DataService.SchedulePrivateUpdate(player)
@@ -301,27 +321,6 @@ local function PlayerAdded(player: Player)
 			PublicData[player] = TableUtil.Copy(Data.TempPlayerData, true)
 			Data.ReplicateToPublic(PrivateData[player], PublicData[player])
 
-			proxyPrivateData[player] = Table.HookTable(PrivateData[player], function(t, i, v)
-				-- Run before value is set
-				local privateChanged = t[i] ~= v
-				if privateChanged then
-					scheduledUpdates.Private[player] = true
-				end
-			end, function(t, i, v)
-				-- Run after value is set
-				local changed = Data.ReplicateToPublic(PrivateData[player], PublicData[player])
-				if changed then
-					scheduledUpdates.Public[player] = true
-				end
-			end)
-
-			proxyPublicData[player] = Table.HookTable(PublicData[player], function(t, i, v)
-				local changed = t[i] ~= v
-				if changed then
-					scheduledUpdates.Public[player] = true
-				end
-			end)
-
 			print("Waiting for client to load!")
 			if LoadedService.ClientLoaded(player):Await() then
 				print("Replicating data!")
@@ -341,7 +340,7 @@ local function PlayerAdded(player: Player)
 end
 
 function HandleSelectHero(player: Player, hero: string)
-	local privateData = DataService.GetPrivateData(player):Await()
+	local privateData = DataService.WritePrivateData(player):Await()
 
 	if not privateData then
 		return
@@ -356,7 +355,7 @@ function HandleSelectHero(player: Player, hero: string)
 end
 
 function HandleSelectSkin(player: Player, hero: string, skin: string)
-	local privateData = DataService.GetPrivateData(player):Await()
+	local privateData = DataService.WritePrivateData(player):Await()
 
 	if not privateData then
 		return
@@ -371,7 +370,7 @@ function HandleSelectSkin(player: Player, hero: string, skin: string)
 end
 
 function HandleSelectModifier(player: Player, hero: string, modifier: string, slot: number)
-	local privateData = DataService.GetPrivateData(player):Await()
+	local privateData = DataService.WritePrivateData(player):Await()
 
 	if not privateData then
 		return
@@ -395,7 +394,7 @@ function HandleSelectModifier(player: Player, hero: string, modifier: string, sl
 end
 
 function HandleSelectTalent(player, hero, talent)
-	local privateData = DataService.GetPrivateData(player):Await()
+	local privateData = DataService.WritePrivateData(player):Await()
 
 	if not privateData then
 		return
@@ -411,7 +410,7 @@ function HandleSelectTalent(player, hero, talent)
 end
 
 function HandleSelectSkill(player, hero, skill)
-	local privateData = DataService.GetPrivateData(player):Await()
+	local privateData = DataService.WritePrivateData(player):Await()
 
 	if not privateData then
 		return
@@ -427,7 +426,7 @@ function HandleSelectSkill(player, hero, skill)
 end
 
 function HandlePurchaseHero(player: Player, hero: string, select: boolean?)
-	local privateData = DataService.GetPrivateData(player):Await()
+	local privateData = DataService.WritePrivateData(player):Await()
 
 	if not privateData or privateData.OwnedHeroes[hero] then
 		return
@@ -451,7 +450,7 @@ function HandlePurchaseHero(player: Player, hero: string, select: boolean?)
 end
 
 function HandlePurchaseSkin(player: Player, hero: string, skin: string)
-	local privateData = DataService.GetPrivateData(player):Await()
+	local privateData = DataService.WritePrivateData(player):Await()
 
 	if not privateData then
 		return
@@ -476,7 +475,7 @@ function HandlePurchaseSkin(player: Player, hero: string, skin: string)
 end
 
 function HandlePurchaseModifier(player: Player, hero: string, modifier: string)
-	local privateData = DataService.GetPrivateData(player):Await()
+	local privateData = DataService.WritePrivateData(player):Await()
 
 	if not privateData then
 		return
@@ -508,7 +507,7 @@ function HandlePurchaseModifier(player: Player, hero: string, modifier: string)
 end
 
 function HandlePurchaseTalent(player, hero, talent)
-	local privateData = DataService.GetPrivateData(player):Await()
+	local privateData = DataService.WritePrivateData(player):Await()
 
 	if not privateData then
 		return
@@ -540,7 +539,7 @@ function HandlePurchaseTalent(player, hero, talent)
 end
 
 function HandlePurchaseSkill(player, hero, skill)
-	local privateData = DataService.GetPrivateData(player):Await()
+	local privateData = DataService.WritePrivateData(player):Await()
 
 	if not privateData then
 		return
@@ -579,6 +578,11 @@ function StartEventLoop()
 
 		for player, _ in pairs(scheduledUpdates.Private) do
 			DataService.UpdatePrivateData(player)
+
+			local changed = Data.ReplicateToPublic(PrivateData[player], PublicData[player])
+			if changed then
+				scheduledUpdates.Public[player] = true
+			end
 		end
 
 		for player, _ in pairs(scheduledUpdates.Public) do
@@ -599,16 +603,8 @@ end
 
 function DataService.Initialize()
 	GameData = TableUtil.Copy(Data.GameData, true)
-	proxyGameData = Table.HookTable(GameData, function(t, i, v)
-		if t[i] ~= v then
-			scheduledUpdates.Game = true
-		end
-	end)
-
 	PublicData = {}
 	PrivateData = {}
-	proxyPublicData = {}
-	proxyPrivateData = {}
 
 	-- In case Players have joined the server earlier than this script ran:
 	for _, player in ipairs(Players:GetPlayers()) do

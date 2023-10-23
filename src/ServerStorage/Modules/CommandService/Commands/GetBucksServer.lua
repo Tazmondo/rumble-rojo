@@ -4,7 +4,7 @@ local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local DataService = require(ServerStorage.Modules.DataService)
 
 return function(context, recipientPlayer, bucks)
-	local data = DataService.GetPrivateData(recipientPlayer):UnwrapOr(nil) :: Data.PrivatePlayerData?
+	local data = DataService.ReadPrivateData(recipientPlayer):UnwrapOr(nil) :: Data.PrivatePlayerData?
 	if data then
 		return "bucks: " .. data.Money
 	else

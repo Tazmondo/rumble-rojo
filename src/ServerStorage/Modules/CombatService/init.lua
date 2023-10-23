@@ -434,7 +434,7 @@ function processHit(
 
 	-- Update Data
 	if player then
-		DataService.GetPrivateData(player):After(function(data)
+		DataService.WritePrivateData(player):After(function(data)
 			if data then
 				data.Stats.DamageDealt += actualDamage
 			end
@@ -638,8 +638,8 @@ function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 			CombatService:ExitPlayerCombat(player):Await()
 		end
 
-		local data = DataService.GetPrivateData(player):Await()
-		local dataPublic = DataService.GetPublicData(player):Await()
+		local data = DataService.ReadPrivateData(player):Await()
+		local dataPublic = DataService.WritePublicData(player):Await()
 		if not data or not dataPublic then
 			return nil :: boolean?, nil :: Model?
 		end
@@ -670,7 +670,7 @@ function CombatService:ExitPlayerCombat(player: Player)
 	self = self :: CombatService
 
 	return Future.new(function()
-		local publicData = DataService.GetPublicData(player):Await()
+		local publicData = DataService.WritePublicData(player):Await()
 		if publicData then
 			publicData.InCombat = false
 		end
@@ -684,7 +684,8 @@ function CombatService:ExitPlayerCombat(player: Player)
 		-- Must wait for replication, otherwise the client will still think the player is in combat
 		-- when the character loads
 		DataService.WaitForReplication():Await()
-		local char = self:SpawnCharacter(player):Await()
+		local char: Model = self:SpawnCharacter(player):Await()
+
 		return char
 	end)
 end
@@ -732,12 +733,6 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	print("Spawning Character", player)
 
 	return Future.new(function()
-		local playerData = DataService.GetPublicData(player):Await()
-		if not playerData then
-			-- player left so dont need to continue spawning
-			return nil :: any
-		end
-
 		local details = PlayersInCombat[player]
 		local heroModel = if details
 			then HeroDetails.GetModelFromName(details.HeroName, details.SkinName):Clone()
@@ -746,8 +741,6 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 		print(player, "Loading character...")
 		local character = LoadCharacterService.SpawnCharacter(player, spawnCFrame, heroModel):Await()
 		print(player, "Character loaded")
-
-		playerData.CharacterLoaded = true
 
 		local humanoid = assert(
 			character:FindFirstChild("Humanoid"),
@@ -773,7 +766,7 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 			end
 		end)
 
-		return character :: Model?
+		return character
 	end)
 end
 
@@ -849,7 +842,7 @@ function CombatService:PlayerAdded(player: Player)
 				Skill = ServerScriptService:GetAttribute("skill") or "",
 			}
 
-			local data = assert(DataService.GetPublicData(player):Await(), "In studio, doesnt matter.")
+			local data = assert(DataService.WritePublicData(player):Await(), "In studio, doesnt matter.")
 			data.InCombat = true
 		end
 

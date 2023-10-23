@@ -124,7 +124,7 @@ function ProcessReceipt(receipt_info)
 	end
 
 	local profile = DataService.GetProfile(player):Await()
-	local data = DataService.GetPrivateData(player):Await()
+	local data = DataService.WritePrivateData(player):Await()
 	if not profile or not data then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end

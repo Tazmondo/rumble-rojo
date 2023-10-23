@@ -6,7 +6,6 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
-local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
@@ -159,7 +158,7 @@ function SavePlayer(player: Player)
 			print("Cannot save with stores disabled.")
 			return
 		end
-		local data = DataService.GetPrivateData(player):Await()
+		local data = DataService.ReadPrivateData(player):Await()
 		if data then
 			TrophyLeaderboardStore:SetAsync(PREFIX .. player.UserId, data.PeriodTrophies)
 			KillLeaderboardStore:SetAsync(PREFIX .. player.UserId, data.PeriodKills)
@@ -216,7 +215,7 @@ function LoadFromDataService()
 	local playerData = {}
 	for i, player in ipairs(Players:GetPlayers()) do
 		if DataService.PlayerLoaded(player):IsComplete() then
-			local data = DataService.GetPrivateData(player):Await()
+			local data = DataService.ReadPrivateData(player):Await()
 			if data then
 				playerData[tostring(player.UserId)] = { Trophies = data.PeriodTrophies, Kills = data.PeriodKills }
 			end
@@ -256,11 +255,7 @@ function CheckPeriodPassed()
 		KillLeaderboardStore = DataStoreService:GetOrderedDataStore(GetStorePrefixWithWeek(currentWeek) .. "Kill")
 
 		for i, player in ipairs(Players:GetPlayers()) do
-			DataService.GetPrivateData(player):After(function(data)
-				if data then
-					HandleReward(player, data)
-				end
-			end)
+			Spawn(HandleReward, player)
 		end
 	end
 end
@@ -281,8 +276,12 @@ function DataServiceLoop()
 	end
 end
 
--- This function is spawned, so it should try to avoid yielding
-function HandleReward(player: Player, data: Data.ProfileData)
+function HandleReward(player: Player)
+	local data = DataService.ReadPrivateData(player):Await()
+	if not data then
+		return
+	end
+
 	local lastLogin = data.LastLoggedIn
 
 	local week = GetWeek(lastLogin)
@@ -294,17 +293,22 @@ function HandleReward(player: Player, data: Data.ProfileData)
 
 	local success, lastData = LeaderboardService.GetDataForTime(lastLogin):Await()
 
+	data = DataService.WritePrivateData(player):Await()
+	if not data then
+		return
+	end
+
 	if not success then
 		warn(lastData)
 		return
 	end
-	print(lastData, #lastData.Kill, #lastData.Trophy)
+
 	local reward = 0
 
 	local value, index = TableUtil.Find(lastData.Kill, function(a)
 		return a.UserID == tostring(player.UserId)
 	end)
-	print(index, value)
+
 	if index and value and value.Data > 0 then
 		reward += GetReward(index)
 	end
@@ -312,7 +316,7 @@ function HandleReward(player: Player, data: Data.ProfileData)
 	local value, index = TableUtil.Find(lastData.Trophy, function(a)
 		return a.UserID == tostring(player.UserId)
 	end)
-	print(index, value)
+
 	if index and value and value.Data > 0 then
 		reward += GetReward(index)
 	end

@@ -5,7 +5,7 @@ local DataService = require(ServerStorage.Modules.DataService)
 
 return function(context, player, login)
 	local output = ""
-	local data = DataService.GetPrivateData(player):UnwrapOr(nil) :: Data.PrivatePlayerData?
+	local data = DataService.WritePrivateData(player):UnwrapOr(nil) :: Data.PrivatePlayerData?
 	if data then
 		data.LastLoggedIn += login
 	else

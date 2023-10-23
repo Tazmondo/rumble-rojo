@@ -46,9 +46,8 @@ function ArenaService.HandleResults(player)
 
 	local money = battleData.Kills * Config.MoneyKill
 
-	local privateData = DataService.GetPrivateData(player):Unwrap()
-	local publicData = DataService.GetPublicData(player):Unwrap()
-	if privateData and publicData then
+	local privateData = DataService.WritePrivateData(player):Unwrap()
+	if privateData then
 		DataService.AddTrophies(privateData, trophies)
 		DataService.AddKills(privateData, battleData.Kills)
 
@@ -71,7 +70,7 @@ function ArenaService.HandleResults(player)
 			privateData.Stats.KillStreak = 0
 		end
 	else
-		warn(privateData, publicData, "data was nil during results handling!")
+		warn(privateData, "data was nil during results handling!")
 	end
 
 	MatchResultsEvent:Fire(player, trophies, battleData)
@@ -89,7 +88,7 @@ function ArenaService.GetRegisteredPlayersLength(): number
 		count += 1
 	end
 
-	DataService.GetGameData().NumAlivePlayers = count
+	DataService.WriteGameData().NumAlivePlayers = count
 	return count
 end
 
@@ -103,35 +102,37 @@ function ArenaService.GetQueuedPlayersLength(): number
 		end
 	end
 
-	DataService.GetGameData().NumQueuedPlayers = count
+	DataService.WriteGameData().NumQueuedPlayers = count
 	return count
 end
 
 function ArenaService.StartIntermission()
 	-- WAITING FOR PLAYERS
-	local gameData = DataService.GetGameData()
-	gameData.Status = "NotEnoughPlayers"
-	gameData.NumQueuedPlayers = 0
+
+	-- The reason I don't use a variable is because WriteGameData only updates if you update the table in the same frame it was called
+	-- Using a variable implies it updates all the time, which could cause me to make an error in future
+	DataService.WriteGameData().Status = "NotEnoughPlayers"
+	DataService.WriteGameData().NumQueuedPlayers = 0
 
 	registeredPlayers = {}
 
-	gameData.IntermissionTime = CONFIG.Intermission
+	DataService.WriteGameData().IntermissionTime = CONFIG.Intermission
 
 	while ArenaService.GetQueuedPlayersLength() < CONFIG.MinPlayers do
 		task.wait()
 	end
 
 	-- INTERMISSION
-	gameData.Status = "Intermission"
+	DataService.WriteGameData().Status = "Intermission"
 
 	-- Since intermission can restart, we don't need to always reload the map.
 	if not MapService:IsLoaded() then
 		MapService:LoadNextMap()
 	end
 
-	while gameData.IntermissionTime > 0 do
+	while DataService.WriteGameData().IntermissionTime > 0 do
 		task.wait(1)
-		gameData.IntermissionTime -= 1
+		DataService.WriteGameData().IntermissionTime -= 1
 		if ArenaService.GetQueuedPlayersLength() < CONFIG.MinPlayers then
 			ArenaService.StartIntermission()
 			return
@@ -153,8 +154,7 @@ function ArenaService.StartIntermission()
 end
 
 function ArenaService.StartMatch()
-	local gameData = DataService.GetGameData()
-	gameData.Status = "BattleStarting"
+	DataService.WriteGameData().Status = "BattleStarting"
 
 	local spawnCount = 1
 	local spawns = MapService:GetMapSpawns()
@@ -164,7 +164,7 @@ function ArenaService.StartMatch()
 		if player.Parent == nil or not queued then
 			continue
 		end
-		local playerData = DataService.GetPrivateData(player):UnwrapOr(nil)
+		local playerData = DataService.ReadPrivateData(player):UnwrapOr(nil)
 		if not playerData then
 			continue
 		end
@@ -208,17 +208,17 @@ function ArenaService.StartMatch()
 		end
 	end
 
-	gameData.Status = "Battle"
+	DataService.WriteGameData().Status = "Battle"
 	local RoundTime = 0
 	local winner = nil
 
 	StormService.Start(ArenaService.GetRegisteredPlayersLength() <= 6)
 
 	while
-		not gameData.ForceEndRound
+		not DataService.ReadGameData().ForceEndRound
 		and (
 			(RoundTime < CONFIG.RoundLength and not winner and ArenaService.GetRegisteredPlayersLength() > 0)
-			or gameData.ForceRound
+			or DataService.ReadGameData().ForceRound
 		)
 	do
 		-- determine winner stuff
@@ -233,14 +233,13 @@ function ArenaService.StartMatch()
 end
 
 function ArenaService.EndMatch(winner: Player?)
-	local gameData = DataService.GetGameData()
-	gameData.Status = "BattleEnded"
+	DataService.WriteGameData().Status = "BattleEnded"
 
 	if winner then
 		if registeredPlayers[winner] then
 			registeredPlayers[winner].Won = true
 		end
-		gameData.WinnerName = winner.DisplayName
+		DataService.WriteGameData().WinnerName = winner.DisplayName
 	end
 	-- Allow round ended text to appear for a bit
 	task.wait(2)
@@ -278,7 +277,7 @@ function HandleQueue(player, isJoining)
 	end
 	playerQueueStatus[player] = isJoining
 
-	DataService.GetPublicData(player):After(function(data)
+	DataService.WritePublicData(player):After(function(data)
 		if data then
 			data.Queued = isJoining
 		end
@@ -289,8 +288,7 @@ function HandleQueue(player, isJoining)
 end
 
 function ArenaService.Initialize()
-	local gameData = DataService.GetGameData()
-	gameData.Status = "NotEnoughPlayers"
+	DataService.WriteGameData().Status = "NotEnoughPlayers"
 
 	task.spawn(function()
 		ArenaService.StartIntermission()

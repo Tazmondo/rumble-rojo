@@ -4,7 +4,6 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArenaService = require(script.Parent.ArenaService)
 local CombatService = require(script.Parent.CombatService)
-local Table = require(ReplicatedStorage.Modules.Shared.Table)
 local DataService = require(script.Parent.DataService)
 local ItemService = require(script.Parent.ItemService)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
@@ -132,14 +131,12 @@ end
 
 function GenerateQuests(player: Player)
 	return Future.new(function()
-		local data = DataService.GetPrivateData(player):Await()
+		local data = DataService.WritePrivateData(player):Await()
 		if not data then
 			return
 		end
 
-		-- Must do this instead of clearing table so we do not overwrite the metatable
-		-- Which would cause it to stop working properly
-		Table.ReplaceTable(data, "Quests", {})
+		data.Quests = {}
 
 		local totalCount = 0
 		local doneTypes = {}
@@ -163,8 +160,7 @@ function GetQuestOfType(player: Player, type: Types.QuestType)
 	return Future.new(function()
 		local foundQuest: Types.Quest?
 
-		-- Here we need to get the original table, as we cannot iterate through the proxy table
-		local data = DataService.GetPrivateData(player, true):Await()
+		local data = DataService.ReadPrivateData(player):Await()
 		if not data then
 			return foundQuest
 		end
@@ -180,7 +176,7 @@ end
 
 function PlayerAdded(player: Player)
 	return Future.new(function()
-		local data = DataService.GetPrivateData(player):Await()
+		local data = DataService.WritePrivateData(player):Await()
 		if not data then
 			return
 		end
@@ -213,7 +209,7 @@ function AdvanceQuest(player: Player, type: Types.QuestType, count: number?)
 end
 
 function HandleClaimQuest(player: Player, questIndex: number)
-	local data = DataService.GetPrivateData(player, true):Await()
+	local data = DataService.WritePrivateData(player):Await()
 	if not data then
 		return
 	end
@@ -242,7 +238,7 @@ function HandleClaimQuest(player: Player, questIndex: number)
 end
 
 function QuestService.HandleRefreshQuests(player: Player)
-	local data = DataService.GetPrivateData(player, true):Await()
+	local data = DataService.WritePrivateData(player):Await()
 	if not data then
 		return
 	end
