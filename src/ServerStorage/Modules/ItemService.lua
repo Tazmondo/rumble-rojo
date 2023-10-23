@@ -86,7 +86,7 @@ function HandleBeginAbsorb(combatPlayers: CombatPlayers, player: Player, id: num
 
 	-- make sure exploiters dont pick up items from infinite range
 	-- this can be bypassed by teleporting to the item, but this can be stopped by anti-teleport checks
-	if (HRP.Position - item.Position).Magnitude > Config.PickupRadius + 5 then
+	if (HRP.Position - item.Position).Magnitude > Config.PickupRadius + 5 or combatPlayer:IsDead() then
 		-- since this is likely due to lag, get the client to replace the item again (as it will have assumed it to be picked up)
 		warn(player, "picked up item from too far away", (HRP.Position - item.Position).Magnitude)
 		RegisterItemEvent:Fire(player, "Booster", item.Id, item.Position)

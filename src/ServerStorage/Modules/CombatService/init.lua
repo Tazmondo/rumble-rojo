@@ -459,7 +459,6 @@ function processHit(
 		local victimHRP = (
 			victimCharacter:FindFirstChild("box") or victimCharacter:FindFirstChild("HumanoidRootPart")
 		) :: BasePart
-		print("exploding...")
 		ItemService.ExplodeBoosters(victimHRP.Position, victimCombatPlayer.boosterCount + 1)
 	end
 end
@@ -724,6 +723,8 @@ function CombatService:SetupCombatPlayer(player: Player, details: PlayerCombatDe
 
 	print("Asking client to initialize combat player")
 	CombatPlayerInitializeEvent:Fire(player, details.HeroName, modifierStrings, details.Skill)
+
+	return combatPlayer
 end
 
 function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
@@ -753,8 +754,9 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 			"Humanoid was not found during character spawning."
 		) :: Humanoid
 
+		local combatPlayer
 		if PlayersInCombat[player] then
-			self:SetupCombatPlayer(player, PlayersInCombat[player])
+			combatPlayer = self:SetupCombatPlayer(player, PlayersInCombat[player])
 		else
 			character:ScaleTo(ServerConfig.LobbyPlayerScale)
 			humanoid.WalkSpeed = ServerConfig.LobbyMovementSpeed
@@ -763,7 +765,12 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 
 		-- This shouldn't cause a memory leak if the character is respawned instead of dying, as humanoid being destroyed will disconnect thi
 		humanoid.Died:Once(function()
-			self:HandlePlayerDeath(player)
+			if not combatPlayer or (combatPlayer and not combatPlayer:IsDead()) then
+				self:HandlePlayerDeath(player)
+				if combatPlayer then
+					combatPlayer:Kill()
+				end
+			end
 		end)
 
 		return character :: Model?

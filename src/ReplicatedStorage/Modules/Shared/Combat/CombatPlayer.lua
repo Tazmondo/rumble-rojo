@@ -611,6 +611,7 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 
 	-- Fix issues where you're brought to 0.1 hp and dont die.
 	if self.health < 1 then
+		print("died: ", self.health)
 		self.health = 0
 		if self.humanoid then
 			self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
@@ -621,6 +622,20 @@ function CombatPlayer.TakeDamage(self: CombatPlayer, amount: number)
 
 	self:Update()
 	return amount
+end
+
+function CombatPlayer.Kill(self: CombatPlayer)
+	if self:IsDead() then
+		return
+	end
+	self.health = 0
+
+	self:ChangeState("Dead")
+	if self.humanoid then
+		self.humanoid:ChangeState(Enum.HumanoidStateType.Dead)
+	end
+
+	self:Update()
 end
 
 function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)

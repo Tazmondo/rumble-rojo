@@ -263,6 +263,7 @@ export type CombatPlayer = {
 	DealDamage: (CombatPlayer, number, victim: Model) -> (),
 	CanTakeDamage: (CombatPlayer) -> boolean,
 	TakeDamage: (CombatPlayer, number) -> number,
+	Kill: (CombatPlayer) -> (),
 
 	AbilitiesEnabled: (CombatPlayer) -> boolean,
 	CanAttack: (CombatPlayer) -> boolean,
