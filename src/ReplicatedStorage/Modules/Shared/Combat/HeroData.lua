@@ -125,7 +125,7 @@ local Boxy: Types.HeroData = {
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
 		Name = "Headache",
-		Ammo = 3,
+		Ammo = 4,
 		AmmoRegen = 1.5,
 		Range = Enums.AttackRange.Medium,
 		ReloadSpeed = 0.5,
@@ -144,7 +144,7 @@ local Boxy: Types.HeroData = {
 		AbilityType = "Super" :: "Super",
 		Name = "Lightning Strike",
 		Charge = 3,
-		Range = Enums.AttackRange.Medium,
+		Range = Enums.AttackRange.ShortMedium,
 
 		Data = {
 			AttackType = "Shotgun",
@@ -169,14 +169,14 @@ local Gobzie: Types.HeroData = {
 		Ammo = 3,
 		AmmoRegen = 2,
 		Range = Enums.AttackRange.Short,
-		ReloadSpeed = 0.5,
+		ReloadSpeed = 0.6,
 
 		Data = {
 			AttackType = "Shotgun",
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
-			Damage = 260,
+			Damage = 255,
 			Angle = 7,
-			ShotCount = 6,
+			ShotCount = 5,
 			TimeBetweenShots = 0.1,
 			SpeedVariation = 1.5,
 			AngleVariation = 5,
@@ -185,7 +185,7 @@ local Gobzie: Types.HeroData = {
 	Super = {
 		AbilityType = "Super",
 		Name = "Zombie Infection",
-		Charge = 8,
+		Charge = 16,
 		Range = Enums.AttackRange.Short, -- to account for size of projectile
 
 		Data = {
@@ -194,8 +194,8 @@ local Gobzie: Types.HeroData = {
 			ProjectileSpeed = Enums.ProjectileSpeed.MediumFast,
 			Chain = {
 				AttackType = "Field",
-				Damage = 900,
-				Duration = 6,
+				Damage = 750,
+				Duration = 4,
 				Radius = Enums.Radius.Large,
 				Effect = function(combatPlayer)
 					-- Make sure to also update the talent when you update the slow amount
@@ -209,36 +209,150 @@ local Gobzie: Types.HeroData = {
 local Buzzer: Types.HeroData = {
 	Name = "Buzzer",
 	Health = 4400,
-	MovementSpeed = Enums.MovementSpeed.Slow,
+	MovementSpeed = Enums.MovementSpeed.SlowNormal,
 	Attack = {
 		AbilityType = "Attack" :: "Attack",
 		Name = "Saw Blade",
 		Ammo = 3,
 		AmmoRegen = 1.5,
-		Range = Enums.AttackRange.Medium, -- to account for size of projectile
-		ReloadSpeed = 0.7,
+		Range = Enums.AttackRange.Short, -- to account for size of projectile
+		ReloadSpeed = 0.9,
 
 		Data = {
 			AttackType = "Shotgun" :: "Shotgun",
 			Damage = 500,
 			ShotCount = 2,
 			Angle = 7,
-			ProjectileSpeed = Enums.ProjectileSpeed.VerySlow,
-			AngleVariation = 2,
-			TimeBetweenShots = 0.3,
-			SpeedVariation = 1,
+			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+			AngleVariation = 1.5,
+			TimeBetweenShots = 0.2,
+			SpeedVariation = 0,
+			Chain = {
+				AttackType = "Field",
+				Damage = 25,
+				Duration = 2,
+				Radius = Enums.Radius.Small,
+			},
 		},
 	},
 	Super = {
 		AbilityType = "Super" :: "Super",
 		Name = "Super Blade",
 		Charge = 7,
+		Range = Enums.AttackRange.MediumLarge,
+
+		Data = {
+			AttackType = "Shot" :: "Shot",
+			Damage = 2300,
+			ProjectileSpeed = Enums.ProjectileSpeed.Medium,
+			Chain = {
+				AttackType = "Field",
+				Damage = 50,
+				Duration = 2,
+				Radius = Enums.Radius.Small,
+				Effect = function(combatPlayer)
+					-- Make sure to also update the talent when you update the slow amount
+					combatPlayer:SetStatusEffect("Slow", 0.75, 0.2)
+				end,
+			},
+		},
+	},
+}
+local Spike: Types.HeroData = {
+	Name = "Spike",
+	Health = 4400,
+	MovementSpeed = Enums.MovementSpeed.Normal,
+	Attack = {
+		AbilityType = "Attack" :: "Attack",
+		Name = "Meat&Bone",
+		Ammo = 1,
+		AmmoRegen = 1,
+		Range = Enums.AttackRange.Medium, -- to account for size of projectile
+		ReloadSpeed = 0.9,
+
+		Data = {
+			AttackType = "Shotgun" :: "Shotgun",
+			Damage = 950,
+			ShotCount = 3,
+			Angle = 8,
+			TimeBetweenShots = 0.1,
+			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+			AngleVariation = 3,
+			SpeedVariation = 1,
+		},
+	},
+	Super = {
+		AbilityType = "Super" :: "Super",
+		Name = "Buckshot",
+		Charge = 3,
+		Range = Enums.AttackRange.Medium,
+
+		Data = {
+			AttackType = "Shotgun",
+			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+			Damage = 200,
+			Angle = 360,
+			ShotCount = 34,
+			TimeBetweenShots = 0.02,
+			SpeedVariation = 0,
+			AngleVariation = 0,
+			Chain = {
+				AttackType = "Field",
+				Damage = 5,
+				Duration = 2,
+				Radius = Enums.Radius.Small,
+				Effect = function(combatPlayer)
+					-- Make sure to also update the talent when you update the slow amount
+					combatPlayer:SetStatusEffect("Slow", 0.75, 0.2)
+				end,
+			},
+		},
+	},
+}
+
+local Tiger: Types.HeroData = {
+	Name = "Tiger",
+	Health = 4400,
+	MovementSpeed = Enums.MovementSpeed.Normal,
+	Attack = {
+		AbilityType = "Attack" :: "Attack",
+		Name = "Meat&Bone",
+		Ammo = 1,
+		AmmoRegen = 1,
+		Range = Enums.AttackRange.Medium, -- to account for size of projectile
+		ReloadSpeed = 0.9,
+
+		Data = {
+			AttackType = "Shotgun" :: "Shotgun",
+			Damage = 950,
+			ProjectileSpeed = Enums.ProjectileSpeed.Fast,
+			Angle = 7,
+			ShotCount = 3,
+			TimeBetweenShots = 0.1,
+			SpeedVariation = 0,
+			AngleVariation = 0,
+			Chain = {
+				AttackType = "Field",
+				Damage = 50,
+				Duration = 2,
+				Radius = Enums.Radius.Small,
+				Effect = function(combatPlayer)
+					-- Make sure to also update the talent when you update the slow amount
+					combatPlayer:SetStatusEffect("Slow", 0.75, 0.2)
+				end,
+			},
+		},
+	},
+	Super = {
+		AbilityType = "Super" :: "Super",
+		Name = "Blade Blast",
+		Charge = 1,
 		Range = Enums.AttackRange.Large,
 
 		Data = {
 			AttackType = "Shot" :: "Shot",
 			Damage = 2300,
-			ProjectileSpeed = Enums.ProjectileSpeed.VerySlow,
+			ProjectileSpeed = Enums.ProjectileSpeed.Medium,
 			Chain = {
 				AttackType = "Field",
 				Damage = 50,
@@ -259,6 +373,8 @@ local HeroData: { [string]: Types.HeroData } = {
 	Gobzie = Gobzie,
 	Boxy = Boxy,
 	Buzzer = Buzzer,
+	Spike = Spike,
+	Tiger = Tiger,
 }
 
 -- Ensures we dont accidentally change any of the data in the table, as this would be a bug.

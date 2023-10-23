@@ -3,16 +3,18 @@
 local Enums = {}
 
 Enums.MovementSpeed = {
-	VerySlow = 9,
-	Slow = 11,
-	Normal = 13,
-	Fast = 14,
-	VeryFast = 16,
+	VerySlow = 12,
+	Slow = 13,
+	SlowNormal = 14,
+	Normal = 15,
+	Fast = 16,
+	VeryFast = 17,
 }
 
 Enums.AttackRange = {
 	VeryShort = 24,
 	Short = 32,
+	ShortMedium = 38,
 	Medium = 48,
 	MediumLarge = 64,
 	Large = 80,
@@ -20,9 +22,9 @@ Enums.AttackRange = {
 }
 
 Enums.ProjectileSpeed = {
-	VerySlow = 20,
-	Slow = 25,
-	Medium = 40,
+	VerySlow = 25,
+	Slow = 30,
+	Medium = 42,
 	MediumFast = 50,
 	Fast = 60,
 }

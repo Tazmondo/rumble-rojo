@@ -383,6 +383,41 @@ local orderedHeroDetails: { OrderedHero } = {
 			},
 		},
 	},
+
+	{
+		Name = "Spike",
+		Description = "Buzzer is a slow but lethal killing machine. He spits out deadly sawblades to shred his enemies to pieces.",
+		Price = 400,
+		DefaultSkin = "Spike",
+		Modifiers = table.clone(DefaultModifiers),
+		Talents = {},
+		Skills = table.clone(DefaultSkills),
+		Skins = {
+			{
+				Name = "Spike",
+				Price = 0,
+				Description = "BZZZZZ",
+				Rarity = "Common",
+			},
+		},
+	},
+	{
+		Name = "Tiger",
+		Description = "Buzzer is a slow but lethal killing machine. He spits out deadly sawblades to shred his enemies to pieces.",
+		Price = 400,
+		DefaultSkin = "Tiger",
+		Modifiers = table.clone(DefaultModifiers),
+		Talents = {},
+		Skills = table.clone(DefaultSkills),
+		Skins = {
+			{
+				Name = "Tiger",
+				Price = 0,
+				Description = "BZZZZZ",
+				Rarity = "Common",
+			},
+		},
+	},
 }
 
 -- Silly type cheating, there's a better way of doing this but I'm lazy

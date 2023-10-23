@@ -284,8 +284,8 @@ Modifiers.Missile = {
 -- GOBZIE --
 Modifiers["Violent Infection"] = {
 	Name = "Violent Infection",
-	Description = "Your super no longer slows, but does 50% more damage.",
-	Price = 1000,
+	Description = "Your super no longer slows, but does 20% more damage.",
+	Price = 800,
 	UnlockedImage = "rbxassetid://15083487751",
 	LockedImage = "rbxassetid://15083488134",
 	Modify = function(self)
@@ -294,7 +294,7 @@ Modifiers["Violent Infection"] = {
 		local superField = super.Chain :: Types.FieldData
 
 		superField.Effect = nil
-		superField.Damage *= 1.5
+		superField.Damage *= 1.2
 	end,
 }
 
