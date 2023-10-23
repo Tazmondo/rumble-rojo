@@ -50,6 +50,11 @@ Data.ProfileTemplate = {
 
 	QuestGivenTime = 0,
 	Quests = {} :: { Types.Quest },
+
+	Settings = {
+		Mute = false,
+		AutoAim = true,
+	},
 }
 TableUtil.Lock(Data.ProfileTemplate)
 
