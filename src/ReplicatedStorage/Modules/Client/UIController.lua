@@ -1249,14 +1249,20 @@ function UIController:Initialize()
 	-- It's a frame, not a button, so I can't use .Activated
 	UserInputService.InputEnded:Connect(function(input, processed)
 		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
+			HeroSelect.BoostShop.Visible == true
+			and (
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+			)
 		then
 			local position = input.Position
 			local objects = PlayerGui:GetGuiObjectsAtPosition(position.X, position.Y)
 			if
-				objects[1] == HeroSelect.BoostShop
-				or objects[1].Name == "Cursor" and objects[2] == HeroSelect.BoostShop
+				#objects >= 2
+				and (
+					objects[1] == HeroSelect.BoostShop
+					or objects[1].Name == "Cursor" and objects[2] == HeroSelect.BoostShop
+				)
 			then
 				HeroSelect.BoostShop.Visible = false
 			end
