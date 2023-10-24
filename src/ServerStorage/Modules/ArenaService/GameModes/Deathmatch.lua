@@ -1,7 +1,7 @@
 local GameModeType = require(script.Parent.GameMode)
 local Deathmatch = {}
 
-local MATCHTIME = 30
+local MATCHTIME = 120
 
 function Deathmatch.new()
 	local interface = GameModeType.DefaultGameMode()

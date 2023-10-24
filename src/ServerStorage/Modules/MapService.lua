@@ -124,14 +124,14 @@ function MapService:GetBestSpawn()
 	local spawnFolder = map:FindFirstChild("Spawns") :: Folder
 	local spawns = spawnFolder:GetChildren()
 
-	local minSpawn
-	local minDistance = math.huge
+	local bestSpawn = spawns[1] :: BasePart
+	local bestDistance = 0
 
 	local combatPlayers = CombatService:GetAllCombatPlayers()
 
 	for i, spawn in ipairs(spawns) do
 		if spawn:IsA("BasePart") then
-			local spawnDistance = math.huge
+			local playerDistance = math.huge
 
 			for j, combatPlayer in ipairs(combatPlayers) do
 				if combatPlayer.isObject or combatPlayer:IsDead() then
@@ -139,17 +139,18 @@ function MapService:GetBestSpawn()
 				end
 
 				local diff = combatPlayer.character:GetPivot().Position - spawn.Position
-				spawnDistance = math.min(spawnDistance, diff.Magnitude)
+				print(i, diff, combatPlayer.character:GetFullName())
+				playerDistance = math.min(playerDistance, diff.Magnitude)
 			end
 
-			if spawnDistance < minDistance then
-				minSpawn = spawn
-				minDistance = spawnDistance
+			if playerDistance > bestDistance then
+				bestSpawn = spawn
+				bestDistance = playerDistance
 			end
 		end
 	end
 
-	return minSpawn.CFrame
+	return bestSpawn.CFrame
 end
 
 function MapService:UnloadCurrentMap()
