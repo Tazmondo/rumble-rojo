@@ -641,7 +641,7 @@ function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 		local data = DataService.ReadPrivateData(player):Await()
 		local dataPublic = DataService.WritePublicData(player):Await()
 		if not data or not dataPublic then
-			return nil :: boolean?, nil :: Model?
+			return nil :: Model?
 		end
 
 		local hero = data.SelectedHero
@@ -661,8 +661,7 @@ function CombatService:EnterPlayerCombat(player: Player, newCFrame: CFrame?)
 		dataPublic.InCombat = true
 		DataService.WaitForReplication():Await()
 
-		self:SpawnCharacter(player, newCFrame):Await()
-		return true
+		return self:SpawnCharacter(player, newCFrame):Await()
 	end)
 end
 
