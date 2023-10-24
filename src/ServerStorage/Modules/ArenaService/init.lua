@@ -26,6 +26,7 @@ local CONFIG = ServerConfig
 local playerQueueStatus: { [Player]: boolean } = {}
 
 local registeredPlayers: { [Player]: Types.PlayerBattleResults } = {} -- boolean before character select, playerstats afterwards
+local WriteGame = DataService.WriteGameData
 
 -- For Quests
 ArenaService.PlayerResultsSignal = Signal()
@@ -88,7 +89,7 @@ function ArenaService.GetRegisteredPlayersLength(): number
 		count += 1
 	end
 
-	DataService.WriteGameData().NumAlivePlayers = count
+	WriteGame().NumAlivePlayers = count
 	return count
 end
 
@@ -102,7 +103,7 @@ function ArenaService.GetQueuedPlayersLength(): number
 		end
 	end
 
-	DataService.WriteGameData().NumQueuedPlayers = count
+	WriteGame().NumQueuedPlayers = count
 	return count
 end
 
@@ -111,28 +112,28 @@ function ArenaService.StartIntermission()
 
 	-- The reason I don't use a variable is because WriteGameData only updates if you update the table in the same frame it was called
 	-- Using a variable implies it updates all the time, which could cause me to make an error in future
-	DataService.WriteGameData().Status = "NotEnoughPlayers"
-	DataService.WriteGameData().NumQueuedPlayers = 0
+	WriteGame().Status = "NotEnoughPlayers"
+	WriteGame().NumQueuedPlayers = 0
 
 	registeredPlayers = {}
 
-	DataService.WriteGameData().IntermissionTime = CONFIG.Intermission
+	WriteGame().IntermissionTime = CONFIG.Intermission
 
 	while ArenaService.GetQueuedPlayersLength() < CONFIG.MinPlayers do
 		task.wait()
 	end
 
 	-- INTERMISSION
-	DataService.WriteGameData().Status = "Intermission"
+	WriteGame().Status = "Intermission"
 
 	-- Since intermission can restart, we don't need to always reload the map.
 	if not MapService:IsLoaded() then
 		MapService:LoadNextMap()
 	end
 
-	while DataService.WriteGameData().IntermissionTime > 0 do
+	while WriteGame().IntermissionTime > 0 do
 		task.wait(1)
-		DataService.WriteGameData().IntermissionTime -= 1
+		WriteGame().IntermissionTime -= 1
 		if ArenaService.GetQueuedPlayersLength() < CONFIG.MinPlayers then
 			ArenaService.StartIntermission()
 			return
@@ -154,7 +155,7 @@ function ArenaService.StartIntermission()
 end
 
 function ArenaService.StartMatch()
-	DataService.WriteGameData().Status = "BattleStarting"
+	WriteGame().Status = "BattleStarting"
 
 	local spawnCount = 1
 	local spawns = MapService:GetMapSpawns()
@@ -208,7 +209,7 @@ function ArenaService.StartMatch()
 		end
 	end
 
-	DataService.WriteGameData().Status = "Battle"
+	WriteGame().Status = "Battle"
 	local RoundTime = 0
 	local winner = nil
 
@@ -233,13 +234,13 @@ function ArenaService.StartMatch()
 end
 
 function ArenaService.EndMatch(winner: Player?)
-	DataService.WriteGameData().Status = "BattleEnded"
+	WriteGame().Status = "BattleEnded"
 
 	if winner then
 		if registeredPlayers[winner] then
 			registeredPlayers[winner].Won = true
 		end
-		DataService.WriteGameData().WinnerName = winner.DisplayName
+		WriteGame().WinnerName = winner.DisplayName
 	end
 	-- Allow round ended text to appear for a bit
 	task.wait(2)
@@ -288,7 +289,7 @@ function HandleQueue(player, isJoining)
 end
 
 function ArenaService.Initialize()
-	DataService.WriteGameData().Status = "NotEnoughPlayers"
+	WriteGame().Status = "NotEnoughPlayers"
 
 	task.spawn(function()
 		ArenaService.StartIntermission()
