@@ -1,8 +1,9 @@
-local GameModeType = {}
+local GameMode = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local CombatService = require(ServerStorage.Modules.CombatService)
+local DataService = require(ServerStorage.Modules.DataService)
 local MapService = require(ServerStorage.Modules.MapService)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Future = require(ReplicatedStorage.Packages.Future)
@@ -23,12 +24,12 @@ export type GameModeInterface = {
 }
 
 -- Makes sure all functions are defined, so we don't try and call nil if a gamemode does not explicitly define a function
-function GameModeType.DefaultGameMode()
+function GameMode.DefaultGameMode()
 	local self = {} :: GameModeInterface
 
 	-- Use ... to allow type cast
 	self.Initialize = function(_, players: { Player })
-		return GameModeType.Initialize(self, players)
+		return GameMode.Initialize(self, players)
 	end
 
 	self.Tick = function(...) end
@@ -56,7 +57,7 @@ function GameModeType.DefaultGameMode()
 	return self
 end
 
-function GameModeType.Initialize(interface: GameModeInterface, players: { Player })
+function GameMode.Initialize(interface: GameModeInterface, players: { Player })
 	return Future.new(function()
 		local HRPs = {}
 		for i, player in ipairs(players) do
@@ -77,7 +78,7 @@ function GameModeType.Initialize(interface: GameModeInterface, players: { Player
 	end)
 end
 
-function GameModeType.EnterCombat(player)
+function GameMode.EnterCombat(player)
 	return Future.new(function()
 		-- Need to pcall since GetBestSpawn can error when there is no map.
 		local success, spawn: CFrame? = pcall(function()
@@ -93,7 +94,7 @@ function GameModeType.EnterCombat(player)
 	end)
 end
 
-function GameModeType.Respawn(player)
+function GameMode.Respawn(player)
 	return Future.new(function()
 		-- Wait a moment before respawning
 		task.wait(2)
@@ -112,4 +113,12 @@ function GameModeType.Respawn(player)
 	end)
 end
 
-return GameModeType
+function GameMode.Tick(interface: GameModeInterface)
+	if DataService.ReadGameData().ForceEndRound then
+		return true
+	end
+
+	return false
+end
+
+return GameMode

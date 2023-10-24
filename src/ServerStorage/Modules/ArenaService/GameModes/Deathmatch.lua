@@ -1,23 +1,23 @@
-local GameModeType = require(script.Parent.GameMode)
+local GameMode = require(script.Parent.GameMode)
 local Deathmatch = {}
 
 local MATCHTIME = 120
 
 function Deathmatch.new()
-	local interface = GameModeType.DefaultGameMode()
+	local interface = GameMode.DefaultGameMode()
 
 	local playerKills = {} :: { [Player]: { Kills: number, Deaths: number } }
 	local startTime
 
 	function interface:Initialize(players)
 		startTime = os.clock()
-		return GameModeType.Initialize(interface, players)
+		return GameMode.Initialize(interface, players)
 	end
 
 	function interface:AddPlayer(player)
 		playerKills[player] = { Kills = 0, Deaths = 0 }
 
-		return GameModeType.EnterCombat(player)
+		return GameMode.EnterCombat(player)
 	end
 
 	function interface:RemovePlayer(player)
@@ -44,8 +44,9 @@ function Deathmatch.new()
 	end
 
 	function interface:Tick()
-		if os.clock() - startTime >= MATCHTIME then
+		if GameMode.Tick(interface) or os.clock() - startTime >= MATCHTIME then
 			interface.Ended:Fire(interface:GetWinners())
+			return
 		end
 	end
 
@@ -53,7 +54,7 @@ function Deathmatch.new()
 		if playerKills[data.Victim] then
 			playerKills[data.Victim].Deaths += 1
 
-			GameModeType.Respawn(data.Victim)
+			GameMode.Respawn(data.Victim)
 		end
 
 		if data.Killer and playerKills[data.Killer] then
@@ -65,7 +66,7 @@ function Deathmatch.new()
 		return "Time Left: " .. math.round(os.clock() - startTime)
 	end
 
-	return interface :: GameModeType.GameModeInterface
+	return interface :: GameMode.GameModeInterface
 end
 
 return Deathmatch
