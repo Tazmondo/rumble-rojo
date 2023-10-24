@@ -1,10 +1,10 @@
 local Deathmatch = require(script.Deathmatch)
-local GameModeType = require(script.GameModeType)
+local GameMode = require(script.GameMode)
 
 type GameModeDefinition = {
-	new: () -> GameModeType.GameModeInterface,
+	new: () -> GameMode.GameModeInterface,
 }
 
 return {
 	Deathmatch = Deathmatch,
-} :: { [GameModeType.GameModeType]: GameModeDefinition }
+} :: { [GameMode.GameModeType]: GameModeDefinition }

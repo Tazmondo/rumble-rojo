@@ -699,9 +699,9 @@ function CombatService:HandlePlayerDeath(player: Player, data: Types.KillData?)
 		PlayerKilledEvent:FireAll(data)
 	end
 
-	task.delay(1, function()
-		CombatService:ExitPlayerCombat(player)
-	end)
+	-- task.delay(1, function()
+	-- 	CombatService:ExitPlayerCombat(player)
+	-- end)
 end
 
 function CombatService:SetupCombatPlayer(player: Player, details: PlayerCombatDetails)
@@ -729,7 +729,7 @@ end
 
 function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 	self = self :: CombatService
-	print("Spawning Character", player)
+	print("Spawning Character", player, debug.traceback())
 
 	return Future.new(function()
 		local details = PlayersInCombat[player]

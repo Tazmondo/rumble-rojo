@@ -5,12 +5,14 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
-local GameModeType = require(ServerStorage.Modules.ArenaService.GameModes.GameModeType)
+local GameMode = require(ServerStorage.Modules.ArenaService.GameModes.GameMode)
 local GameModes = require(script.Parent.GameModes)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
+local Future = require(ReplicatedStorage.Packages.Future)
 local CombatService = require(ServerStorage.Modules.CombatService)
 
 local FighterDiedEvent = require(ReplicatedStorage.Events.Arena.FighterDiedEvent):Server()
+local MatchResultsEvent = require(ReplicatedStorage.Events.Arena.MatchResultsEvent):Server()
 
 function _new()
 	local self = setmetatable({}, Arena)
@@ -18,7 +20,6 @@ function _new()
 	self.gameMode = GameModes["Deathmatch" :: "Deathmatch"].new()
 
 	self.players = {} :: { [Player]: boolean }
-	self.playerStats = {} :: { [Player]: Types.PlayerBattleResults }
 	self.playing = false
 
 	return self
@@ -36,18 +37,8 @@ function Arena.new()
 	end)
 
 	CombatService.KillSignal:Connect(function(data: Types.KillData)
-		-- If there was no killer, treat it as a suicide
-		local killer = data.Killer or data.Victim
-
-		local killerData = self.playerStats[killer]
-		local victimData = self.playerStats[data.Victim]
-
-		if killerData and killer ~= data.Victim then
-			killerData.Kills += 1
-		end
-		if victimData then
-			victimData.Died = true
-			FighterDiedEvent:Fire(data.Victim)
+		if self.playing then
+			self.gameMode:HandleKill(data)
 		end
 	end)
 
@@ -57,31 +48,47 @@ end
 -- Runs every frame, handles arena state
 function Arena.Tick(self: Arena, dt: number)
 	if self.playing then
-		self.gameMode.Tick(dt)
+		self.gameMode:Tick(dt)
 	end
 end
 
-function Arena.Start(self: Arena)
-	for player, _ in pairs(self.players) do
-		self.gameMode.AddPlayer(player)
-	end
-	self.playing = true
+function Arena.Start(self: Arena, players: { Player })
+	self.players = {}
+
+	return Future.new(function()
+		for i, player in ipairs(players) do
+			self.players[player] = true
+		end
+
+		self.gameMode:Initialize(players):Await()
+		self.playing = true
+	end)
 end
 
 function Arena.Stop(self: Arena)
-	local winner = self.gameMode.GetWinner()
 	self.playing = false
 
-	return winner
+	for player, value in pairs(self.players) do
+		if value then
+			CombatService:ExitPlayerCombat(player)
+		end
+	end
+
+	return
 end
 
 function Arena.AddPlayer(self: Arena, player: Player)
 	self.players[player] = true
-	self.gameMode.AddPlayer(player)
+	if self.playing then
+		self.gameMode:AddPlayer(player)
+	end
 end
 
 function Arena.RemovePlayer(self: Arena, player: Player)
 	self.players[player] = nil
+	if self.playing then
+		self.gameMode:RemovePlayer(player)
+	end
 end
 
 function Arena.GetNumPlayers(self: Arena)
@@ -95,10 +102,21 @@ function Arena.GetNumPlayers(self: Arena)
 	return count
 end
 
-function Arena.SetGamemode(self: Arena, gameMode: GameModeType.GameModeType)
+function Arena.SetGamemode(self: Arena, gameMode: GameMode.GameModeType)
 	assert(not self.playing, "Tried to set gamemode while arena still playing.")
 
 	self.gameMode = GameModes[gameMode].new()
+end
+
+function Arena.GameEndedFuture(self: Arena)
+	return Future.new(function()
+		if self.playing then
+			local winners = self.gameMode.Ended:Wait()
+			self:Stop()
+			return winners
+		end
+		return {}
+	end)
 end
 
 export type Arena = typeof(_new(...)) & typeof(Arena)
