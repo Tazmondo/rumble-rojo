@@ -245,8 +245,6 @@ function QuestService.HandleRefreshQuests(player: Player)
 
 	GenerateQuests(player)
 	data.QuestGivenTime = os.time()
-
-	DataService.UpdatePrivateData(player)
 end
 
 function ResetStreakQuests(player)
