@@ -22,6 +22,18 @@ local icons = {
 }
 CursorController.Icons = icons
 
+local centredIcons = {
+	[icons.lobby] = false,
+	[icons.hover] = false,
+	[icons.press] = false,
+	[icons.attack] = true,
+	[icons.attackActive] = true,
+	[icons.attackDisabled] = true,
+	[icons.super] = true,
+	[icons.superActive] = true,
+	[icons.superDisabled] = true,
+}
+
 local iconOverride: string?
 local hoverButton: ImageButton?
 local pressedButton: ImageButton?
@@ -67,6 +79,14 @@ function Render()
 
 		if not visible then
 			hoverButton = nil
+
+			local newGui = PlayerGui:GetGuiObjectsAtPosition(mousePosition.X, mousePosition.Y - 36)
+			if #newGui > 1 then
+				local topGui = newGui[2]
+				if topGui:IsA("ImageButton") or topGui:IsA("TextButton") then
+					hoverButton = topGui
+				end
+			end
 		end
 	end
 
@@ -83,6 +103,13 @@ function Render()
 
 	if newImage ~= CursorImage.Image then
 		CursorImage.Image = newImage
+
+		local centred = centredIcons[newImage]
+		if centred then
+			CursorImage.AnchorPoint = Vector2.new(0.5, 0.5)
+		else
+			CursorImage.AnchorPoint = Vector2.new(0, 0)
+		end
 	end
 end
 
@@ -117,7 +144,7 @@ end
 function Initialize()
 	CursorGui = PlayerGui:WaitForChild("Cursor")
 	CursorImage = CursorGui:FindFirstChild("Cursor") :: ImageLabel
-	CursorImage.Image = icons.lobby
+	CursorImage.Image = ""
 
 	UserInputService.MouseIconEnabled = false
 
