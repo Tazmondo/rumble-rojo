@@ -119,6 +119,39 @@ function MapService:GetMapSpawns()
 	end))
 end
 
+function MapService:GetBestSpawn()
+	assert(map, "Tried to get spawn without a map being loaded.")
+	local spawnFolder = map:FindFirstChild("Spawns") :: Folder
+	local spawns = spawnFolder:GetChildren()
+
+	local minSpawn
+	local minDistance
+
+	local combatPlayers = CombatService:GetAllCombatPlayers()
+
+	for i, spawn in ipairs(spawns) do
+		if spawn:IsA("BasePart") then
+			local spawnDistance = math.huge
+
+			for j, combatPlayer in ipairs(combatPlayers) do
+				if combatPlayer.isObject or combatPlayer:IsDead() then
+					continue
+				end
+
+				local diff = combatPlayer.character:GetPivot().Position - spawn.Position
+				spawnDistance = math.min(spawnDistance, diff.Magnitude)
+			end
+
+			if spawnDistance < minDistance then
+				minSpawn = spawn
+				minDistance = spawnDistance
+			end
+		end
+	end
+
+	return minSpawn.CFrame
+end
+
 function MapService:UnloadCurrentMap()
 	return Future.Try(function()
 		if not map then
