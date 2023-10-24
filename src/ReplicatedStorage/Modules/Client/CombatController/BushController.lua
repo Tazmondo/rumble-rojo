@@ -159,8 +159,12 @@ function Render(dt: number)
 			if not active then
 				continue
 			end
+
+			-- Player models might be a bit too tall, causing HRP to be above the top of the bush.
+			local tallBush = bush.Size * Vector3.new(1, 1.5, 1)
+
 			-- Make sure middle of HRP is inside the bush
-			if IsPointInVolume(HRP.Position, bush.CFrame, bush.Size) then
+			if IsPointInVolume(HRP.Position, bush.CFrame, tallBush) then
 				if
 					isPlayerCharacter
 					or not inCombat
