@@ -527,18 +527,21 @@ function InputEnded(self: InputController, input: InputObject, processed: boolea
 	if input ~= self.activeInput then
 		return
 	end
+	local usingSuper = self.superToggle or self.activeButton == self.superButton
+
 	self.activeInput = nil
+	self.superToggle = false
 
 	if self.activeButton then
 		local alpha = DragButton.GetDistanceAlpha(self.activeButton)
 
 		DragButton.Reset(self.activeButton)
 
+		self.activeButton = nil
+
 		-- If user releases in the deadzone then don't do anything.
 		if alpha == 0 then
 			if self.hasMoved then
-				self.superToggle = false
-				self.activeButton = nil
 				return
 			end
 		end
@@ -550,11 +553,9 @@ function InputEnded(self: InputController, input: InputObject, processed: boolea
 
 	self.attacking = true
 
-	Attack(self, if self.superToggle or self.activeButton == self.superButton then "Super" else "Attack")
+	Attack(self, if usingSuper then "Super" else "Attack"):Await()
 
 	self.attacking = false
-	self.superToggle = false
-	self.activeButton = nil
 end
 
 function Attack(self: InputController, type: "Attack" | "Super" | "Skill")
