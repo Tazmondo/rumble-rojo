@@ -63,6 +63,9 @@ type PlayerCombatDetails = {
 local CombatPlayerData: { [Model]: CombatPlayer.CombatPlayer } = {}
 local PlayersInCombat: { [Player]: PlayerCombatDetails } = {}
 
+-- Teams are just a number, so if there are two teams, players are either team 1 or team 2
+local playerTeams: { [Player]: number }? = nil
+
 local function replicateAttack(
 	player: Player,
 	origin: CFrame,
@@ -352,6 +355,18 @@ function processHit(
 	reflected: number?, -- Used for reflect skill
 	multiplier: number? -- Used for DPS effect on fields
 )
+	local victimPlayer = victimCombatPlayer.player
+
+	if playerTeams and player and victimPlayer then
+		-- Check both players are on a team
+		if playerTeams[player] and playerTeams[victimPlayer] then
+			-- If both players on same team then return
+			if playerTeams[player] == playerTeams[victimPlayer] then
+				return
+			end
+		end
+	end
+
 	if
 		localTargetPosition
 		and (target.Position - localTargetPosition).Magnitude > Config.MaximumPlayerPositionDifference
@@ -446,7 +461,6 @@ function processHit(
 
 	local died = victimCombatPlayer:GetState() == "Dead" and beforeState ~= afterState
 
-	local victimPlayer = Players:GetPlayerFromCharacter(victimCharacter)
 	if died then
 		if victimPlayer and died then
 			local data = {
@@ -804,6 +818,10 @@ function CombatService:ForceUpdateCombatPlayers()
 	for character, combatPlayer in pairs(CombatPlayerData) do
 		combatPlayer:Update()
 	end
+end
+
+function CombatService:UpdateTeams(newTeams: typeof(playerTeams))
+	playerTeams = newTeams
 end
 
 function CombatService:LoadPlayerGuis(player: Player)

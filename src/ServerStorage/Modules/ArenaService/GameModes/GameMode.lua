@@ -58,6 +58,7 @@ function GameMode.DefaultGameMode()
 end
 
 function GameMode.Initialize(interface: GameModeInterface, players: { Player })
+	CombatService:UpdateTeams()
 	return Future.new(function()
 		local HRPs = {}
 		for i, player in ipairs(players) do
