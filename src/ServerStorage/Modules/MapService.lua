@@ -125,7 +125,7 @@ function MapService:GetBestSpawn()
 	local spawns = spawnFolder:GetChildren()
 
 	local minSpawn
-	local minDistance
+	local minDistance = math.huge
 
 	local combatPlayers = CombatService:GetAllCombatPlayers()
 
