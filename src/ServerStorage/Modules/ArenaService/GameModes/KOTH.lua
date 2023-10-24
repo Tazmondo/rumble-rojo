@@ -31,17 +31,12 @@ function KOTH.new()
 
 	function interface:GetWinners()
 		local bestPlayer
-		local bestKills = -1
+		local bestTime = 0
 
 		for player, data in pairs(playerStats) do
-			if data.Kills == bestKills then
-				if data.Deaths < playerStats[player].Deaths then
-					bestPlayer = player
-					bestKills = data.Kills
-				end
-			elseif data.Kills > bestKills then
+			if data.MiddleTime > bestTime then
 				bestPlayer = player
-				bestKills = data.Kills
+				bestTime = data.MiddleTime
 			end
 		end
 
