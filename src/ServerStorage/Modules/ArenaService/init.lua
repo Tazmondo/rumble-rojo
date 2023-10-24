@@ -7,6 +7,7 @@ local ArenaService = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Arena = require(script.Arena)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local ServerConfig = require(ReplicatedStorage.Modules.Shared.ServerConfig)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
@@ -17,15 +18,17 @@ local ItemService = require(script.Parent.ItemService)
 local MapService = require(script.Parent.MapService)
 local StormService = require(script.Parent.StormService)
 
-local FighterDiedEvent = require(ReplicatedStorage.Events.Arena.FighterDiedEvent):Server()
 local MatchResultsEvent = require(ReplicatedStorage.Events.Arena.MatchResultsEvent):Server()
 local QueueEvent = require(ReplicatedStorage.Events.Arena.QueueEvent):Server()
 
 local CONFIG = ServerConfig
 
-local playerQueueStatus: { [Player]: boolean } = {}
+local playerQueueStatus: { [Player]: Arena.Arena? } = {}
 
 local registeredPlayers: { [Player]: Types.PlayerBattleResults } = {} -- boolean before character select, playerstats afterwards
+
+local arena = Arena.new()
+
 local WriteGame = DataService.WriteGameData
 
 -- For Quests
@@ -276,7 +279,7 @@ function HandleQueue(player, isJoining)
 	if isJoining and ArenaService.GetQueuedPlayersLength() >= CONFIG.MaxPlayers then
 		isJoining = false
 	end
-	playerQueueStatus[player] = isJoining
+	playerQueueStatus[player] = if isJoining then arena else nil
 
 	DataService.WritePublicData(player):After(function(data)
 		if data then
@@ -296,7 +299,7 @@ function ArenaService.Initialize()
 	end)
 
 	local function playerAdded(player: Player)
-		playerQueueStatus[player] = false
+		playerQueueStatus[player] = nil
 
 		-- Autoqueue player when they join
 		if CONFIG.QueueOnJoin and DataService.PlayerLoaded(player):Await() then
@@ -312,28 +315,6 @@ function ArenaService.Initialize()
 
 	Players.PlayerRemoving:Connect(function(player)
 		registeredPlayers[player] = nil
-	end)
-
-	CombatService.KillSignal:Connect(function(data: Types.KillData)
-		if ArenaService.GetRegisteredPlayersLength() < 2 then
-			-- Don't handle kills that are a result of ties.
-			return
-		end
-		-- If there was no killer, treat it as a suicide
-		local killer = data.Killer or data.Victim
-
-		print("Received kill signal: " .. killer.Name .. " -> " .. data.Victim.Name)
-		local killerData = registeredPlayers[killer]
-		local victimData = registeredPlayers[data.Victim]
-
-		if killerData and killer ~= data.Victim then
-			killerData.Kills += 1
-		end
-		if victimData then
-			victimData.Died = true
-			FighterDiedEvent:Fire(data.Victim)
-			ArenaService.HandleResults(data.Victim)
-		end
 	end)
 
 	QueueEvent:On(HandleQueue)
