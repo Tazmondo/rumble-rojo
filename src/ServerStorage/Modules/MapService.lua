@@ -169,6 +169,10 @@ function MapService:GetMap()
 	return map
 end
 
+function MapService:GetMapCentre()
+	return activeMapCFrame.Position
+end
+
 function MapService:Initialize()
 	-- MapService:LoadNextMap():Await()
 
