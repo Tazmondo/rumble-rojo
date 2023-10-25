@@ -7,6 +7,8 @@ validExts = ['lua']
 
 loc = 0
 fileCount = 0
+eventCount = 0
+commandCount = 0
 
 for filename in filenames:
     if filename.split(".")[-1] in validExts and not "Iris" in filename and not "ProfileService" in filename and not "Spring" in filename:
@@ -16,4 +18,10 @@ for filename in filenames:
             print(f'{filename} : {length}')
             fileCount += 1
 
-print(f"\nFile Count: {fileCount}\nLines of Code: {loc}")
+            if "Commands/" in filename:
+                commandCount += 1
+            
+            if "Events/" in filename:
+                eventCount += 1
+
+print(f"\nScript Count: {fileCount}\nEvents: {eventCount}\nCommands: {commandCount}\nModules: {fileCount - commandCount - eventCount}\nLines of Code: {loc}")
