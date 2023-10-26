@@ -14,19 +14,41 @@ function ModifierCollection.new(modifiers: { Types.Modifier })
 		table.insert(self.Modifiers, modifier.Name)
 	end
 
-	for key, value in pairs(Modifiers[""]) do
-		if typeof(value) == "function" then
-			self[key] = function(...)
-				local number = 1
-				for i, modifier: any in ipairs(modifiers) do
-					local result = modifier[key](...)
-					if typeof(result) == "number" then
-						number *= result
+	local function UpdateFunctions()
+		for key, value in pairs(Modifiers[""]) do
+			if typeof(value) == "function" then
+				self[key] = function(...)
+					local number = 1
+					for i, modifierName: any in ipairs(self.Modifiers) do
+						local modifier = Modifiers[modifierName] :: any
+
+						local result = modifier[key](...)
+						if typeof(result) == "number" then
+							number *= result
+						end
 					end
+					return number
 				end
-				return number
 			end
 		end
+	end
+	UpdateFunctions()
+
+	self.AddModifier = function(modifier: Types.Modifier)
+		table.insert(self.Modifiers, modifier.Name)
+
+		UpdateFunctions()
+	end
+
+	self.RemoveModifier = function(removeModifier: Types.Modifier)
+		for i, modifierName in ipairs(self.Modifiers) do
+			if modifierName == removeModifier.Name then
+				table.remove(self.Modifiers, i)
+				break
+			end
+		end
+
+		UpdateFunctions()
 	end
 
 	return self :: Types.ModifierCollection

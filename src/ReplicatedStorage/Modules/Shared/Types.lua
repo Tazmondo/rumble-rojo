@@ -61,6 +61,7 @@ export type Modifier = {
 
 type ModifierFunctions = {
 	Modify: (CombatPlayer) -> (), -- Called when initialized
+	UnModify: (CombatPlayer) -> (), -- Called when uninitialized
 	Damage: (CombatPlayer) -> number, -- Called when dealing damage
 	Defence: (CombatPlayer) -> number, -- Called when taking damage
 	OnHidden: (CombatPlayer, hidden: boolean) -> (), -- Called when entering/exiting bush
@@ -70,6 +71,8 @@ type ModifierFunctions = {
 
 export type ModifierCollection = {
 	Modifiers: { string },
+	AddModifier: (Modifier) -> (),
+	RemoveModifier: (Modifier) -> (),
 } & ModifierFunctions
 
 export type Skill = {
@@ -247,6 +250,7 @@ export type CombatPlayer = {
 	GetStatusEffect: (CombatPlayer, string) -> any?,
 	SetBush: (CombatPlayer, boolean) -> (),
 	SetAiming: (CombatPlayer, string?) -> (),
+	UpdateStatsFromBaseStats: (CombatPlayer) -> (),
 
 	Reload: (CombatPlayer) -> (),
 	ScheduleReload: (CombatPlayer) -> (),
@@ -257,7 +261,7 @@ export type CombatPlayer = {
 
 	Heal: (CombatPlayer, number) -> (),
 	SetHealth: (CombatPlayer, number) -> (),
-	SetMaxHealth: (CombatPlayer, number) -> (),
+	CalculateNewMaxHealth: (CombatPlayer) -> (),
 
 	GetNextAttackId: (CombatPlayer) -> number,
 	DealDamage: (CombatPlayer, number, victim: Model) -> (),
@@ -280,6 +284,8 @@ export type CombatPlayer = {
 	RegisterBullet: (CombatPlayer, number, CFrame, number, AbilityData, number?) -> (),
 
 	AddBooster: (CombatPlayer, number) -> (),
+	AddModifier: (CombatPlayer, string) -> (),
+	RemoveModifier: (CombatPlayer, string) -> (),
 	UpdateSpeed: (CombatPlayer) -> (),
 	Destroy: (CombatPlayer) -> (),
 }

@@ -45,6 +45,9 @@ local Config = {
 	-- Cooldown between skill use (seconds)
 	SkillCooldown = 5,
 
+	-- How long picked up boosts last
+	BoostLength = 20,
+
 	-- trophy values
 	TrophyWin = 10,
 	TrophyKill = 2,

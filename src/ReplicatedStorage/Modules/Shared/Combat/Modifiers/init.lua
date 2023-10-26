@@ -10,6 +10,7 @@ local Modifiers: {
 		UnlockedImage: string?,
 		LockedImage: string?,
 		Modify: ((Types.CombatPlayer) -> ())?,
+		UnModify: ((Types.CombatPlayer) -> ())?,
 		Damage: ((Types.CombatPlayer) -> number)?,
 		Defence: ((Types.CombatPlayer) -> number)?,
 		OnHit: ((self: Types.CombatPlayer, victim: Types.CombatPlayer, details: Types.AbilityData) -> ())?,
@@ -47,6 +48,9 @@ Modifiers.Fast = {
 	Modify = function(combatPlayer)
 		combatPlayer.baseSpeed *= 1.1
 	end,
+	UnModify = function(combatPlayer)
+		combatPlayer.baseSpeed /= 1.1
+	end,
 }
 
 Modifiers.Health = {
@@ -57,6 +61,9 @@ Modifiers.Health = {
 	LockedImage = "rbxassetid://14996725052",
 	Modify = function(combatPlayer)
 		combatPlayer.baseHealth *= 1.1
+	end,
+	UnModify = function(combatPlayer)
+		combatPlayer.baseHealth /= 1.1
 	end,
 }
 
@@ -99,6 +106,9 @@ Modifiers.Regen = {
 	Modify = function(self)
 		self.baseRegenRate *= 1.5
 	end,
+	UnModify = function(self)
+		self.baseRegenRate /= 1.5
+	end,
 }
 
 Modifiers.Fury = {
@@ -125,18 +135,8 @@ Modifiers.QuickReload = {
 	Modify = function(self)
 		self.baseAmmoRegen /= 1.15
 	end,
-}
-
-Modifiers.SuperCharge = {
-	Name = "Super Charge",
-	Description = "Charge your super 15% faster.",
-	Price = 500,
-	LockedImage = "rbxassetid://14996722575",
-	UnlockedImage = "rbxassetid://14996724478",
-	Modify = function(self)
-		-- Use math.floor here so that it always rounds down.
-		-- For characters like frankie who have a low super requirement
-		self.requiredSuperCharge = math.floor(self.requiredSuperCharge / 1.15)
+	UnModify = function(self)
+		self.baseAmmoRegen *= 1.15
 	end,
 }
 

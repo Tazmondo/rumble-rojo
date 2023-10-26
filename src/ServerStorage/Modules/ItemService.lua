@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LoadedService = require(script.Parent.LoadedService)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local SpawnItemEvent = require(ReplicatedStorage.Events.Item.SpawnItem):Server()
@@ -20,7 +21,22 @@ ItemService.CollectBoost = Signal()
 
 local spawnedItems: { [number]: Item } = {}
 
-type Item = { Position: Vector3, Id: number, Collector: Player? }
+type BoostItemData = {
+	Type: "Boost",
+}
+type ModifierItemData = {
+	Type: "Modifier",
+	Modifier: Types.Modifier,
+}
+
+type ItemMetaData = BoostItemData | ModifierItemData
+
+type Item = {
+	Position: Vector3,
+	Id: number,
+	Collector: Player?,
+	Data: ItemMetaData,
+}
 
 local arenaFolder = workspace:WaitForChild("Arena") :: Folder
 
@@ -58,7 +74,11 @@ function ItemService.ExplodeBoosters(position: Vector3, count: number)
 
 		id += 1
 		SpawnItemEvent:FireAll("Booster", id, position, newPosition)
-		spawnedItems[id] = { Position = newPosition, Id = id }
+		spawnedItems[id] = {
+			Position = newPosition,
+			Id = id,
+			Data = { Type = "Boost" },
+		}
 	end
 end
 
@@ -70,7 +90,7 @@ function ItemService.CleanUp()
 end
 
 function HandleBeginAbsorb(combatPlayers: CombatPlayers, player: Player, id: number)
-	local item = spawnedItems[id]
+	local item: Item = spawnedItems[id]
 
 	if not player.Character or not item then
 		return
@@ -118,7 +138,14 @@ function HandleItemPickup(combatPlayers: CombatPlayers, player: Player, id: numb
 		return
 	end
 
-	combatPlayer:AddBooster(1)
+	if item.Data.Type == "Boost" then
+		combatPlayer:AddBooster(1)
+	elseif item.Data.Type == "Modifier" then
+		combatPlayer:AddModifier(item.Data.Modifier.Name)
+	else
+		error("Invalid item type: ", item.Data.Type)
+	end
+
 	ItemService.CollectBoost:Fire(player)
 	-- don't need to tell players to destroy item as that's part of the CollectItem call in the absorb handler
 	spawnedItems[id] = nil

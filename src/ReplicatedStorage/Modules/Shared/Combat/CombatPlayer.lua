@@ -19,6 +19,7 @@ local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
+local Modifiers = require(script.Parent.Modifiers)
 local DefaultModifier = require(script.Parent.Modifiers.DefaultModifier) :: Types.Modifier
 
 local SyncEvent: any
@@ -90,6 +91,8 @@ function InitializeSelf(
 	self.heroData = TableUtil.Copy(heroData, true)
 	self.destroyed = false
 
+	self.boosterCount = 0
+
 	self.baseDamageMultiplier = 1
 	self.baseHealth = self.heroData.Health
 	self.baseSpeed = self.heroData.MovementSpeed
@@ -104,13 +107,10 @@ function InitializeSelf(
 
 	self.maxHealth = self.baseHealth
 	self.health = self.maxHealth
-	self.movementSpeed = self.baseSpeed
-	self.maxAmmo = self.heroData.Attack.Ammo
-	self.ammo = self.maxAmmo
-	self.ammoRegen = self.baseAmmoRegen - LATENCYALLOWANCE
-	self.reloadSpeed = self.heroData.Attack.ReloadSpeed - LATENCYALLOWANCE
+	self:UpdateStatsFromBaseStats()
+
 	self.superCharge = 0
-	self.boosterCount = 0
+	self.ammo = self.maxAmmo
 
 	self.statusEffects = {} :: { [string]: any }
 	self.inBush = false
@@ -185,6 +185,7 @@ end
 function CombatPlayer.newChest(health: number, model: Model): CombatPlayer
 	local heroData = HeroData.ChestData
 	local self = InitializeSelf(heroData, model, ModifierCollection.new({ DefaultModifier }), nil, true)
+	self.baseHealth = health
 	self.maxHealth = health
 	self.health = health
 
@@ -282,6 +283,15 @@ function CombatPlayer.Update(self: CombatPlayer)
 	end
 end
 
+function CombatPlayer.UpdateStatsFromBaseStats(self: CombatPlayer)
+	self.ammoRegen = self.baseAmmoRegen - LATENCYALLOWANCE
+	self.reloadSpeed = self.baseReloadSpeed - LATENCYALLOWANCE
+	self.maxAmmo = self.heroData.Attack.Ammo
+
+	self:UpdateSpeed()
+	self:CalculateNewMaxHealth()
+end
+
 function CombatPlayer.AsUpdateData(self: CombatPlayer): Types.UpdateData
 	return {
 		Health = self.health,
@@ -349,8 +359,7 @@ function CombatPlayer.SetStatusEffect(self: CombatPlayer, effect: string, value:
 	then
 		self:UpdateSpeed()
 	elseif effect == "Haste" then
-		self.ammoRegen = self.baseAmmoRegen - LATENCYALLOWANCE
-		self.reloadSpeed = self.baseReloadSpeed - LATENCYALLOWANCE
+		self:UpdateStatsFromBaseStats()
 	end
 	self:Update()
 end
@@ -639,23 +648,46 @@ function CombatPlayer.Kill(self: CombatPlayer)
 	self:Update()
 end
 
-function CombatPlayer.SetMaxHealth(self: CombatPlayer, newMaxHealth: number)
+function CombatPlayer.CalculateNewMaxHealth(self: CombatPlayer)
 	local previousHealthPercentage = self.health / self.maxHealth
 
+	local newMaxHealth = self.baseHealth * (1 + self.boosterCount * Config.BoosterHealth)
 	self.maxHealth = newMaxHealth
 	self.health = math.clamp(self.maxHealth * previousHealthPercentage, 0, newMaxHealth)
 
 	-- Don't need to regen as health percentage is preserved
 	-- self:ScheduleRegen(Config.InitialRegenTime)
 
-	self:Sync("SetMaxHealth", newMaxHealth)
 	self:Update()
 end
 
 function CombatPlayer.AddBooster(self: CombatPlayer, count: number)
 	self.boosterCount += count
+	self:CalculateNewMaxHealth()
 
-	self:SetMaxHealth(self.baseHealth * (1 + self.boosterCount * Config.BoosterHealth))
+	self:Sync("AddBooster", count)
+end
+
+function CombatPlayer.AddModifier(self: CombatPlayer, modifierName: string)
+	local modifier = Modifiers[modifierName]
+
+	self.modifiers.AddModifier(modifier)
+	modifier.Modify(self)
+
+	self:Sync("AddModifier", modifierName)
+
+	task.delay(Config.BoostLength, function()
+		if not self.destroyed then
+			self:RemoveModifier(modifier.Name)
+		end
+	end)
+end
+
+function CombatPlayer.RemoveModifier(self: CombatPlayer, modifierName: string)
+	local modifier = Modifiers[modifierName]
+
+	self.modifiers.RemoveModifier(modifier)
+	modifier.UnModify(self)
 end
 
 function CombatPlayer.Destroy(self: CombatPlayer)
