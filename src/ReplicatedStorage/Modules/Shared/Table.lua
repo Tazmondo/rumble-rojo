@@ -53,4 +53,14 @@ function Table.ReplaceTable(table, key, newTable)
 	table[key] = newTable
 end
 
+function Table.ArrayToMap(array)
+	local map = {}
+
+	for i, value in ipairs(array) do
+		map[value] = true
+	end
+
+	return map
+end
+
 return Table

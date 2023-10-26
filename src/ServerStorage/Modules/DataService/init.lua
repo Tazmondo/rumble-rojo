@@ -11,6 +11,7 @@ local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local Migration = require(script.Migration)
 local Data = require(ReplicatedStorage.Modules.Shared.Data)
 local HeroDetails = require(ReplicatedStorage.Modules.Shared.HeroDetails)
+local Table = require(ReplicatedStorage.Modules.Shared.Table)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local LoadedService = require(script.Parent.LoadedService)
@@ -77,37 +78,51 @@ function CorrectOwnedHero(heroData: HeroDetails.Hero, ownedHero: Data.OwnedHeroD
 		ownedHero.SelectedSkin = heroData.DefaultSkin
 	end
 
+	local validModifiers = Table.ArrayToMap(heroData.Modifiers)
+
 	local modifiers = ownedHero.SelectedModifiers
 	if #modifiers ~= 2 then
 		modifiers = { "", "" }
 	else
-		local mod1Found = false
-		local mod2Found = false
+		local mod1Found = validModifiers[modifiers[1]] ~= nil
+		local mod2Found = validModifiers[modifiers[2]] ~= nil
 
-		for i, modifier in ipairs(heroData.Modifiers) do
-			if modifier == modifiers[1] then
-				mod1Found = true
-			elseif modifier == modifiers[2] then
-				mod2Found = true
-			end
-			if mod1Found and mod2Found then
-				break
-			end
-		end
 		modifiers = {
 			if mod1Found then modifiers[1] else "",
 			if mod2Found then modifiers[2] else "",
 		}
 	end
 
+	for modifier, _ in pairs(ownedHero.Modifiers) do
+		if not validModifiers[modifier] then
+			ownedHero.Modifiers[modifier] = nil
+		end
+	end
+
+	local validTalents = Table.ArrayToMap(heroData.Talents)
+
 	local talent = ownedHero.SelectedTalent
-	if not table.find(heroData.Talents, talent) then
+	if not validTalents[talent] then
 		ownedHero.SelectedTalent = ""
 	end
 
+	for talent, _ in pairs(ownedHero.Talents) do
+		if not validTalents[talent] then
+			ownedHero.Talents[talent] = nil
+		end
+	end
+
+	local validSkills = Table.ArrayToMap(heroData.Skills)
+
 	local skill = ownedHero.SelectedSkill
-	if not table.find(heroData.Skills, skill) then
+	if not validSkills[skill] then
 		ownedHero.SelectedSkill = ""
+	end
+
+	for skill, _ in pairs(ownedHero.Skills) do
+		if not validSkills[skill] then
+			ownedHero.Skills[skill] = nil
+		end
 	end
 
 	debug.profileend()
