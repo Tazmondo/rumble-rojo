@@ -25,6 +25,7 @@ local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local DragButton = require(script.DragButton)
 local InputType = require(script.InputType)
+local SettingsController = require(script.Parent.SettingsController)
 local SoundController = require(script.Parent.SoundController)
 
 local SkillAbilityEvent = require(ReplicatedStorage.Events.Combat.SkillAbilityEvent):Client()
@@ -381,7 +382,10 @@ function ShouldManualAttack(self: InputController)
 		if self.activeButton then
 			return self.hasMoved and DragButton.GetDistanceAlpha(self.activeButton) > 0
 		else
-			return (os.clock() - self.inputTime) >= MANUALAIMDELAY
+			local settings = SettingsController.GetSettings()
+			local alwaysManual = not settings.AutoAim
+
+			return alwaysManual or (os.clock() - self.inputTime) >= MANUALAIMDELAY
 		end
 	end
 	return false

@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local DataController = require(script.Parent.DataController)
+local SettingsController = require(script.Parent.SettingsController)
 
 local SoundController = {}
 
@@ -20,7 +21,6 @@ playingFolder.Parent = localPlayer.PlayerScripts
 playingFolder.Name = "PlayingSounds"
 
 local ambience: Sound? = nil
-local muted: boolean = false
 
 local player = Players.LocalPlayer
 
@@ -123,7 +123,7 @@ end
 function SoundController:StateUpdated()
 	if
 		-- RunService:IsStudio() or
-		muted
+		SoundController:Muted()
 	then
 		SoundController:SetAmbience()
 		return
@@ -151,16 +151,12 @@ function SoundController:StateUpdated()
 end
 
 function SoundController:MuteMusic(shouldMute: boolean)
-	muted = shouldMute
-	if muted then
-		SoundController:SetAmbience()
-	else
-		SoundController:StateUpdated()
-	end
+	SettingsController.UpdateSetting("Mute", shouldMute)
+	SoundController:StateUpdated()
 end
 
 function SoundController:Muted()
-	return muted
+	return SettingsController.GetSettings().Mute
 end
 
 function SoundController:ButtonClick(unlock: boolean?)
