@@ -2,7 +2,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
-local DefaultModifier = require(script.DefaultModifier)
 
 local Modifiers: {
 	[string]: {
@@ -21,7 +20,22 @@ local Modifiers: {
 	{}
 
 -- Modifiers.Default = TableUtil.Copy(DefaultModifier, true) :: any
-Modifiers[""] = TableUtil.Copy(DefaultModifier, true) :: any
+Modifiers[""] = {
+	Name = "Default",
+	Description = "No modifier",
+	Price = 0,
+	Modify = function() end,
+	UnModify = function() end,
+	OnHit = function() end,
+	OnReceiveHit = function() end,
+	Damage = function()
+		return 1
+	end,
+	Defence = function()
+		return 1
+	end,
+	OnHidden = function() end,
+}
 
 --------- REGULAR MODIFIERS ------------
 Modifiers.Fast = {
@@ -413,7 +427,7 @@ for modifier, data in pairs(Modifiers :: any) do
 	end
 
 	-- Populate modifiers with default functions for any missing keys
-	for k, v in pairs(DefaultModifier) do
+	for k, v in pairs(Modifiers[""]) do
 		if typeof(v) == "function" and not data[k] then
 			data[k] = v
 		end

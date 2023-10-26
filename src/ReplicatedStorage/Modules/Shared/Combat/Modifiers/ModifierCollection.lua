@@ -2,8 +2,8 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Modifiers = require(script.Parent)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
-local DefaultModifier = require(script.Parent.DefaultModifier)
 
 local ModifierCollection = {}
 
@@ -14,7 +14,7 @@ function ModifierCollection.new(modifiers: { Types.Modifier })
 		table.insert(self.Modifiers, modifier.Name)
 	end
 
-	for key, value in pairs(DefaultModifier) do
+	for key, value in pairs(Modifiers[""]) do
 		if typeof(value) == "function" then
 			self[key] = function(...)
 				local number = 1
