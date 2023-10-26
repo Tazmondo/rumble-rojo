@@ -48,7 +48,9 @@ end
 -- Runs every frame, handles arena state
 function Arena.Tick(self: Arena, dt: number)
 	if self.playing then
+		debug.profilebegin("GameMode_Tick")
 		self.gameMode:Tick(dt)
+		debug.profileend()
 	end
 end
 
