@@ -419,9 +419,10 @@ function CombatPlayer.ScheduleReload(self: CombatPlayer)
 end
 
 function CombatPlayer.Regen(self: CombatPlayer)
-	if not self:CanRegen() then
+	if not self:CanRegen() or RunService:IsClient() then
 		return
 	end
+	self.scheduledRegen = {}
 
 	local regenAmount = self.maxHealth * Config.RegenAmount * self.baseRegenRate
 	self:Heal(regenAmount)
