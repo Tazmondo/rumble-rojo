@@ -34,7 +34,7 @@ local Config = {
 	SkillKey = Enum.KeyCode.Space,
 
 	-- How long before health regen begins after taking or dealing damage
-	InitialRegenTime = 5,
+	InitialRegenTime = 3,
 
 	-- How long between each heal once regeneration has begun
 	RegenCooldown = 1.5,
