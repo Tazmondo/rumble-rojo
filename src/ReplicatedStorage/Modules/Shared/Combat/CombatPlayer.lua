@@ -380,6 +380,10 @@ end
 
 -- aim is an attacktype enum
 function CombatPlayer.SetAiming(self: CombatPlayer, aim: string?)
+	if self.aiming == aim then
+		return
+	end
+
 	self.aiming = aim
 	self:Update()
 	if RunService:IsClient() then
