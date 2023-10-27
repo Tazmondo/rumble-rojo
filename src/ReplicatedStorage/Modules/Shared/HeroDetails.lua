@@ -1,6 +1,8 @@
 --!strict
 --!nolint LocalShadow
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
+local Skills = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers.Skills)
 local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 -- Defines hero prices and skin prices
 
@@ -59,7 +61,6 @@ local DefaultModifiers = {
 	"Regen",
 	"Fury",
 	"QuickReload",
-	"SuperCharge",
 	"Bulwark",
 	"Rat",
 	"TrueSight",
@@ -452,6 +453,18 @@ function ValidateData()
 		end
 
 		assert(heroData.Skins[heroData.DefaultSkin].Price == 0, "Default hero skin is not free!")
+
+		for i, modifier in ipairs(heroData.Modifiers) do
+			assert(Modifiers[modifier], `Modifier: {modifier} did not exist`)
+		end
+
+		for i, talent in ipairs(heroData.Talents) do
+			assert(Modifiers[talent], `Talent: {talent} did not exist`)
+		end
+
+		for i, skill in ipairs(heroData.Skills) do
+			assert(Skills[skill], `Skill: {skill} did not exist`)
+		end
 	end
 end
 
