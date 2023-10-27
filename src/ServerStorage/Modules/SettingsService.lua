@@ -11,7 +11,7 @@ function HandleUpdateSettings(player: Player, key: string, value: any)
 	end
 
 	local userSettings = data.Settings
-	if not userSettings[key] then
+	if userSettings[key] == nil then
 		warn("Tried to update non-existing setting", key, value)
 		return
 	end
