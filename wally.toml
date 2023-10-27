@@ -10,6 +10,7 @@ Loader = "sleitnick/loader@^2.0.0"
 TableUtil = "sleitnick/table-util@^1.2.0"
 RaycastHitbox = "ulferno/raycasthitbox@^4.0.1"
 Cmdr = "evaera/cmdr@^1.12.0"
+Iris = "michael-48/iris@^2.1.4"
 
 Red = "red-blox/red@2.1.0"
 Future = "red-blox/future@1.0.1"

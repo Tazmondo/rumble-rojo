@@ -4,9 +4,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatPlayerController = require(ReplicatedStorage.Modules.Client.CombatController.CombatPlayerController)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
+local Iris = require(ReplicatedStorage.Packages.Iris)
 local DataController = require(script.Parent.DataController)
 local InputController = require(script.Parent.InputController)
-local Iris = require(ReplicatedStorage.Modules.Shared.Iris)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 
 local player = Players.LocalPlayer
@@ -33,11 +33,11 @@ function DebugUIController.Initialize()
     
     Spawn(function()
         DataController.HasLoadedData():Await()
-        Iris.Init()
+        Iris.Init();
 
         -- Iris:Connect(Iris.ShowDemoWindow)
         
-        Iris:Connect(function()
+        (Iris :: any):Connect(function()
             debug.profilebegin("DebugUI_Render")
 
             local unCollapsed = Iris.State(false)
