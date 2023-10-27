@@ -20,7 +20,6 @@ local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
 local HeroData = require(script.Parent.HeroData)
 local Config = require(script.Parent.Config)
 local Modifiers = require(script.Parent.Modifiers)
-local DefaultModifier = require(script.Parent.Modifiers.DefaultModifier) :: Types.Modifier
 
 local SyncEvent: any
 local UpdateEvent: any
@@ -184,7 +183,7 @@ end
 
 function CombatPlayer.newChest(health: number, model: Model): CombatPlayer
 	local heroData = HeroData.ChestData
-	local self = InitializeSelf(heroData, model, ModifierCollection.new({ DefaultModifier }), nil, true)
+	local self = InitializeSelf(heroData, model, ModifierCollection.new({ Modifiers[""] }), nil, true)
 	self.baseHealth = health
 	self.maxHealth = health
 	self.health = health
