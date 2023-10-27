@@ -11,10 +11,20 @@ for i, moduleScript in ipairs(scripts) do
 		continue
 	end
 	local yielded = true
+	local success
+	local message
+
 	Spawn(function()
-		require(moduleScript)
+		success, message = pcall(function()
+			require(moduleScript)
+		end)
+
 		yielded = false
 	end)
+
+	if success == false then
+		error(message)
+	end
 
 	if yielded then
 		warn("Yielded while requiring" .. moduleScript:GetFullName())
