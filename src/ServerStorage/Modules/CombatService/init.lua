@@ -751,6 +751,16 @@ function CombatService:SpawnCharacter(player: Player, spawnCFrame: CFrame?)
 			then HeroDetails.GetModelFromName(details.HeroName, details.SkinName):Clone()
 			else nil
 
+		local oldCharacter = player.Character
+		if oldCharacter then
+			local oldCombatPlayer = CombatPlayerData[oldCharacter]
+			if oldCombatPlayer then
+				print("destroying old combatplayer")
+				oldCombatPlayer:Destroy()
+				CombatPlayerData[oldCharacter] = nil
+			end
+		end
+
 		print(player, "Loading character...")
 		local character = LoadCharacterService.SpawnCharacter(player, spawnCFrame, heroModel):Await()
 		print(player, "Character loaded")

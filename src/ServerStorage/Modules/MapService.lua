@@ -2,7 +2,6 @@
 --!strict
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CombatService = require(script.Parent.CombatService)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local ServerConfig = require(ReplicatedStorage.Modules.Shared.ServerConfig)
 local Future = require(ReplicatedStorage.Packages.Future)
@@ -67,19 +66,22 @@ function MoveMapDown()
 	end)
 end
 
-function RegisterChests()
+function MapService:GetChests()
 	if not MapService:IsLoaded() then
 		warn("Tried to register chests without a map")
-		return
+		return nil :: { Model }?
 	end
+	assert(map)
 
 	local chests = CollectionService:GetTagged(Config.ChestTag)
-	assert(map)
+	local out = {}
 	for i, chest: Model in ipairs(chests) do
 		if chest:IsDescendantOf(map) then
-			CombatService.RegisterChest(chest)
+			table.insert(out, chest)
 		end
 	end
+
+	return out
 end
 
 function LoadMap(storedMap: Model)
@@ -88,7 +90,6 @@ function LoadMap(storedMap: Model)
 	map:PivotTo(inactiveMapCFrame)
 
 	map.Parent = activeMapFolder
-	RegisterChests()
 end
 
 function UnloadMap()
@@ -117,40 +118,6 @@ function MapService:GetMapSpawns()
 		local spawn = spawn :: BasePart
 		return spawn.CFrame
 	end))
-end
-
-function MapService:GetBestSpawn()
-	assert(map, "Tried to get spawn without a map being loaded.")
-	local spawnFolder = map:FindFirstChild("Spawns") :: Folder
-	local spawns = spawnFolder:GetChildren()
-
-	local bestSpawn = spawns[1] :: BasePart
-	local bestDistance = 0
-
-	local combatPlayers = CombatService:GetAllCombatPlayers()
-
-	for i, spawn in ipairs(spawns) do
-		if spawn:IsA("BasePart") then
-			local playerDistance = math.huge
-
-			for j, combatPlayer in ipairs(combatPlayers) do
-				if combatPlayer.isObject or combatPlayer:IsDead() then
-					continue
-				end
-
-				local diff = combatPlayer.character:GetPivot().Position - spawn.Position
-				print(i, diff, combatPlayer.character:GetFullName())
-				playerDistance = math.min(playerDistance, diff.Magnitude)
-			end
-
-			if playerDistance > bestDistance then
-				bestSpawn = spawn
-				bestDistance = playerDistance
-			end
-		end
-	end
-
-	return bestSpawn.CFrame
 end
 
 function MapService:UnloadCurrentMap()

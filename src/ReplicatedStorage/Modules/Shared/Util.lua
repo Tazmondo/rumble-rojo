@@ -1,3 +1,4 @@
+local RunService = game:GetService("RunService")
 local Util = {}
 
 local lobbyFolder = workspace:FindFirstChild("Lobby")
@@ -7,7 +8,11 @@ function GetArenaCastParams()
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterType = Enum.RaycastFilterType.Include
 
-	raycastParams.FilterDescendantsInstances = { arenaFolder, lobbyFolder } -- Include the lobby for testing purposes
+	if RunService:IsStudio() then
+		raycastParams.FilterDescendantsInstances = { arenaFolder, lobbyFolder } -- Include the lobby for testing purposes
+	else
+		raycastParams.FilterDescendantsInstances = { arenaFolder }
+	end
 
 	return raycastParams
 end

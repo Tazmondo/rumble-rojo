@@ -2,15 +2,14 @@ local GameMode = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
+local Modifiers = require(ReplicatedStorage.Modules.Shared.Combat.Modifiers)
 local CombatService = require(ServerStorage.Modules.CombatService)
 local DataService = require(ServerStorage.Modules.DataService)
+local ItemService = require(ServerStorage.Modules.ItemService)
 local MapService = require(ServerStorage.Modules.MapService)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
-local Util = require(ReplicatedStorage.Modules.Shared.Util)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Signal = require(ReplicatedStorage.Packages.Signal)
-
-local random = Random.new()
 
 export type GameModeType = "Deathmatch" | "Gem Grab"
 export type GameModeInterface = {
@@ -86,7 +85,7 @@ function GameMode.EnterCombat(player)
 	return Future.new(function()
 		-- Need to pcall since GetBestSpawn can error when there is no map.
 		local success, spawn: CFrame? = pcall(function()
-			return MapService:GetBestSpawn()
+			return GetBestSpawn()
 		end)
 
 		if not success then
@@ -98,6 +97,36 @@ function GameMode.EnterCombat(player)
 	end)
 end
 
+function GetBestSpawn()
+	local spawns = MapService:GetMapSpawns()
+
+	local bestSpawn = spawns[1]
+	local bestDistance = 0
+
+	local combatPlayers = CombatService:GetAllCombatPlayers()
+
+	for i, spawn in ipairs(spawns) do
+		local playerDistance = math.huge
+
+		for j, combatPlayer in ipairs(combatPlayers) do
+			if combatPlayer.isObject or combatPlayer:IsDead() then
+				continue
+			end
+
+			local diff = combatPlayer.character:GetPivot().Position - spawn.Position
+			print(i, diff, combatPlayer.character:GetFullName())
+			playerDistance = math.min(playerDistance, diff.Magnitude)
+		end
+
+		if playerDistance > bestDistance then
+			bestSpawn = spawn
+			bestDistance = playerDistance
+		end
+	end
+
+	return bestSpawn
+end
+
 function GameMode.Respawn(player: Player, spawnItem: boolean?)
 	return Future.new(function()
 		-- Wait a moment before respawning
@@ -105,7 +134,7 @@ function GameMode.Respawn(player: Player, spawnItem: boolean?)
 
 		-- Need to pcall since GetBestSpawn can error when there is no map.
 		local success, spawn: CFrame? = pcall(function()
-			return MapService:GetBestSpawn()
+			return GetBestSpawn()
 		end)
 
 		if not success then
@@ -117,13 +146,9 @@ function GameMode.Respawn(player: Player, spawnItem: boolean?)
 
 		local HRP = char.PrimaryPart :: BasePart
 
-		local randomX = random:NextNumber(5, 15)
-		local randomZ = random:NextNumber(5, 15)
+		ItemService.SpawnModifier(HRP.Position, Modifiers["Fast"], 12.5, 20)
 
-		local boostFloat = HRP.Position + Vector3.new(randomX, 0, randomZ)
-		local boostPosition = Util.GetFloor(boostFloat) or boostFloat
-
-		-- TODO: finish me
+		return char
 	end)
 end
 

@@ -4,10 +4,12 @@ local ItemService = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LoadedService = require(script.Parent.LoadedService)
+local MapService = require(script.Parent.MapService)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
 local Item = require(ReplicatedStorage.Modules.Shared.Item)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
+local Util = require(ReplicatedStorage.Modules.Shared.Util)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local SpawnItemEvent = require(ReplicatedStorage.Events.Item.SpawnItem):Server()
@@ -32,7 +34,38 @@ local minDistance = 3
 
 type CombatPlayers = { [Model]: CombatPlayer.CombatPlayer }
 
-function ItemService.SpawnModifier(position: Vector3, modifier: Types.Modifier)
+function ItemService.SpawnModifier(position: Vector3, modifier: Types.Modifier, minRadius: number?, maxRadius: number?)
+	local finalPosition
+	if minRadius and maxRadius then
+		local retries = 20
+		local castHeight = Config.Map.MaxHeight * Config.Map.BlockSize
+		local mapOrigin = MapService:GetMapCentre()
+
+		while not finalPosition and retries > 0 do
+			retries -= 1
+			local randomDistance = random:NextNumber(minRadius, maxRadius)
+			local randomAngle = random:NextNumber(math.rad(-180), math.rad(180))
+
+			local boostOffset = CFrame.Angles(0, randomAngle, 0) * Vector3.new(0, castHeight, -randomDistance)
+			local boostPosition = position + boostOffset
+
+			local boostFloorPosition = Util.GetFloor(boostPosition)
+			if boostFloorPosition and math.abs(boostFloorPosition.Y - mapOrigin.Y) < Config.Map.BlockSize / 2 then
+				-- Floor is in-line with the map origin
+
+				-- Position floating above ground
+				finalPosition = boostFloorPosition + Vector3.new(0, 5, 0)
+			end
+		end
+
+		if not finalPosition then
+			warn("Could not find valid boost spawn position")
+			return
+		end
+	else
+		finalPosition = position
+	end
+
 	id += 1
 
 	local data: Item.ModifierItemData = {
@@ -41,11 +74,11 @@ function ItemService.SpawnModifier(position: Vector3, modifier: Types.Modifier)
 	}
 
 	spawnedItems[id] = {
-		Position = position,
+		Position = finalPosition,
 		Id = id,
 		Data = data,
 	}
-	SpawnItemEvent:FireAll(data, id, position)
+	SpawnItemEvent:FireAll(data, id, finalPosition)
 end
 
 function ItemService.ExplodeBoosters(position: Vector3, count: number)

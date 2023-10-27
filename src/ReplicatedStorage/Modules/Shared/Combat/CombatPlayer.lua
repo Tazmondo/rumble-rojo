@@ -84,32 +84,13 @@ function InitializeSelf(
 	object: boolean?,
 	skill: Types.Skill?
 )
-	local self = {} :: Types.CombatPlayer
+	local self = (setmetatable({}, CombatPlayer) :: any) :: CombatPlayer
 
 	-- We make a copy so that modifiers are able to change the attack details
 	self.heroData = TableUtil.Copy(heroData, true)
 	self.destroyed = false
 
 	self.boosterCount = 0
-
-	self.baseDamageMultiplier = 1
-	self.baseHealth = self.heroData.Health
-	self.baseSpeed = self.heroData.MovementSpeed
-	self.baseRegenRate = 1
-	self.baseAmmoRegen = self.heroData.Attack.AmmoRegen
-	self.baseReloadSpeed = self.heroData.Attack.ReloadSpeed
-	self.requiredSuperCharge = self.heroData.Super.Charge
-	self.skillUses = 3
-
-	modifiers.Modify(self)
-	self.modifiers = modifiers
-
-	self.maxHealth = self.baseHealth
-	self.health = self.maxHealth
-	self:UpdateStatsFromBaseStats()
-
-	self.superCharge = 0
-	self.ammo = self.maxAmmo
 
 	self.statusEffects = {} :: { [string]: any }
 	self.inBush = false
@@ -120,18 +101,6 @@ function InitializeSelf(
 	self.humanoid = model:FindFirstChildOfClass("Humanoid") :: Humanoid?
 	self.HRP = model:FindFirstChild("HumanoidRootPart") :: BasePart?
 	self.isObject = if object then true else false
-
-	if self.humanoid then
-		self.humanoidData =
-			{ self.humanoid.MaxHealth, self.humanoid.WalkSpeed, self.humanoid.DisplayDistanceType } :: { any }
-
-		self.humanoid.MaxHealth = self.maxHealth
-		self.humanoid.Health = self.health
-		self.humanoid.WalkSpeed = self.movementSpeed
-		self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-		self.humanoid.JumpPower = 0
-		self.humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-	end
 
 	self.state = "Idle"
 	self.lastAttackTime = 0 -- os.clock based
@@ -154,7 +123,40 @@ function InitializeSelf(
 	self.scheduledReloads = 0
 	self.scheduledRegen = nil :: {}?
 
-	return (setmetatable(self, CombatPlayer) :: any) :: CombatPlayer
+	self.baseDamageMultiplier = 1
+	self.baseHealth = self.heroData.Health
+	self.baseSpeed = self.heroData.MovementSpeed
+	self.baseRegenRate = 1
+	self.baseAmmoRegen = self.heroData.Attack.AmmoRegen
+	self.baseReloadSpeed = self.heroData.Attack.ReloadSpeed
+	self.requiredSuperCharge = self.heroData.Super.Charge
+	self.skillUses = 3
+	self.ammoRegen = self.baseAmmoRegen - LATENCYALLOWANCE
+	self.reloadSpeed = self.baseReloadSpeed - LATENCYALLOWANCE
+	self.maxAmmo = self.heroData.Attack.Ammo
+	self.superCharge = 0
+	self.ammo = self.maxAmmo
+
+	modifiers.Modify(self)
+	self.modifiers = modifiers
+
+	self.maxHealth = self.baseHealth
+	self.health = self.maxHealth
+	self:UpdateStatsFromBaseStats()
+
+	if self.humanoid then
+		self.humanoidData =
+			{ self.humanoid.MaxHealth, self.humanoid.WalkSpeed, self.humanoid.DisplayDistanceType } :: { any }
+
+		self.humanoid.MaxHealth = self.maxHealth
+		self.humanoid.Health = self.health
+		self.humanoid.WalkSpeed = self.movementSpeed
+		self.humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+		self.humanoid.JumpPower = 0
+		self.humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	end
+
+	return self :: CombatPlayer
 end
 
 -- Player is optional as NPCs can be combatplayers

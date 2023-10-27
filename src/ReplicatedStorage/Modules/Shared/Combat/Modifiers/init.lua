@@ -22,7 +22,7 @@ local Modifiers: {
 
 -- Modifiers.Default = TableUtil.Copy(DefaultModifier, true) :: any
 Modifiers[""] = {
-	Name = "Default",
+	Name = "",
 	Description = "No modifier",
 	Price = 0,
 	Modify = function() end,

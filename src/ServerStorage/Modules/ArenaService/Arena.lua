@@ -10,6 +10,7 @@ local GameModes = require(script.Parent.GameModes)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Future = require(ReplicatedStorage.Packages.Future)
 local CombatService = require(ServerStorage.Modules.CombatService)
+local MapService = require(ServerStorage.Modules.MapService)
 
 local FighterDiedEvent = require(ReplicatedStorage.Events.Arena.FighterDiedEvent):Server()
 local MatchResultsEvent = require(ReplicatedStorage.Events.Arena.MatchResultsEvent):Server()
@@ -56,6 +57,12 @@ end
 
 function Arena.Start(self: Arena, players: { Player })
 	self.players = {}
+	local chests = MapService:GetChests()
+	if chests then
+		for i, chest in ipairs(chests) do
+			CombatService.RegisterChest(chest)
+		end
+	end
 
 	return Future.new(function()
 		for i, player in ipairs(players) do
