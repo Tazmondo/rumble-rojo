@@ -678,6 +678,7 @@ function CombatPlayer.AddModifier(self: CombatPlayer, modifierName: string)
 
 	self.modifiers.AddModifier(modifier)
 	modifier.Modify(self)
+	self:UpdateStatsFromBaseStats()
 
 	self:Sync("AddModifier", modifierName)
 
@@ -691,8 +692,11 @@ end
 function CombatPlayer.RemoveModifier(self: CombatPlayer, modifierName: string)
 	local modifier = Modifiers[modifierName]
 
-	self.modifiers.RemoveModifier(modifier)
-	modifier.UnModify(self)
+	local found = self.modifiers.RemoveModifier(modifier)
+	if found then
+		modifier.UnModify(self)
+		self:UpdateStatsFromBaseStats()
+	end
 end
 
 function CombatPlayer.Destroy(self: CombatPlayer)

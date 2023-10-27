@@ -46,7 +46,7 @@ local Config = {
 	SkillCooldown = 5,
 
 	-- How long picked up boosts last
-	BoostLength = 20,
+	BoostLength = 30,
 
 	-- trophy values
 	TrophyWin = 10,

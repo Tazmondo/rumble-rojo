@@ -41,14 +41,18 @@ function ModifierCollection.new(modifiers: { Types.Modifier })
 	end
 
 	self.RemoveModifier = function(removeModifier: Types.Modifier)
+		local found = false
 		for i, modifierName in ipairs(self.Modifiers) do
 			if modifierName == removeModifier.Name then
 				table.remove(self.Modifiers, i)
+				found = true
 				break
 			end
 		end
 
 		UpdateFunctions()
+
+		return found
 	end
 
 	return self :: Types.ModifierCollection

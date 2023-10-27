@@ -72,7 +72,7 @@ type ModifierFunctions = {
 export type ModifierCollection = {
 	Modifiers: { string },
 	AddModifier: (Modifier) -> (),
-	RemoveModifier: (Modifier) -> (),
+	RemoveModifier: (Modifier) -> boolean,
 } & ModifierFunctions
 
 export type Skill = {
