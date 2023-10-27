@@ -7,16 +7,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local Item = require(ReplicatedStorage.Modules.Shared.Item)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Spawn = require(ReplicatedStorage.Packages.Spawn)
 local RenderFunctions = require(script.Parent.RenderFunctions)
 local SoundController = require(script.Parent.SoundController)
 
 local SpawnItemEvent = require(ReplicatedStorage.Events.Item.SpawnItem):Client()
+local ExplodeItemEvent = require(ReplicatedStorage.Events.Item.ExplodeItem):Client()
 local RegisterItemEvent = require(ReplicatedStorage.Events.Item.RegisterItem):Client()
 local DestroyItemEvent = require(ReplicatedStorage.Events.Item.DestroyItem):Client()
 local ItemCollectedEvent = require(ReplicatedStorage.Events.Item.ItemCollected):Client()
-
 local CollectItemEvent = require(ReplicatedStorage.Events.Item.CollectItem):Client()
 local BeginAbsorbEvent = require(ReplicatedStorage.Events.Item.BeginAbsorb):Client()
 
@@ -28,50 +29,74 @@ local inCombat = false
 local itemFolder = Instance.new("Folder", workspace)
 itemFolder.Name = "Items"
 
-local spawnedItems: { [number]: Item } = {}
-type Item = {
+local spawnedItems: { [number]: RenderedItem } = {}
+type RenderedItem = {
 	Position: Vector3,
 	Id: number,
 	Item: Model,
 	Enabled: boolean,
+	Data: Item.ItemMetaData,
 	SpawnRender: RBXScriptConnection?,
 }
 
 -- time taken for spawned items to jump from origin to new position
-local spawnTime = 1.5
-local itemHeight = 2.5
+local itemExplodeTime = 1.5
+local itemArcHeight = 2.5
+
+-- time taken for spawned items to appear when appearing from nothing
+local itemAppearTime = 0.5
 
 local absorptionTime = 0.25
 
-function SpawnItem(type: string, id: number, origin: Vector3, position: Vector3)
-	print("Spawning item")
+function PlaySpawnAnimation(itemTable: RenderedItem, length: number, animate)
+	local render = RunService.PreRender:Connect(animate)
+	itemTable.SpawnRender = render
 
-	local startCF = CFrame.new(origin)
-	local endCF = CFrame.new(position)
-
-	local item = RegisterItem(type, id, position)
-	local model = item.Item
-
-	local timeTaken = 0
-	local render = RunService.PreRender:Connect(function(dt)
-		timeTaken += dt
-		local rotation = model:GetPivot().Rotation
-
-		local alpha = timeTaken / spawnTime
-
-		model:PivotTo(RenderFunctions.RenderArc(startCF, endCF, itemHeight, alpha, true) * rotation)
-	end)
-	item.SpawnRender = render
-
-	task.delay(spawnTime, function()
+	task.delay(length, function()
 		if render.Connected then
 			render:Disconnect()
 		end
-		item.SpawnRender = nil
+		itemTable.SpawnRender = nil
 	end)
 end
 
-function RegisterItem(type: string, id: number, position: Vector3, disabled: boolean?)
+function ExplodeItem(data: Item.ItemMetaData, id: number, origin: Vector3, position: Vector3)
+	local startCF = CFrame.new(origin)
+	local endCF = CFrame.new(position)
+
+	local item = RegisterItem(data, id, position)
+	local model = item.Item
+
+	local timeTaken = 0
+	local function animateFunction(dt)
+		timeTaken += dt
+		local rotation = model:GetPivot().Rotation
+
+		local alpha = math.clamp(timeTaken / itemExplodeTime, 0, 1)
+
+		model:PivotTo(RenderFunctions.RenderArc(startCF, endCF, itemArcHeight, alpha, true) * rotation)
+	end
+
+	PlaySpawnAnimation(item, itemExplodeTime, animateFunction)
+end
+
+function SpawnItem(data: Item.ItemMetaData, id: number, origin: Vector3)
+	local item = RegisterItem(data, id, origin)
+	local model = item.Item
+
+	local timeTaken = 0
+	local function animateFunction(dt)
+		timeTaken += dt
+
+		local alpha = math.clamp(timeTaken / itemAppearTime, 0, 1)
+
+		model:ScaleTo(alpha)
+	end
+
+	PlaySpawnAnimation(item, itemAppearTime, animateFunction)
+end
+
+function RegisterItem(data: Item.ItemMetaData, id: number, position: Vector3, disabled: boolean?)
 	print("Registering item", id)
 	if spawnedItems[id] then
 		print("destroying old item with id", id)
@@ -88,6 +113,7 @@ function RegisterItem(type: string, id: number, position: Vector3, disabled: boo
 		Item = item,
 		Id = id,
 		Enabled = not disabled,
+		Data = data,
 	}
 	return spawnedItems[id]
 end
@@ -123,7 +149,7 @@ function RenderAbsorption(model: Model, targetPart: BasePart)
 	end)
 end
 
-function AbsorbItem(item: Item, part: BasePart)
+function AbsorbItem(item: RenderedItem, part: BasePart)
 	item.Enabled = false
 
 	local model = item.Item
@@ -195,6 +221,7 @@ function ItemController.Initialize()
 
 	RegisterItemEvent:On(RegisterItem)
 	DestroyItemEvent:On(DestroyItem)
+	ExplodeItemEvent:On(ExplodeItem)
 	SpawnItemEvent:On(SpawnItem)
 	ItemCollectedEvent:On(HandleItemPickup)
 end

@@ -6,10 +6,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LoadedService = require(script.Parent.LoadedService)
 local CombatPlayer = require(ReplicatedStorage.Modules.Shared.Combat.CombatPlayer)
 local Config = require(ReplicatedStorage.Modules.Shared.Combat.Config)
+local Item = require(ReplicatedStorage.Modules.Shared.Item)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local SpawnItemEvent = require(ReplicatedStorage.Events.Item.SpawnItem):Server()
+local ExplodeItemEvent = require(ReplicatedStorage.Events.Item.ExplodeItem):Server()
 local RegisterItemEvent = require(ReplicatedStorage.Events.Item.RegisterItem):Server()
 local DestroyItemEvent = require(ReplicatedStorage.Events.Item.DestroyItem):Server()
 local ItemCollectedEvent = require(ReplicatedStorage.Events.Item.ItemCollected):Server()
@@ -19,24 +21,7 @@ local BeginAbsorbEvent = require(ReplicatedStorage.Events.Item.BeginAbsorb):Serv
 -- For Quests
 ItemService.CollectBoost = Signal()
 
-local spawnedItems: { [number]: Item } = {}
-
-type BoostItemData = {
-	Type: "Boost",
-}
-type ModifierItemData = {
-	Type: "Modifier",
-	Modifier: Types.Modifier,
-}
-
-type ItemMetaData = BoostItemData | ModifierItemData
-
-type Item = {
-	Position: Vector3,
-	Id: number,
-	Collector: Player?,
-	Data: ItemMetaData,
-}
+local spawnedItems: { [number]: Item.Item } = {}
 
 local arenaFolder = workspace:WaitForChild("Arena") :: Folder
 
@@ -47,7 +32,21 @@ local minDistance = 3
 
 type CombatPlayers = { [Model]: CombatPlayer.CombatPlayer }
 
-function ItemService.SpawnBooster(position: Vector3) end
+function ItemService.SpawnModifier(position: Vector3, modifier: Types.Modifier)
+	id += 1
+
+	local data: Item.ModifierItemData = {
+		Type = "Modifier",
+		Modifier = modifier,
+	}
+
+	spawnedItems[id] = {
+		Position = position,
+		Id = id,
+		Data = data,
+	}
+	SpawnItemEvent:FireAll(data, id, position)
+end
 
 function ItemService.ExplodeBoosters(position: Vector3, count: number)
 	local params = RaycastParams.new()
@@ -73,12 +72,15 @@ function ItemService.ExplodeBoosters(position: Vector3, count: number)
 		end
 
 		id += 1
-		SpawnItemEvent:FireAll("Booster", id, position, newPosition)
+
+		local data: Item.BoostItemData = { Type = "Boost" }
+
 		spawnedItems[id] = {
 			Position = newPosition,
 			Id = id,
-			Data = { Type = "Boost" },
+			Data = data,
 		}
+		ExplodeItemEvent:FireAll(data, id, position, newPosition)
 	end
 end
 
@@ -90,7 +92,7 @@ function ItemService.CleanUp()
 end
 
 function HandleBeginAbsorb(combatPlayers: CombatPlayers, player: Player, id: number)
-	local item: Item = spawnedItems[id]
+	local item = spawnedItems[id]
 
 	if not player.Character or not item then
 		return
@@ -109,7 +111,7 @@ function HandleBeginAbsorb(combatPlayers: CombatPlayers, player: Player, id: num
 	if (HRP.Position - item.Position).Magnitude > Config.PickupRadius + 5 or combatPlayer:IsDead() then
 		-- since this is likely due to lag, get the client to replace the item again (as it will have assumed it to be picked up)
 		warn(player, "picked up item from too far away", (HRP.Position - item.Position).Magnitude)
-		RegisterItemEvent:Fire(player, "Booster", item.Id, item.Position)
+		RegisterItemEvent:Fire(player, item.Data, item.Id, item.Position)
 		return
 	end
 
@@ -157,7 +159,7 @@ function ItemService.Initialize(combatPlayers: CombatPlayers)
 
 		if loaded then
 			for i, item in pairs(spawnedItems) do
-				RegisterItemEvent:Fire(player, "Booster", item.Id, item.Position)
+				RegisterItemEvent:Fire(player, item.Data, item.Id, item.Position)
 			end
 		end
 	end)

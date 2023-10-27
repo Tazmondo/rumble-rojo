@@ -4,32 +4,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Used by server and client to generate data deterministically for attacks (using seeding)
 
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
+local Util = require(ReplicatedStorage.Modules.Shared.Util)
 local CombatPlayer = require(script.Parent.CombatPlayer)
 
 local AttackLogic = {}
 
 local arenaFolder = workspace:FindFirstChild("Arena")
-local lobbyFolder = workspace:FindFirstChild("Lobby")
 
 type IdFunction = () -> number
-
-function GetArenaCastParams()
-	local raycastParams = RaycastParams.new()
-	raycastParams.FilterType = Enum.RaycastFilterType.Include
-
-	raycastParams.FilterDescendantsInstances = { arenaFolder, lobbyFolder } -- Include the lobby for testing purposes
-
-	return raycastParams
-end
-
-function GetFloor(position: Vector3)
-	local cast = workspace:Raycast(position, Vector3.new(0, -20, 0), GetArenaCastParams())
-	if cast then
-		return cast.Position
-	else
-		return nil
-	end
-end
 
 function AttackLogic.MakeAttack(
 	combatPlayer: CombatPlayer.CombatPlayer?,
@@ -56,7 +38,7 @@ function AttackLogic.MakeAttack(
 		return AttackLogic.Arced(origin, idFunction(), target, attackData.Data.ProjectileSpeed)
 	elseif attackData.Data.AttackType == "Field" then
 		if not target then
-			target = GetFloor(origin.Position) or origin.Position
+			target = Util.GetFloor(origin.Position) or origin.Position
 		end
 		return { origin = CFrame.new(target :: Vector3), id = idFunction() }
 	else

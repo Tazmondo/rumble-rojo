@@ -6,8 +6,11 @@ local CombatService = require(ServerStorage.Modules.CombatService)
 local DataService = require(ServerStorage.Modules.DataService)
 local MapService = require(ServerStorage.Modules.MapService)
 local Types = require(ReplicatedStorage.Modules.Shared.Types)
+local Util = require(ReplicatedStorage.Modules.Shared.Util)
 local Future = require(ReplicatedStorage.Packages.Future)
 local Signal = require(ReplicatedStorage.Packages.Signal)
+
+local random = Random.new()
 
 export type GameModeType = "Deathmatch" | "Gem Grab"
 export type GameModeInterface = {
@@ -95,7 +98,7 @@ function GameMode.EnterCombat(player)
 	end)
 end
 
-function GameMode.Respawn(player)
+function GameMode.Respawn(player: Player, spawnItem: boolean?)
 	return Future.new(function()
 		-- Wait a moment before respawning
 		task.wait(2)
@@ -110,7 +113,17 @@ function GameMode.Respawn(player)
 			return
 		end
 
-		CombatService:SpawnCharacter(player, spawn)
+		local char = CombatService:SpawnCharacter(player, spawn):Await()
+
+		local HRP = char.PrimaryPart :: BasePart
+
+		local randomX = random:NextNumber(5, 15)
+		local randomZ = random:NextNumber(5, 15)
+
+		local boostFloat = HRP.Position + Vector3.new(randomX, 0, randomZ)
+		local boostPosition = Util.GetFloor(boostFloat) or boostFloat
+
+		-- TODO: finish me
 	end)
 end
 
