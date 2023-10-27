@@ -18,9 +18,12 @@ castParams.FilterDescendantsInstances = { arenaFolder }
 
 local StormConfig = Config.Storm
 
+local BLOCKSIZE = Config.Map.BlockSize
+local MAPLENGTH = Config.Map.MapLength
+
 local Add, Remove = Bin()
 local centre = assert(workspace.Lobby.MapPivotPoint).Position
-local firstLayer = StormConfig.MapLength / 2 + 1
+local firstLayer = MAPLENGTH / 2 + 1
 
 local currentProgress = 0
 local layers: { [number]: { Vector3 } } = {}
@@ -31,12 +34,12 @@ function AddCoordinate(layer: number, i: number, j: number, inverseI: boolean, i
 
 	local coordinate = centre
 		+ Vector3.new(
-			iCoefficient * (i * StormConfig.BlockSize - (StormConfig.BlockSize / 2)),
-			StormConfig.BlockSize / 2,
-			jCoefficient * (j * StormConfig.BlockSize - (StormConfig.BlockSize / 2))
+			iCoefficient * (i * BLOCKSIZE - (BLOCKSIZE / 2)),
+			BLOCKSIZE / 2,
+			jCoefficient * (j * BLOCKSIZE - (BLOCKSIZE / 2))
 		)
 
-	local result = workspace:Raycast(coordinate, Vector3.new(0, -StormConfig.BlockSize, 0), castParams)
+	local result = workspace:Raycast(coordinate, Vector3.new(0, -BLOCKSIZE, 0), castParams)
 	if result then
 		table.insert(layers[layer], coordinate)
 	end
@@ -44,8 +47,8 @@ end
 
 function RegisterLayers()
 	debug.profilebegin("RegisterStormLayers")
-	for i = 1, StormConfig.MapLength / 2 do
-		for j = 1, StormConfig.MapLength / 2 do
+	for i = 1, MAPLENGTH / 2 do
+		for j = 1, MAPLENGTH / 2 do
 			local layer = math.max(i, j)
 			if not layers[layer] then
 				layers[layer] = {}

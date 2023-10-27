@@ -63,10 +63,15 @@ local Config = {
 	-- pickup radius for items
 	PickupRadius = 10,
 
-	-- STORM CONFIG --
-	Storm = {
+	-- MAP CONFIG --
+	Map = {
 		BlockSize = 8,
 		MapLength = 32,
+		MaxHeight = 5, -- Maximum height in blocks of a map, from the floor
+	},
+
+	-- STORM CONFIG --
+	Storm = {
 		MinLayer = 3,
 		DamageAmount = 0.2,
 		DamageDelay = 1,

@@ -10,6 +10,9 @@ local Future = require(ReplicatedStorage.Packages.Future)
 
 local StormConfig = Config.Storm
 
+local BLOCKSIZE = Config.Map.BlockSize
+local MAPLENGTH = Config.Map.MapLength
+
 local Add, Remove = Bin()
 
 local lastDamaged: number
@@ -37,8 +40,7 @@ function DamageLoop()
 			end
 
 			local position = HRP.Position
-			local difference = (position - centre)
-				* Vector3.new(1 / StormConfig.BlockSize, 1, 1 / StormConfig.BlockSize)
+			local difference = (position - centre) * Vector3.new(1 / BLOCKSIZE, 1, 1 / BLOCKSIZE)
 
 			-- Since the storm area is a square not a circle, we can't take the magnitude
 			local maxDifference = math.max(math.abs(difference.X), math.abs(difference.Z))
@@ -78,7 +80,7 @@ function StormService.Start(fastMode: boolean)
 		local progressDelay = StormConfig.ProgressDelay * (if fastMode then 0.75 else 1)
 
 		-- Start outside the range of the map so no players on the map are damaged
-		currentLayer = StormConfig.MapLength / 2 + 1
+		currentLayer = MAPLENGTH / 2 + 1
 
 		local data = DataService.WriteGameData().Storm
 
