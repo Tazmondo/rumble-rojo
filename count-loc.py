@@ -24,4 +24,4 @@ for filename in filenames:
             if "Events/" in filename:
                 eventCount += 1
 
-print(f"\nScript Count: {fileCount}\nEvents: {eventCount}\nCommands: {commandCount}\nModules: {fileCount - commandCount - eventCount}\nLines of Code: {loc}")
+print(f"\nModuleScript Count: {fileCount}\nEvents: {eventCount}\nCommands: {commandCount}\nModules: {fileCount - commandCount - eventCount}\nLines of Code: {loc}")
