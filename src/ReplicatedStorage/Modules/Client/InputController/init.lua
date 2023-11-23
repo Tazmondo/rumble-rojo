@@ -268,19 +268,19 @@ end
 
 -- Returns point of intersection between a ray and a plane
 local function RayPlaneIntersection(
-	origin: Vector3,
-	normal: Vector3,
+	planeOrigin: Vector3,
+	planeNormal: Vector3,
 	rayOrigin: Vector3,
 	unitRayDirection: Vector3
 ): Vector3?
-	local rpoint = rayOrigin - origin
-	local dot = unitRayDirection:Dot(normal)
+	local rpoint = rayOrigin - planeOrigin
+	local dot = unitRayDirection:Dot(planeNormal)
 	if dot == 0 then
 		-- Parallel
 		return nil
 	end
 
-	local t = -rpoint:Dot(normal) / dot
+	local t = -rpoint:Dot(planeNormal) / dot
 	return rayOrigin + t * unitRayDirection, t
 end
 
